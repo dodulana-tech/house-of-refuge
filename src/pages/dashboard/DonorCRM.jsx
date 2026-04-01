@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { fmt } from '../../utils/paystack'
 
 /*
@@ -157,7 +158,7 @@ export default function DonorCRM() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontWeight: 700, fontSize: '.95rem' }}>{d.name}</span>
+                    <Link to={'/dashboard/donors/' + d.id} style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--charcoal)'}>{d.name}</Link>
                     <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: '.68rem', fontWeight: 700, background: tc.bg, color: tc.color }}>
                       {d.type}
                     </span>

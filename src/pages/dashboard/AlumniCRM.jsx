@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 /*
   Alumni CRM — 24-Month Post-Discharge Monitoring per SOP Chapter 8.5
@@ -170,7 +171,7 @@ export default function AlumniCRM() {
                       {a.initials}
                     </span>
                     <div>
-                      <span style={{ fontWeight: 700, fontSize: '.95rem' }}>{a.initials}</span>
+                      <Link to={'/dashboard/alumni/' + a.id} style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--charcoal)'}>{a.initials}</Link>
                       <span style={{
                         marginLeft: 8, padding: '2px 10px', borderRadius: 12, fontSize: '.68rem', fontWeight: 700,
                         background: sc.bg, color: sc.color,

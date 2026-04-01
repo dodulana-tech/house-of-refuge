@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { getApplications as getLocalApps } from '../../utils/store'
 import { getApplications as getSupaApps, isSupabaseReady } from '../../utils/supabase'
 import { fmt } from '../../utils/paystack'
@@ -81,9 +82,9 @@ export default function Admissions() {
             <div key={app.id} className="card" style={{ padding: '18px 22px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)' }}>
+                  <Link to={'/dashboard/admissions/' + app.id} style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)', textDecoration: 'none', display: 'block' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--charcoal)'}>
                     {app.initials || ((app.first_name || app.fn || '').charAt(0) + (app.last_name || app.ln || '').charAt(0)).toUpperCase()}
-                  </div>
+                  </Link>
                   <div style={{ fontSize: '.78rem', color: 'var(--g500)', marginTop: 2 }}>
                     {app.email} · {app.phone} · Applied: {new Date(app.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}
                   </div>

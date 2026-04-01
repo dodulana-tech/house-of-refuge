@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 /*
@@ -225,7 +226,7 @@ export default function Patients() {
                     {p.initials.split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)' }}>{p.initials}</div>
+                    <Link to={'/dashboard/patients/' + p.id} style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--charcoal)'}>{p.initials}</Link>
                     <div style={{ fontSize: '.76rem', color: 'var(--g500)' }}>
                       {p.gender}, {p.age}y · ID: {p.id} · Pathway {p.pathway} · {p.substance}
                     </div>

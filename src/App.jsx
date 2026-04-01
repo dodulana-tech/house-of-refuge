@@ -60,6 +60,8 @@ const DPatientRights = lazy(() => import('./pages/dashboard/PatientRights'))
 const DFamilyVisitRequests = lazy(() => import('./pages/dashboard/FamilyVisitRequests'))
 const DFamilyResources = lazy(() => import('./pages/dashboard/FamilyResources'))
 const DPatientSchedule = lazy(() => import('./pages/dashboard/PatientSchedule'))
+const DAlumniDetail = lazy(() => import('./pages/dashboard/AlumniDetail'))
+const DBehavioralDetail = lazy(() => import('./pages/dashboard/BehavioralDetail'))
 
 // ── Contexts ──────────────────────────────────────────────
 export const NotifContext = createContext(null)

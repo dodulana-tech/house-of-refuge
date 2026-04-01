@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 /*
   Staff Directory — per HOR Organogram
@@ -67,7 +68,7 @@ export default function StaffDirectory() {
                   fontSize: '.72rem', fontWeight: 700, flexShrink: 0,
                 }}>{s.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--charcoal)' }}>{s.name}</div>
+                  <Link to={'/dashboard/staff/' + i} style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--charcoal)', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--charcoal)'}>{s.name}</Link>
                   <div style={{ fontSize: '.76rem', color: 'var(--g500)' }}>{s.role} · {s.department}</div>
                 </div>
               </div>
