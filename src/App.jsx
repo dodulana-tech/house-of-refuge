@@ -60,6 +60,9 @@ const DPatientRights = lazy(() => import('./pages/dashboard/PatientRights'))
 const DFamilyVisitRequests = lazy(() => import('./pages/dashboard/FamilyVisitRequests'))
 const DFamilyResources = lazy(() => import('./pages/dashboard/FamilyResources'))
 const DPatientSchedule = lazy(() => import('./pages/dashboard/PatientSchedule'))
+const DPatientTimeline = lazy(() => import('./pages/dashboard/PatientTimeline'))
+const DRiskAssessment = lazy(() => import('./pages/dashboard/RiskAssessment'))
+const DFamilyTherapy = lazy(() => import('./pages/dashboard/FamilyTherapyTracker'))
 const DAlumniDetail = lazy(() => import('./pages/dashboard/AlumniDetail'))
 const DBehavioralDetail = lazy(() => import('./pages/dashboard/BehavioralDetail'))
 const DDonorDetail = lazy(() => import('./pages/dashboard/DonorDetail'))
@@ -134,6 +137,9 @@ function AppRoutes() {
         <Route path="medication" element={<DMAR />} />
         <Route path="mdt" element={<DMDTReviews />} />
         <Route path="clinical-notes" element={<DClinicalNotes />} />
+        <Route path="timeline" element={<DPatientTimeline />} />
+        <Route path="risk-assessment" element={<DRiskAssessment />} />
+        <Route path="family-therapy" element={<DFamilyTherapy />} />
 
         {/* Pillar 2: Admissions & Discharge */}
         <Route path="admissions" element={<DAdmissions />} />

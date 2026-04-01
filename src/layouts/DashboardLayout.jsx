@@ -27,6 +27,9 @@ const MENU = {
     { icon: '💊', to: '/dashboard/medication', label: 'Medication (MAR)' },
     { icon: '🤝', to: '/dashboard/mdt', label: 'MDT Reviews' },
     { icon: '📝', to: '/dashboard/clinical-notes', label: 'Clinical Notes' },
+    { icon: '🕐', to: '/dashboard/timeline', label: 'Patient Timeline' },
+    { icon: '🚨', to: '/dashboard/risk-assessment', label: 'Risk Assessment' },
+    { icon: '👨‍👩‍👧', to: '/dashboard/family-therapy', label: 'Family Therapy' },
 
     { section: 'Admissions & Discharge' },
     { icon: '📥', to: '/dashboard/admissions', label: 'Admissions Pipeline' },
@@ -73,6 +76,9 @@ const MENU = {
     { icon: '📝', to: '/dashboard/clinical-notes', label: 'Clinical Notes' },
     { icon: '💊', to: '/dashboard/medication', label: 'Medication (MAR)' },
     { icon: '🤝', to: '/dashboard/mdt', label: 'MDT Reviews' },
+    { icon: '🕐', to: '/dashboard/timeline', label: 'Patient Timeline' },
+    { icon: '🚨', to: '/dashboard/risk-assessment', label: 'Risk Assessment' },
+    { icon: '👨‍👩‍👧', to: '/dashboard/family-therapy', label: 'Family Therapy' },
 
     { section: 'Programme' },
     { icon: '📅', to: '/dashboard/schedule', label: 'Daily Schedule' },
