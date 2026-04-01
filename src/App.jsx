@@ -51,6 +51,14 @@ const DOutcomeTracking = lazy(() => import('./pages/dashboard/OutcomeTracking'))
 const DAlumniCRM = lazy(() => import('./pages/dashboard/AlumniCRM'))
 const DSafeguarding = lazy(() => import('./pages/dashboard/SafeguardingDashboard'))
 const DInventory = lazy(() => import('./pages/dashboard/InventoryManagement'))
+const DTreatmentPlanBuilder = lazy(() => import('./pages/dashboard/TreatmentPlanBuilder'))
+const DMDTReviews = lazy(() => import('./pages/dashboard/MDTReviews'))
+const DEquipmentSponsorship = lazy(() => import('./pages/dashboard/EquipmentSponsorship'))
+const DBoardReports = lazy(() => import('./pages/dashboard/BoardReports'))
+const DPatientRights = lazy(() => import('./pages/dashboard/PatientRights'))
+const DFamilyVisitRequests = lazy(() => import('./pages/dashboard/FamilyVisitRequests'))
+const DFamilyResources = lazy(() => import('./pages/dashboard/FamilyResources'))
+const DPatientSchedule = lazy(() => import('./pages/dashboard/PatientSchedule'))
 
 // ── Contexts ──────────────────────────────────────────────
 export const NotifContext = createContext(null)
@@ -116,9 +124,9 @@ function AppRoutes() {
         <Route path="patients" element={<DPatients />} />
         <Route path="patients/:id" element={<DPatientDetail />} />
         <Route path="caseload" element={<DPatients />} />
-        <Route path="treatment-plans" element={<DComingSoon title="Treatment Plans" description="Columbia Model treatment plan management" features={['Individual treatment plan per patient', 'Goal tracking with progress indicators', 'MDT review scheduling (Week 4, Week 8, pre-discharge)', 'PRPP development and documentation', 'Treatment plan co-authorship with patient']} />} />
+        <Route path="treatment-plans" element={<DTreatmentPlanBuilder />} />
         <Route path="medication" element={<DMAR />} />
-        <Route path="mdt" element={<DComingSoon title="MDT Case Reviews" description="Multi-Disciplinary Team governance" features={['Weekly MDT meeting scheduling and minutes', 'Treatment plan review tracking (Week 4, 8, pre-discharge)', 'Care plan decisions and action items', 'Attendance tracking per discipline', 'Emergency MDT for critical incidents']} />} />
+        <Route path="mdt" element={<DMDTReviews />} />
         <Route path="clinical-notes" element={<DClinicalNotes />} />
 
         {/* Pillar 2: Admissions & Discharge */}
@@ -148,28 +156,28 @@ function AppRoutes() {
         <Route path="payments" element={<Payments />} />
         <Route path="donors" element={<DDonorCRM />} />
         <Route path="inventory" element={<DInventory />} />
-        <Route path="sponsorship" element={<DComingSoon title="Equipment Sponsorship" description="32-item sponsorship tracking" features={['Item sponsorship status and progress', 'Sponsor recognition and receipts', 'Delivery and installation tracking', 'Budget vs actual for equipment drive', 'Public sponsorship page integration']} />} />
+        <Route path="sponsorship" element={<DEquipmentSponsorship />} />
 
         {/* Pillar 7: M&E & Compliance */}
         <Route path="outcomes" element={<DOutcomeTracking />} />
         <Route path="alumni" element={<DAlumniCRM />} />
         <Route path="safeguarding" element={<DSafeguarding />} />
-        <Route path="reports" element={<DComingSoon title="Board Reports" description="Governance and compliance reporting" features={['Monthly progress reports', 'Quarterly M&E reports', 'Financial stewardship reports', 'Safeguarding compliance reports', 'Operational readiness tracking', 'Regulatory compliance (NDLEA, MOH)']} />} />
+        <Route path="reports" element={<DBoardReports />} />
 
         {/* Patient-specific routes */}
         <Route path="checkin" element={<Checkin />} />
         <Route path="treatment" element={<Treatment />} />
         <Route path="meals" element={<Meals />} />
-        <Route path="my-schedule" element={<DOverview />} />
+        <Route path="my-schedule" element={<DPatientSchedule />} />
         <Route path="my-spiritual" element={<DOverview />} />
         <Route path="my-skills" element={<DOverview />} />
         <Route path="my-payments" element={<Payments />} />
-        <Route path="my-rights" element={<DComingSoon title="Your Rights" description="HOR Resident Rights Charter" features={['Right to dignity, respect, and compassion', 'Right to an individualized treatment plan', 'Right to confidentiality of personal/medical information', 'Right to know rules, expectations, and consequences', 'Right to submit a grievance or complaint', 'Right to make your own decisions including to leave', 'Right to contact emergency family member at any time']} />} />
+        <Route path="my-rights" element={<DPatientRights />} />
 
         {/* Family-specific routes */}
-        <Route path="visits" element={<DComingSoon title="Visit Requests" description="Sunday visitation scheduling" features={['Request a visit (Sunday 12–6 PM)', 'View request status', 'Visitor guidelines and rules', 'Previous visit history']} />} />
+        <Route path="visits" element={<DFamilyVisitRequests />} />
         <Route path="milestones" element={<DOverview />} />
-        <Route path="resources" element={<DComingSoon title="Family Resources" description="Support for families of residents" features={['Understanding Addiction as a Family', 'Setting Healthy Boundaries', 'Preparing for Re-entry', 'Family Therapy — What to Expect', 'Self-Care for Families', 'Support Groups (Al-Anon, Nar-Anon)']} />} />
+        <Route path="resources" element={<DFamilyResources />} />
         <Route path="family-therapy" element={<DOverview />} />
         <Route path="family-payments" element={<Payments />} />
         <Route path="settings" element={<DOverview />} />
