@@ -84,12 +84,27 @@ export default function ConsentManager() {
   const { user } = useAuth()
   const [view, setView] = useState('bulk') // 'bulk' | patient id
   const [selectedPatient, setSelectedPatient] = useState(PATIENTS[0].id)
+  const [consentOverrides, setConsentOverrides] = useState({})
+
+  const getConsentStatus = (patientId, formKey) => {
+    const overrideKey = `${patientId}_${formKey}`
+    if (consentOverrides[overrideKey]) return consentOverrides[overrideKey]
+    const patient = PATIENTS.find(p => p.id === patientId)
+    return patient?.consents[formKey] || 'pending'
+  }
+
+  const toggleConsentStatus = (patientId, formKey) => {
+    const current = getConsentStatus(patientId, formKey)
+    if (current === 'not-required') return
+    const next = current === 'pending' ? 'signed' : 'pending'
+    setConsentOverrides(prev => ({ ...prev, [`${patientId}_${formKey}`]: next }))
+  }
 
   const totalSigned = PATIENTS.reduce((sum, p) =>
-    sum + Object.values(p.consents).filter(v => v === 'signed').length, 0
+    sum + CONSENT_FORMS.filter(f => getConsentStatus(p.id, f.key) === 'signed').length, 0
   )
   const totalForms = PATIENTS.reduce((sum, p) =>
-    sum + Object.values(p.consents).filter(v => v !== 'not-required').length, 0
+    sum + CONSENT_FORMS.filter(f => getConsentStatus(p.id, f.key) !== 'not-required').length, 0
   )
 
   const activePatient = PATIENTS.find(p => p.id === selectedPatient)
@@ -149,8 +164,8 @@ export default function ConsentManager() {
             </thead>
             <tbody>
               {PATIENTS.map(p => {
-                const signed = Object.values(p.consents).filter(v => v === 'signed').length
-                const applicable = Object.values(p.consents).filter(v => v !== 'not-required').length
+                const signed = CONSENT_FORMS.filter(f => getConsentStatus(p.id, f.key) === 'signed').length
+                const applicable = CONSENT_FORMS.filter(f => getConsentStatus(p.id, f.key) !== 'not-required').length
                 const pct = applicable > 0 ? Math.round((signed / applicable) * 100) : 0
                 return (
                   <tr key={p.id}>
@@ -170,15 +185,24 @@ export default function ConsentManager() {
                     <td style={tdStyle}>{p.pathway}</td>
                     <td style={tdStyle}>{p.day}</td>
                     {CONSENT_FORMS.map(f => {
-                      const status = p.consents[f.key]
+                      const status = getConsentStatus(p.id, f.key)
                       const s = STATUS_STYLES[status]
+                      const isClickable = status !== 'not-required'
                       return (
                         <td key={f.key} style={tdStyle}>
-                          <span style={{
-                            padding: '3px 8px', borderRadius: 10, fontSize: '.7rem',
-                            fontWeight: 600, background: s.background, color: s.color,
-                            whiteSpace: 'nowrap',
-                          }}>
+                          <span
+                            onClick={isClickable ? () => toggleConsentStatus(p.id, f.key) : undefined}
+                            style={{
+                              padding: '3px 8px', borderRadius: 10, fontSize: '.7rem',
+                              fontWeight: 600, background: s.background, color: s.color,
+                              whiteSpace: 'nowrap',
+                              cursor: isClickable ? 'pointer' : 'default',
+                              transition: 'opacity .15s',
+                            }}
+                            title={isClickable ? 'Click to toggle status' : ''}
+                            onMouseEnter={e => { if (isClickable) e.target.style.opacity = '0.7' }}
+                            onMouseLeave={e => { if (isClickable) e.target.style.opacity = '1' }}
+                          >
                             {s.label}
                           </span>
                         </td>
@@ -233,8 +257,9 @@ export default function ConsentManager() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {CONSENT_FORMS.map(f => {
-                const status = activePatient.consents[f.key]
+                const status = getConsentStatus(activePatient.id, f.key)
                 const s = STATUS_STYLES[status]
+                const isClickable = status !== 'not-required'
                 return (
                   <div
                     key={f.key}
@@ -250,10 +275,18 @@ export default function ConsentManager() {
                         {f.label}
                       </div>
                     </div>
-                    <span style={{
-                      padding: '4px 12px', borderRadius: 12, fontSize: '.72rem',
-                      fontWeight: 700, background: s.background, color: s.color,
-                    }}>
+                    <span
+                      onClick={isClickable ? () => toggleConsentStatus(activePatient.id, f.key) : undefined}
+                      style={{
+                        padding: '4px 12px', borderRadius: 12, fontSize: '.72rem',
+                        fontWeight: 700, background: s.background, color: s.color,
+                        cursor: isClickable ? 'pointer' : 'default',
+                        transition: 'opacity .15s',
+                      }}
+                      title={isClickable ? 'Click to toggle status' : ''}
+                      onMouseEnter={e => { if (isClickable) e.target.style.opacity = '0.7' }}
+                      onMouseLeave={e => { if (isClickable) e.target.style.opacity = '1' }}
+                    >
                       {s.label}
                     </span>
                   </div>
@@ -264,9 +297,9 @@ export default function ConsentManager() {
 
           {/* Summary stats for selected patient */}
           {(() => {
-            const signed = Object.values(activePatient.consents).filter(v => v === 'signed').length
-            const pending = Object.values(activePatient.consents).filter(v => v === 'pending').length
-            const nr = Object.values(activePatient.consents).filter(v => v === 'not-required').length
+            const signed = CONSENT_FORMS.filter(f => getConsentStatus(activePatient.id, f.key) === 'signed').length
+            const pending = CONSENT_FORMS.filter(f => getConsentStatus(activePatient.id, f.key) === 'pending').length
+            const nr = CONSENT_FORMS.filter(f => getConsentStatus(activePatient.id, f.key) === 'not-required').length
             return (
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <div className="card" style={{ padding: '14px 18px', flex: 1, minWidth: 120, textAlign: 'center' }}>

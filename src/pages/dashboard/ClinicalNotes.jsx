@@ -110,7 +110,7 @@ const PATIENTS = [
   { id: 'P004', initials: 'IM' },
 ]
 
-const MOCK_NOTES = [
+const INITIAL_NOTES = [
   { id: 1, date: '2026-05-07', patient: 'CO', author: 'AI', type: 'Individual CBT', subjective: 'Patient reports improved mood, less preoccupation with alcohol cravings. Acknowledges triggers around family contact.', objective: 'Engaged, good eye contact, affect congruent.', assessment: 'Progressing in contemplation stage. Beginning to identify cognitive distortions.', plan: 'Continue CBT 2x/week. Introduce thought record homework.' },
   { id: 2, date: '2026-05-07', patient: 'AN', author: 'FA', type: 'Nursing', subjective: 'Reports mild nausea this morning. Sleep improved to 6 hours.', objective: 'BP 118/74, Pulse 82, Temp 36.5C. Weight 62kg, stable.', assessment: 'Tramadol withdrawal symptoms decreasing. Day 45 — vitals stabilizing.', plan: 'Continue monitoring. Adjust anti-nausea PRN. Next vitals 0630 tomorrow.' },
   { id: 3, date: '2026-05-06', patient: 'CO', author: 'FA', type: 'Group CBT', subjective: 'Participated actively in group. Shared about family conflict as trigger.', objective: 'Appropriate peer interaction. Offered support to newer resident.', assessment: 'Developing group cohesion. Showing empathy and leadership qualities.', plan: 'Encourage peer mentoring role. Continue group 3x/week.' },
@@ -125,6 +125,7 @@ const MOCK_NOTES = [
 
 export default function ClinicalNotes() {
   const { user } = useAuth()
+  const [notes, setNotes] = useState(INITIAL_NOTES)
   const [showForm, setShowForm] = useState(false)
   const [filterPatient, setFilterPatient] = useState('')
   const [filterType, setFilterType] = useState('')
@@ -143,7 +144,7 @@ export default function ClinicalNotes() {
 
   const prompts = form.type ? (SOAP_PROMPTS[form.type] || DEFAULT_PROMPTS) : DEFAULT_PROMPTS
 
-  const filteredNotes = MOCK_NOTES
+  const filteredNotes = notes
     .filter(n => !filterPatient || n.patient === filterPatient)
     .filter(n => !filterType || n.type === filterType)
     .filter(n => !filterDateFrom || n.date >= filterDateFrom)
@@ -155,7 +156,19 @@ export default function ClinicalNotes() {
 
   const handleSubmit = () => {
     if (!form.patient || !form.type || !form.subjective) return
-    alert('Note saved successfully (demo mode)')
+    const authorInitials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'ST'
+    const newNote = {
+      id: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      patient: form.patient,
+      author: authorInitials,
+      type: form.type,
+      subjective: form.subjective,
+      objective: form.objective,
+      assessment: form.assessment,
+      plan: form.plan,
+    }
+    setNotes(prev => [newNote, ...prev])
     setForm({ patient: '', type: '', subjective: '', objective: '', assessment: '', plan: '' })
     setShowForm(false)
   }
@@ -166,7 +179,7 @@ export default function ClinicalNotes() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Clinical Notes</h1>
-          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{MOCK_NOTES.length} notes across {PATIENTS.length} patients · SOAP format</p>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{notes.length} notes across {PATIENTS.length} patients · SOAP format</p>
         </div>
         <button className="btn btn--primary btn--sm" onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Cancel' : 'Add Note'}
@@ -298,7 +311,7 @@ export default function ClinicalNotes() {
 
       {/* Results count */}
       <p style={{ fontSize: '.82rem', color: 'var(--g500)', marginBottom: 12 }}>
-        Showing {filteredNotes.length} of {MOCK_NOTES.length} notes
+        Showing {filteredNotes.length} of {notes.length} notes
       </p>
 
       {/* Notes list */}
@@ -367,6 +380,13 @@ export default function ClinicalNotes() {
                         <div style={{ fontSize: '.84rem', color: 'var(--charcoal)', lineHeight: 1.5 }}>{text}</div>
                       </div>
                     ))}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (confirm('Delete this note?')) { setNotes(prev => prev.filter(n => n.id !== note.id)); setExpandedNote(null) } }}
+                        style={{ background: 'none', border: '1px solid #E53E3E', color: '#E53E3E', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600, padding: '4px 12px', borderRadius: 6 }}>
+                        Delete Note
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

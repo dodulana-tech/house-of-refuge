@@ -7,7 +7,7 @@ import React, { useState } from 'react'
   Tier 3 — Motivational Discipline: 2-week min, graduation hold, all free time → prayer/Bible study
 */
 
-const MOCK_INCIDENTS = [
+const INITIAL_INCIDENTS = [
   { id: 1, patient: 'IM', tier: 1, type: 'Lateness to sessions', date: '2026-04-01', response: 'Verbal warning documented', status: 'resolved', reportedBy: 'HM' },
   { id: 2, patient: 'CO', tier: 1, type: 'Dormitory cleanliness', date: '2026-03-29', response: 'Written reflection exercise assigned', status: 'resolved', reportedBy: 'HM' },
   { id: 3, patient: 'AN', tier: 2, type: 'Persistent negative attitude', date: '2026-03-25', response: 'Formal reprimand, loss of phone privileges', status: 'monitoring', reportedBy: 'CL' },
@@ -20,8 +20,26 @@ const tierConfig = {
 }
 
 export default function BehavioralManagement() {
+  const [incidents, setIncidents] = useState(INITIAL_INCIDENTS)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ patient: '', tier: '1', type: '', description: '', response: '' })
+
+  const handleSubmitIncident = () => {
+    if (!form.patient || !form.tier || !form.type) return
+    const newIncident = {
+      id: Date.now(),
+      patient: form.patient,
+      tier: parseInt(form.tier),
+      type: form.type,
+      date: new Date().toISOString().split('T')[0],
+      response: form.response || 'Pending review',
+      status: 'monitoring',
+      reportedBy: 'ST',
+    }
+    setIncidents(prev => [newIncident, ...prev])
+    setForm({ patient: '', tier: '1', type: '', description: '', response: '' })
+    setShowForm(false)
+  }
 
   return (
     <div>
@@ -140,13 +158,13 @@ export default function BehavioralManagement() {
               ))}
             </div>
           </div>
-          <button className="btn btn--primary btn--sm">Submit Incident Report</button>
+          <button className="btn btn--primary btn--sm" onClick={handleSubmitIncident}>Submit Incident Report</button>
         </div>
       )}
 
       {/* Incident log */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {MOCK_INCIDENTS.map(inc => {
+        {incidents.map(inc => {
           const cfg = tierConfig[inc.tier]
           return (
             <div key={inc.id} className="card" style={{ padding: '16px 20px', borderLeft: `4px solid ${cfg.color}` }}>
@@ -162,8 +180,10 @@ export default function BehavioralManagement() {
                   </span>
                 </div>
               </div>
-              <div style={{ fontSize: '.82rem', color: 'var(--g500)', marginTop: 8 }}>
-                Response: {inc.response} · Reported by: {inc.reportedBy} · {inc.date}
+              <div style={{ fontSize: '.82rem', color: 'var(--g500)', marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Response: {inc.response} · Reported by: {inc.reportedBy} · {inc.date}</span>
+                <button onClick={() => { if (confirm('Remove this incident?')) setIncidents(prev => prev.filter(i => i.id !== inc.id)) }}
+                  style={{ background: 'none', border: 'none', color: '#E53E3E', cursor: 'pointer', fontSize: '.78rem', fontWeight: 600, padding: '2px 8px' }}>Remove</button>
               </div>
             </div>
           )

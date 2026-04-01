@@ -38,34 +38,65 @@ export default function Patients() {
   const [search, setSearch] = useState('')
   const [patients, setPatients] = useState(PATIENTS)
   const [showAdmitForm, setShowAdmitForm] = useState(false)
+  const [editingId, setEditingId] = useState(null)
   const [admitForm, setAdmitForm] = useState({
     initials: '', gender: '', age: '', substance: '', pathway: '', insight: '', bed: '', counselor: '',
   })
 
-  const takenBeds = patients.map(p => p.bed)
+  const takenBeds = patients.filter(p => p.id !== editingId).map(p => p.bed)
   const availableBeds = BED_OPTIONS.filter(b => !takenBeds.includes(b))
 
   const handleAdmitSubmit = () => {
     if (!admitForm.initials || admitForm.initials.length !== 2 || !admitForm.gender || !admitForm.age || !admitForm.substance || !admitForm.pathway || !admitForm.insight || !admitForm.bed || !admitForm.counselor) return
-    const newPatient = {
-      id: 'P' + String(patients.length + 1).padStart(3, '0'),
-      initials: admitForm.initials.toUpperCase(),
-      gender: admitForm.gender === 'Male' ? 'M' : 'F',
-      age: parseInt(admitForm.age),
-      day: 1,
-      phase: 'stabilization',
-      substance: admitForm.substance,
-      pathway: admitForm.pathway,
-      insight: admitForm.insight,
-      mood: 3,
-      cravings: 3,
-      counselor: admitForm.counselor,
-      bed: admitForm.bed,
-      status: 'admitted',
+    if (editingId) {
+      setPatients(prev => prev.map(p => p.id === editingId ? {
+        ...p,
+        initials: admitForm.initials.toUpperCase(),
+        gender: admitForm.gender === 'Male' ? 'M' : admitForm.gender === 'Female' ? 'F' : admitForm.gender,
+        age: parseInt(admitForm.age),
+        substance: admitForm.substance,
+        pathway: admitForm.pathway,
+        insight: admitForm.insight,
+        counselor: admitForm.counselor,
+        bed: admitForm.bed,
+      } : p))
+      setEditingId(null)
+    } else {
+      const newPatient = {
+        id: 'P' + String(patients.length + 1).padStart(3, '0'),
+        initials: admitForm.initials.toUpperCase(),
+        gender: admitForm.gender === 'Male' ? 'M' : 'F',
+        age: parseInt(admitForm.age),
+        day: 1,
+        phase: 'stabilization',
+        substance: admitForm.substance,
+        pathway: admitForm.pathway,
+        insight: admitForm.insight,
+        mood: 3,
+        cravings: 3,
+        counselor: admitForm.counselor,
+        bed: admitForm.bed,
+        status: 'admitted',
+      }
+      setPatients(prev => [...prev, newPatient])
     }
-    setPatients(prev => [...prev, newPatient])
     setAdmitForm({ initials: '', gender: '', age: '', substance: '', pathway: '', insight: '', bed: '', counselor: '' })
     setShowAdmitForm(false)
+  }
+
+  const handleEditPatient = (p) => {
+    setEditingId(p.id)
+    setAdmitForm({
+      initials: p.initials,
+      gender: p.gender === 'M' ? 'Male' : 'Female',
+      age: String(p.age),
+      substance: p.substance,
+      pathway: p.pathway,
+      insight: p.insight,
+      bed: p.bed,
+      counselor: p.counselor,
+    })
+    setShowAdmitForm(true)
   }
 
   const filtered = patients
@@ -93,7 +124,7 @@ export default function Patients() {
       {/* Admit New Patient Form */}
       {showAdmitForm && (
         <div className="card" style={{ padding: '22px', marginBottom: 24 }}>
-          <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', marginBottom: 16 }}>Admit New Patient</h3>
+          <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', marginBottom: 16 }}>{editingId ? 'Edit Patient' : 'Admit New Patient'}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
             <div className="fg">
               <label className="flabel">Initials (2 letters) *</label>
@@ -157,8 +188,8 @@ export default function Patients() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-            <button className="btn btn--primary btn--sm" onClick={handleAdmitSubmit}>Admit Patient</button>
-            <button className="btn btn--secondary btn--sm" onClick={() => setShowAdmitForm(false)}>Cancel</button>
+            <button className="btn btn--primary btn--sm" onClick={handleAdmitSubmit}>{editingId ? 'Update Patient' : 'Admit Patient'}</button>
+            <button className="btn btn--secondary btn--sm" onClick={() => { setShowAdmitForm(false); setEditingId(null); setAdmitForm({ initials: '', gender: '', age: '', substance: '', pathway: '', insight: '', bed: '', counselor: '' }) }}>Cancel</button>
           </div>
         </div>
       )}
@@ -235,6 +266,9 @@ export default function Patients() {
                   <span>Counselor: {p.counselor}</span>
                   <span>{Math.round((p.day / 84) * 100)}% complete</span>
                 </div>
+              </div>
+              <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                <button className="btn btn--secondary btn--sm" style={{ padding: '4px 12px', fontSize: '.72rem' }} onClick={() => handleEditPatient(p)}>Edit</button>
               </div>
             </div>
           )

@@ -54,7 +54,7 @@ const INITIAL_GRIEVANCES = [
 ]
 
 const severityColors = { Low: '#1A7A4A', Medium: '#DD6B20', High: '#E53E3E', Urgent: '#C53030' }
-const statusColors = { 'Under Review': '#DD6B20', Resolved: '#1A7A4A', Escalated: '#E53E3E', Acknowledged: 'var(--blue)' }
+const statusColors = { 'Under Review': '#DD6B20', Resolved: '#1A7A4A', Escalated: '#E53E3E', Acknowledged: 'var(--blue)', Withdrawn: 'var(--g500)' }
 
 export default function PatientRights() {
   const { user } = useAuth()
@@ -200,6 +200,12 @@ export default function PatientRights() {
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <span style={{ fontSize: '.7rem', padding: '2px 8px', borderRadius: 10, background: (severityColors[g.severity] || 'var(--g400)') + '18', color: severityColors[g.severity], fontWeight: 600 }}>{g.severity}</span>
                       <span style={{ fontSize: '.7rem', padding: '2px 8px', borderRadius: 10, background: (statusColors[g.status] || 'var(--g400)') + '18', color: statusColors[g.status], fontWeight: 600 }}>{g.status}</span>
+                      {(g.status === 'Acknowledged' || g.status === 'Under Review') && (
+                        <button onClick={() => { if (confirm('Withdraw this grievance?')) setGrievances(prev => prev.map(x => x.id === g.id ? { ...x, status: 'Withdrawn' } : x)) }}
+                          style={{ fontSize: '.68rem', padding: '2px 8px', borderRadius: 10, border: '1px solid var(--g400)', background: 'none', color: 'var(--g500)', cursor: 'pointer', fontWeight: 600 }}>
+                          Withdraw
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

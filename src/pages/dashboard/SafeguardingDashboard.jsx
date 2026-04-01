@@ -317,17 +317,29 @@ export default function SafeguardingDashboard() {
                   <span style={{ fontWeight: 700, fontSize: '.85rem' }}>{inc.type}</span>
                   <span style={{
                     padding: '2px 8px', borderRadius: 12, fontSize: '.66rem', fontWeight: 700,
-                    background: inc.status === 'resolved' ? '#C6F6D5' : '#FED7D7',
-                    color: inc.status === 'resolved' ? '#22543D' : '#742A2A',
+                    background: inc.status === 'resolved' ? '#C6F6D5' : inc.status === 'escalated' ? '#FEF3C7' : '#FED7D7',
+                    color: inc.status === 'resolved' ? '#22543D' : inc.status === 'escalated' ? '#92400E' : '#742A2A',
                   }}>
-                    {inc.status === 'resolved' ? 'Resolved' : 'Investigating'}
+                    {inc.status === 'resolved' ? 'Resolved' : inc.status === 'escalated' ? 'Escalated' : 'Investigating'}
                   </span>
                 </div>
                 <span style={{ fontSize: '.75rem', color: 'var(--g400)' }}>{inc.date}</span>
               </div>
               <div style={{ fontSize: '.8rem', color: 'var(--g600)', marginBottom: 4 }}>{inc.description}</div>
-              <div style={{ fontSize: '.78rem', color: 'var(--g500)' }}>
-                <strong>Action:</strong> {inc.action} &middot; <em>Reported by: {inc.reporter}</em>
+              <div style={{ fontSize: '.78rem', color: 'var(--g500)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <span><strong>Action:</strong> {inc.action} &middot; <em>Reported by: {inc.reporter}</em></span>
+                {inc.status !== 'resolved' && (
+                  <span style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => setIncidents(prev => prev.map(i => i.id === inc.id ? { ...i, status: 'resolved' } : i))}
+                      style={{ padding: '3px 10px', borderRadius: 6, border: 'none', background: '#C6F6D5', color: '#22543D', cursor: 'pointer', fontSize: '.72rem', fontWeight: 700 }}>
+                      Resolve
+                    </button>
+                    <button onClick={() => setIncidents(prev => prev.map(i => i.id === inc.id ? { ...i, status: 'escalated' } : i))}
+                      style={{ padding: '3px 10px', borderRadius: 6, border: 'none', background: '#FED7D7', color: '#742A2A', cursor: 'pointer', fontSize: '.72rem', fontWeight: 700 }}>
+                      Escalate
+                    </button>
+                  </span>
+                )}
               </div>
             </div>
           ))}

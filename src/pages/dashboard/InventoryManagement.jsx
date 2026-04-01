@@ -71,6 +71,8 @@ export default function InventoryManagement() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [showReorder, setShowReorder] = useState(false)
   const [reorderForm, setReorderForm] = useState({ item: '', qty: '', urgency: '', supplier: '', notes: '' })
+  const [expanded, setExpanded] = useState(null)
+  const [edits, setEdits] = useState({})
 
   const filtered = INVENTORY
     .filter(i => category === 'all' || i.category === category)
@@ -176,7 +178,12 @@ export default function InventoryManagement() {
               {['Program Director', 'Admin Coordinator', 'Head Nurse (medical supplies)', 'Head of Clinical Services (medications)'].map(a => <option key={a}>{a}</option>)}
             </select>
           </div>
-          <button className="btn btn--primary btn--sm">Submit Requisition</button>
+          <button className="btn btn--primary btn--sm" onClick={() => {
+            if (!reorderForm.item || !reorderForm.qty || !reorderForm.urgency) return
+            alert('Requisition submitted successfully. Awaiting approval.')
+            setReorderForm({ item: '', qty: '', urgency: '', supplier: '', notes: '' })
+            setShowReorder(false)
+          }}>Submit Requisition</button>
         </div>
       )}
 

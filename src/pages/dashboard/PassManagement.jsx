@@ -236,6 +236,7 @@ export default function PassManagement() {
                 <>
                   <button className="btn btn--sm btn--primary" style={{ padding: '5px 12px', fontSize: '.74rem' }} onClick={() => handleApprove(p.id)}>Approve</button>
                   <button className="btn btn--sm btn--secondary" style={{ padding: '5px 12px', fontSize: '.74rem', color: '#E53E3E' }} onClick={() => handleDeny(p.id)}>Deny</button>
+                  <button className="btn btn--sm btn--secondary" style={{ padding: '5px 12px', fontSize: '.74rem', color: '#E53E3E' }} onClick={() => { if (confirm('Cancel this pending pass?')) setPasses(prev => prev.filter(x => x.id !== p.id)) }}>Cancel</button>
                 </>
               )}
               {p.status === 'active' && (
