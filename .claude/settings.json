@@ -15,7 +15,20 @@
       "Bash(SB_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGZtaWZ6Zndsa2lnc2NnbmFoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA0NzU0NiwiZXhwIjoyMDkwNjIzNTQ2fQ.EwNr00SntVZ68bd7fKSAwnKM1vNW79fuvTvWvAiPR-A\")",
       "Bash(__NEW_LINE_c1730ac223fbd7a5__ curl:*)",
       "Bash(SB_URL=\"https://fllfmifzfwlkigscgnah.supabase.co\" SB_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGZtaWZ6Zndsa2lnc2NnbmFoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA0NzU0NiwiZXhwIjoyMDkwNjIzNTQ2fQ.EwNr00SntVZ68bd7fKSAwnKM1vNW79fuvTvWvAiPR-A\" __NEW_LINE_00321cbebf276769__ PATIENT_ID=\"29bd7ce8-ba76-4465-9bb9-0e83c5007603\" __NEW_LINE_00321cbebf276769__ curl -s \"$SB_URL/rest/v1/profiles\" -X POST -H \"apikey: $SB_KEY\" -H \"Authorization: Bearer $SB_KEY\" -H \"Content-Type: application/json\" -H \"Prefer: return=representation\" -d '[:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(find /Users/debo/Downloads/hor-app/src -type f -exec ls -lh {})",
+      "Read(//Users/debo/Downloads/hor-app/**)",
+      "Bash(sort -k2)",
+      "Bash(grep -n \"width.*px\\\\|height.*px\" /Users/debo/Downloads/hor-app/src/styles/global.css /Users/debo/Downloads/hor-app/src/components/*.css /Users/debo/Downloads/hor-app/src/pages/*.css)",
+      "Bash(grep -r \"h1\\\\|h2\\\\|h3\\\\|h4\\\\|h5\\\\|h6\" /Users/debo/Downloads/hor-app/src/pages/*.jsx)",
+      "Bash(find /Users/debo/Downloads/hor-app/public -type f -exec ls -lh {})",
+      "Bash(grep -n \"table\\\\|<tr\\\\|<td\\\\|<thead\" /Users/debo/Downloads/hor-app/src/**/*.jsx /Users/debo/Downloads/hor-app/src/**/**/*.jsx)",
+      "Bash(ls -lh /Users/debo/Downloads/hor-app/*.*)",
+      "Bash(grep -r \"onClick\\\\|tabIndex\" /Users/debo/Downloads/hor-app/src/pages/*.jsx)",
+      "Bash(grep -n \"max-width\\\\|min-width\" /Users/debo/Downloads/hor-app/src/styles/global.css /Users/debo/Downloads/hor-app/src/components/*.css /Users/debo/Downloads/hor-app/src/pages/*.css /Users/debo/Downloads/hor-app/src/pages/**/*.css)",
+      "Bash(grep -r \"opacity\\\\|color\\\\|#[0-9a-f]\\\\{3,6\\\\}\" /Users/debo/Downloads/hor-app/src/styles --include=\"*.css\")",
+      "Bash(grep -n \"overflow-x\\\\|white-space.*nowrap\" /Users/debo/Downloads/hor-app/src/styles/global.css /Users/debo/Downloads/hor-app/src/components/*.css /Users/debo/Downloads/hor-app/src/pages/*.css /Users/debo/Downloads/hor-app/src/pages/**/*.css)",
+      "Bash(grep -n \"@media\" /Users/debo/Downloads/hor-app/src/styles/global.css /Users/debo/Downloads/hor-app/src/components/*.css /Users/debo/Downloads/hor-app/src/pages/*.css /Users/debo/Downloads/hor-app/src/pages/**/*.css)"
     ]
   }
 }
