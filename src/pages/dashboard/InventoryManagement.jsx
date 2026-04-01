@@ -194,14 +194,17 @@ export default function InventoryManagement() {
           const stockPct = Math.min((item.currentQty / item.maxQty) * 100, 100)
           const catInfo = CATEGORIES.find(c => c.key === item.category)
           const isExpiringSoon = item.expiryDate && ((new Date(item.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) < 90
+          const isOpen = expanded === item.id
+          const edit = edits[item.id] || {}
 
           return (
-            <div key={item.id} className="card" style={{ padding: '14px 18px', borderLeft: `3px solid ${status.color}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+            <div key={item.id} className="card" style={{ padding: 0, borderLeft: `3px solid ${status.color}`, overflow: 'hidden' }}>
+              <div onClick={() => setExpanded(isOpen ? null : item.id)} style={{ padding: '14px 18px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <span style={{ fontSize: '.68rem', color: 'var(--g500)', fontWeight: 600 }}>{item.id}</span>
                     <span style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--charcoal)' }}>{item.name}</span>
+                    <span style={{ fontSize: '.72rem', color: 'var(--g500)', marginLeft: 'auto' }}>{isOpen ? '▾' : '▸'}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 12, fontSize: '.76rem', color: 'var(--g500)', flexWrap: 'wrap' }}>
                     <span>{catInfo?.icon} {catInfo?.label}</span>
@@ -227,6 +230,62 @@ export default function InventoryManagement() {
                   </span>
                 </div>
               </div>
+
+              {/* Expanded detail panel */}
+              {isOpen && (
+                <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--g100)', background: 'var(--off)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, padding: '16px 0 12px' }}>
+                    <div>
+                      <div style={{ fontSize: '.7rem', color: 'var(--g500)', marginBottom: 2 }}>Category</div>
+                      <div style={{ fontSize: '.86rem', fontWeight: 600 }}>{catInfo?.icon} {catInfo?.label}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '.7rem', color: 'var(--g500)', marginBottom: 2 }}>Location</div>
+                      <div style={{ fontSize: '.86rem', fontWeight: 600 }}>{item.location}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '.7rem', color: 'var(--g500)', marginBottom: 2 }}>Cost per Unit</div>
+                      <div style={{ fontSize: '.86rem', fontWeight: 600 }}>{fmt(item.costPerUnit)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '.7rem', color: 'var(--g500)', marginBottom: 2 }}>Total Stock Value</div>
+                      <div style={{ fontSize: '.86rem', fontWeight: 600 }}>{fmt(item.currentQty * item.costPerUnit)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '.7rem', color: 'var(--g500)', marginBottom: 2 }}>Min / Max Levels</div>
+                      <div style={{ fontSize: '.86rem', fontWeight: 600 }}>{item.minQty} / {item.maxQty} {item.unit}</div>
+                    </div>
+                    {item.expiryDate && <div>
+                      <div style={{ fontSize: '.7rem', color: 'var(--g500)', marginBottom: 2 }}>Expiry Date</div>
+                      <div style={{ fontSize: '.86rem', fontWeight: 600, color: isExpiringSoon ? '#DD6B20' : 'var(--charcoal)' }}>{item.expiryDate} {isExpiringSoon ? '⚠️ Expiring soon' : ''}</div>
+                    </div>}
+                  </div>
+
+                  <div style={{ fontSize: '.78rem', fontWeight: 700, color: 'var(--charcoal)', marginBottom: 10, marginTop: 4 }}>Update Stock</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: '.7rem', color: 'var(--g500)', display: 'block', marginBottom: 2 }}>Adjust Quantity</label>
+                      <input type="number" value={edit.qty || ''} onChange={e => setEdits(p => ({ ...p, [item.id]: { ...p[item.id], qty: e.target.value } }))} placeholder={`Current: ${item.currentQty}`} style={{ width: '100%', padding: '7px 10px', borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '.7rem', color: 'var(--g500)', display: 'block', marginBottom: 2 }}>Status</label>
+                      <select value={edit.status || item.status} onChange={e => setEdits(p => ({ ...p, [item.id]: { ...p[item.id], status: e.target.value } }))} style={{ width: '100%', padding: '7px 10px', borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }}>
+                        {Object.entries(STOCK_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '.7rem', color: 'var(--g500)', display: 'block', marginBottom: 2 }}>Notes</label>
+                      <input type="text" value={edit.notes || ''} onChange={e => setEdits(p => ({ ...p, [item.id]: { ...p[item.id], notes: e.target.value } }))} placeholder="e.g. Restocked by nurse" style={{ width: '100%', padding: '7px 10px', borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }} />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                      <button className="btn btn--primary btn--sm" style={{ width: '100%' }} onClick={() => {
+                        alert(`Stock update saved for ${item.name}.\nNew qty: ${edit.qty || item.currentQty}\nStatus: ${edit.status || item.status}\nNotes: ${edit.notes || 'None'}`)
+                        setEdits(p => { const n = { ...p }; delete n[item.id]; return n })
+                      }}>Save Changes</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )
         })}
