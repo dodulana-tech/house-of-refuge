@@ -56,7 +56,7 @@ export default function StaffDirectory() {
       {/* Staff list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {STAFF.map((s, i) => (
-          <div key={i} className="card" style={{ padding: '14px 18px', marginLeft: s.level * 24, borderLeft: `3px solid ${deptColors[s.department] || 'var(--g300)'}` }}>
+          <div key={i} className="card" style={{ padding: '14px 18px', marginLeft: Math.min(s.level * 24, 48), borderLeft: `3px solid ${deptColors[s.department] || 'var(--g300)'}` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{

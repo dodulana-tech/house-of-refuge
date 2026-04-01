@@ -22,12 +22,53 @@ const PATIENTS = [
 
 const moodColors = ['', '#E53E3E', '#DD6B20', '#D69E2E', '#38A169', '#2B6CB0']
 
+const SUBSTANCE_OPTIONS = ['Alcohol', 'Cannabis', 'Cocaine', 'Heroin', 'Tramadol', 'Codeine Syrup', 'Methamphetamine', 'Benzodiazepines', 'Multiple']
+const INSIGHT_OPTIONS = ['denial', 'precontemplation', 'contemplation', 'preparation', 'action']
+const COUNSELOR_OPTIONS = ['AI', 'FA', 'TA', 'MO']
+const BED_OPTIONS = [
+  'A1','A2','A3','A4','A5','A6',
+  'B1','B2','B3','B4','B5','B6',
+  'C1','C2','C3','C4','C5','C6',
+  'D1','D2','D3','D4','D5','D6',
+]
+
 export default function Patients() {
   const { user } = useAuth()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [patients, setPatients] = useState(PATIENTS)
+  const [showAdmitForm, setShowAdmitForm] = useState(false)
+  const [admitForm, setAdmitForm] = useState({
+    initials: '', gender: '', age: '', substance: '', pathway: '', insight: '', bed: '', counselor: '',
+  })
 
-  const filtered = PATIENTS
+  const takenBeds = patients.map(p => p.bed)
+  const availableBeds = BED_OPTIONS.filter(b => !takenBeds.includes(b))
+
+  const handleAdmitSubmit = () => {
+    if (!admitForm.initials || admitForm.initials.length !== 2 || !admitForm.gender || !admitForm.age || !admitForm.substance || !admitForm.pathway || !admitForm.insight || !admitForm.bed || !admitForm.counselor) return
+    const newPatient = {
+      id: 'P' + String(patients.length + 1).padStart(3, '0'),
+      initials: admitForm.initials.toUpperCase(),
+      gender: admitForm.gender === 'Male' ? 'M' : 'F',
+      age: parseInt(admitForm.age),
+      day: 1,
+      phase: 'stabilization',
+      substance: admitForm.substance,
+      pathway: admitForm.pathway,
+      insight: admitForm.insight,
+      mood: 3,
+      cravings: 3,
+      counselor: admitForm.counselor,
+      bed: admitForm.bed,
+      status: 'admitted',
+    }
+    setPatients(prev => [...prev, newPatient])
+    setAdmitForm({ initials: '', gender: '', age: '', substance: '', pathway: '', insight: '', bed: '', counselor: '' })
+    setShowAdmitForm(false)
+  }
+
+  const filtered = patients
     .filter(p => filter === 'all' || p.phase === filter)
     .filter(p => !search || p.initials.toLowerCase().includes(search.toLowerCase()))
 
@@ -36,20 +77,97 @@ export default function Patients() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Patient Records</h1>
-          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{PATIENTS.length} current residents · 24 bed capacity</p>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{patients.length} current residents · 24 bed capacity</p>
         </div>
-        <input
-          className="fi" style={{ maxWidth: 280 }}
-          placeholder="Search patients..."
-          value={search} onChange={e => setSearch(e.target.value)}
-        />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <select className="fi" style={{ maxWidth: 200 }} value={search} onChange={e => setSearch(e.target.value)}>
+            <option value="">All patients</option>
+            {patients.map(p => <option key={p.id} value={p.initials}>{p.initials} ({p.id})</option>)}
+          </select>
+          <button className="btn btn--primary btn--sm" onClick={() => setShowAdmitForm(!showAdmitForm)}>
+            {showAdmitForm ? 'Cancel' : 'Admit New Patient'}
+          </button>
+        </div>
       </div>
+
+      {/* Admit New Patient Form */}
+      {showAdmitForm && (
+        <div className="card" style={{ padding: '22px', marginBottom: 24 }}>
+          <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', marginBottom: 16 }}>Admit New Patient</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            <div className="fg">
+              <label className="flabel">Initials (2 letters) *</label>
+              <input className="fi" maxLength={2} value={admitForm.initials} placeholder="e.g. AB"
+                style={{ textTransform: 'uppercase' }}
+                onChange={e => {
+                  const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '')
+                  setAdmitForm(p => ({ ...p, initials: val }))
+                }} />
+            </div>
+            <div className="fg">
+              <label className="flabel">Gender *</label>
+              <select className="fi" value={admitForm.gender} onChange={e => setAdmitForm(p => ({ ...p, gender: e.target.value }))}>
+                <option value="">Select...</option>
+                <option>Male</option>
+                <option>Female</option>
+              </select>
+            </div>
+            <div className="fg">
+              <label className="flabel">Age *</label>
+              <select className="fi" value={admitForm.age} onChange={e => setAdmitForm(p => ({ ...p, age: e.target.value }))}>
+                <option value="">Select...</option>
+                {Array.from({ length: 48 }, (_, i) => i + 18).map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+            <div className="fg">
+              <label className="flabel">Substance *</label>
+              <select className="fi" value={admitForm.substance} onChange={e => setAdmitForm(p => ({ ...p, substance: e.target.value }))}>
+                <option value="">Select...</option>
+                {SUBSTANCE_OPTIONS.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="fg">
+              <label className="flabel">Pathway *</label>
+              <select className="fi" value={admitForm.pathway} onChange={e => setAdmitForm(p => ({ ...p, pathway: e.target.value }))}>
+                <option value="">Select...</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+              </select>
+            </div>
+            <div className="fg">
+              <label className="flabel">Insight Level *</label>
+              <select className="fi" value={admitForm.insight} onChange={e => setAdmitForm(p => ({ ...p, insight: e.target.value }))}>
+                <option value="">Select...</option>
+                {INSIGHT_OPTIONS.map(i => <option key={i} value={i} style={{ textTransform: 'capitalize' }}>{i.charAt(0).toUpperCase() + i.slice(1)}</option>)}
+              </select>
+            </div>
+            <div className="fg">
+              <label className="flabel">Assigned Bed *</label>
+              <select className="fi" value={admitForm.bed} onChange={e => setAdmitForm(p => ({ ...p, bed: e.target.value }))}>
+                <option value="">Select...</option>
+                {availableBeds.map(b => <option key={b}>{b}</option>)}
+              </select>
+            </div>
+            <div className="fg">
+              <label className="flabel">Assigned Counselor *</label>
+              <select className="fi" value={admitForm.counselor} onChange={e => setAdmitForm(p => ({ ...p, counselor: e.target.value }))}>
+                <option value="">Select...</option>
+                {COUNSELOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            <button className="btn btn--primary btn--sm" onClick={handleAdmitSubmit}>Admit Patient</button>
+            <button className="btn btn--secondary btn--sm" onClick={() => setShowAdmitForm(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
 
       {/* Phase filters */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-        <button className={`btn btn--sm ${filter === 'all' ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setFilter('all')}>All ({PATIENTS.length})</button>
+        <button className={`btn btn--sm ${filter === 'all' ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setFilter('all')}>All ({patients.length})</button>
         {Object.entries(PHASES).map(([key, phase]) => {
-          const count = PATIENTS.filter(p => p.phase === key).length
+          const count = patients.filter(p => p.phase === key).length
           return (
             <button key={key} className={`btn btn--sm ${filter === key ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setFilter(key)}>
               {phase.label} ({count})

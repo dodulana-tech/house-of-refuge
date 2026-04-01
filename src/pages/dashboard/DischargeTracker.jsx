@@ -115,22 +115,114 @@ const PATIENTS = [
   },
 ]
 
+const DISCHARGE_TYPE_OPTIONS = [
+  'Planned (Graduation)',
+  'Administrative (Behavioral)',
+  'Clinical (Medical Referral)',
+  'Self-Discharge (AMA)',
+]
+
 export default function DischargeTracker() {
   const { user } = useAuth()
   const [expandedPatient, setExpandedPatient] = useState(null)
+  const [patients, setPatients] = useState(PATIENTS)
+  const [dischargeModal, setDischargeModal] = useState(null) // patient id
+  const [dischargeForm, setDischargeForm] = useState({
+    type: '', date: '', aftercare: '', church: '', alumni: '', safetyPlan: '', harmReduction: '',
+  })
+
+  const isAMA = dischargeForm.type === 'Self-Discharge (AMA)'
+
+  const handleDischargeConfirm = () => {
+    if (!dischargeForm.type || !dischargeForm.date || !dischargeForm.aftercare || !dischargeForm.church || !dischargeForm.alumni) return
+    if (isAMA && (!dischargeForm.safetyPlan || !dischargeForm.harmReduction)) return
+    setPatients(prev => prev.map(p => p.id === dischargeModal ? { ...p, discharged: true } : p))
+    setDischargeModal(null)
+    setDischargeForm({ type: '', date: '', aftercare: '', church: '', alumni: '', safetyPlan: '', harmReduction: '' })
+  }
 
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Discharge Tracker</h1>
         <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>
-          6 graduation criteria &middot; {PATIENTS.length} current residents &middot; All criteria must be met for planned discharge
+          6 graduation criteria &middot; {patients.filter(p => !p.discharged).length} current residents &middot; All criteria must be met for planned discharge
         </p>
       </div>
 
       {/* Patient checklist cards */}
+      {/* Discharge Modal */}
+      {dischargeModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div className="card" style={{ padding: '24px', maxWidth: 500, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', marginBottom: 16 }}>
+              Initiate Discharge — {patients.find(p => p.id === dischargeModal)?.initials}
+            </h3>
+            <div className="fg" style={{ marginBottom: 12 }}>
+              <label className="flabel">Discharge Type *</label>
+              <select className="fi" value={dischargeForm.type} onChange={e => setDischargeForm(p => ({ ...p, type: e.target.value }))}>
+                <option value="">Select...</option>
+                {DISCHARGE_TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="fg" style={{ marginBottom: 12 }}>
+              <label className="flabel">Discharge Date *</label>
+              <input className="fi" type="date" value={dischargeForm.date} onChange={e => setDischargeForm(p => ({ ...p, date: e.target.value }))} />
+            </div>
+            <div className="fg" style={{ marginBottom: 12 }}>
+              <label className="flabel">Aftercare Plan Confirmed *</label>
+              <select className="fi" value={dischargeForm.aftercare} onChange={e => setDischargeForm(p => ({ ...p, aftercare: e.target.value }))}>
+                <option value="">Select...</option>
+                <option>Yes</option>
+                <option>No</option>
+              </select>
+            </div>
+            <div className="fg" style={{ marginBottom: 12 }}>
+              <label className="flabel">Church Placement Confirmed *</label>
+              <select className="fi" value={dischargeForm.church} onChange={e => setDischargeForm(p => ({ ...p, church: e.target.value }))}>
+                <option value="">Select...</option>
+                <option>Yes</option>
+                <option>No</option>
+              </select>
+            </div>
+            <div className="fg" style={{ marginBottom: 12 }}>
+              <label className="flabel">Alumni Programme Enrolled *</label>
+              <select className="fi" value={dischargeForm.alumni} onChange={e => setDischargeForm(p => ({ ...p, alumni: e.target.value }))}>
+                <option value="">Select...</option>
+                <option>Yes</option>
+                <option>No</option>
+              </select>
+            </div>
+            {isAMA && (
+              <>
+                <div className="fg" style={{ marginBottom: 12 }}>
+                  <label className="flabel">Safety Plan Provided *</label>
+                  <select className="fi" value={dischargeForm.safetyPlan} onChange={e => setDischargeForm(p => ({ ...p, safetyPlan: e.target.value }))}>
+                    <option value="">Select...</option>
+                    <option>Yes</option>
+                    <option>No</option>
+                  </select>
+                </div>
+                <div className="fg" style={{ marginBottom: 12 }}>
+                  <label className="flabel">Harm Reduction Info Provided *</label>
+                  <select className="fi" value={dischargeForm.harmReduction} onChange={e => setDischargeForm(p => ({ ...p, harmReduction: e.target.value }))}>
+                    <option value="">Select...</option>
+                    <option>Yes</option>
+                    <option>No</option>
+                  </select>
+                </div>
+              </>
+            )}
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button className="btn btn--primary btn--sm" onClick={handleDischargeConfirm}>Confirm Discharge</button>
+              <button className="btn btn--secondary btn--sm" onClick={() => { setDischargeModal(null); setDischargeForm({ type: '', date: '', aftercare: '', church: '', alumni: '', safetyPlan: '', harmReduction: '' }) }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16, marginBottom: 28 }}>
-        {PATIENTS.map(p => {
+        {patients.filter(p => !p.discharged).map(p => {
           const metCount = Object.values(p.criteria).filter(c => c.met).length
           const total = GRADUATION_CRITERIA.length
           const pct = Math.round((metCount / total) * 100)
@@ -219,18 +311,27 @@ export default function DischargeTracker() {
                 })}
               </div>
 
-              {/* Expand / Graduate button */}
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              {/* Expand / Graduate / Discharge buttons */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 <button
                   className="btn btn--secondary btn--sm"
-                  style={{ flex: 1, fontSize: '.76rem' }}
+                  style={{ flex: 1, fontSize: '.76rem', minWidth: 120 }}
                   onClick={() => setExpandedPatient(isExpanded ? null : p.id)}
                 >
                   {isExpanded ? 'Hide Details' : 'Show Details'}
                 </button>
                 {readyToGraduate && (
-                  <button className="btn btn--primary btn--sm" style={{ flex: 1, fontSize: '.76rem' }}>
+                  <button className="btn btn--primary btn--sm" style={{ flex: 1, fontSize: '.76rem', minWidth: 120 }} onClick={() => { setDischargeForm(prev => ({ ...prev, type: 'Planned (Graduation)' })); setDischargeModal(p.id) }}>
                     Initiate Graduation
+                  </button>
+                )}
+                {metCount >= 4 && !readyToGraduate && (
+                  <button
+                    className="btn btn--sm"
+                    style={{ flex: 1, fontSize: '.76rem', minWidth: 120, background: '#DD6B2015', color: '#DD6B20', border: '1px solid #DD6B2030', fontWeight: 600 }}
+                    onClick={() => setDischargeModal(p.id)}
+                  >
+                    Initiate Discharge
                   </button>
                 )}
               </div>

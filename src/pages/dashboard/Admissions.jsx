@@ -88,7 +88,7 @@ export default function Admissions() {
                     {app.email} · {app.phone} · Applied: {new Date(app.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ padding: '4px 10px', borderRadius: 14, fontSize: '.72rem', fontWeight: 700, background: stageInfo.color + '15', color: stageInfo.color }}>
                     {stageInfo.label}
                   </span>

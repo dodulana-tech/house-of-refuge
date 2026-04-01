@@ -90,12 +90,27 @@ export default function MedicationMAR() {
   const totalScore = Object.values(scores).reduce((s, v) => s + v, 0)
   const severity = isAlcohol ? getCIWASeverity(totalScore) : getCOWSSeverity(totalScore)
 
-  const MOCK_MEDS = [
+  const MOCK_MEDS_INIT = [
     { patient: 'IM', medication: 'Diazepam 10mg', category: 'Detox support', route: 'Oral', frequency: 'TDS', rounds: { '06:00': true, '12:00': true, '18:00': false, '22:30': false } },
     { patient: 'IM', medication: 'Thiamine 100mg', category: 'Vitamin supplement', route: 'IM', frequency: 'OD', rounds: { '06:00': true, '12:00': false, '18:00': false, '22:30': false } },
     { patient: 'CO', medication: 'Multivitamin', category: 'Vitamin supplement', route: 'Oral', frequency: 'OD', rounds: { '06:00': true, '12:00': false, '18:00': false, '22:30': false } },
     { patient: 'AN', medication: 'Paracetamol 1g', category: 'Analgesic (non-opioid)', route: 'Oral', frequency: 'PRN', rounds: {} },
   ]
+
+  const [marRounds, setMarRounds] = useState(() =>
+    MOCK_MEDS_INIT.map(med => ({ ...med.rounds }))
+  )
+
+  const toggleRound = (medIdx, round) => {
+    setMarRounds(prev => {
+      const updated = [...prev]
+      const current = updated[medIdx][round]
+      updated[medIdx] = { ...updated[medIdx], [round]: current === true ? false : true }
+      return updated
+    })
+  }
+
+  const MOCK_MEDS = MOCK_MEDS_INIT.map((med, i) => ({ ...med, rounds: marRounds[i] }))
 
   return (
     <div>
@@ -124,27 +139,29 @@ export default function MedicationMAR() {
             No opioid-containing medications permitted in the facility under any circumstances (SOP 5.6)
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {/* Header row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 80px repeat(4, 70px)', gap: 8, padding: '8px 12px', fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-              <span>Patient</span><span>Medication</span><span>Category</span><span>Route</span>
-              {NURSING_ROUNDS.map(r => <span key={r} style={{ textAlign: 'center' }}>{r}</span>)}
-            </div>
-            {MOCK_MEDS.map((med, i) => (
-              <div key={i} className="card" style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 80px repeat(4, 70px)', gap: 8, padding: '12px', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700, fontSize: '.88rem' }}>{med.patient}</span>
-                <span style={{ fontSize: '.86rem', fontWeight: 600 }}>{med.medication}</span>
-                <span style={{ fontSize: '.74rem', color: 'var(--g500)' }}>{med.category}</span>
-                <span style={{ fontSize: '.74rem', color: 'var(--g500)' }}>{med.route}</span>
-                {NURSING_ROUNDS.map(r => (
-                  <div key={r} style={{ textAlign: 'center' }}>
-                    {med.rounds[r] === true && <span style={{ color: '#1A7A4A', fontWeight: 700 }}>✓</span>}
-                    {med.rounds[r] === false && <span style={{ color: '#E53E3E', fontWeight: 700 }}>—</span>}
-                    {med.rounds[r] === undefined && <span style={{ color: 'var(--g300)' }}>·</span>}
-                  </div>
-                ))}
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 700 }}>
+              {/* Header row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 80px repeat(4, 70px)', gap: 8, padding: '8px 12px', fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                <span>Patient</span><span>Medication</span><span>Category</span><span>Route</span>
+                {NURSING_ROUNDS.map(r => <span key={r} style={{ textAlign: 'center' }}>{r}</span>)}
               </div>
-            ))}
+              {MOCK_MEDS.map((med, i) => (
+                <div key={i} className="card" style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 80px repeat(4, 70px)', gap: 8, padding: '12px', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 700, fontSize: '.88rem' }}>{med.patient}</span>
+                  <span style={{ fontSize: '.86rem', fontWeight: 600 }}>{med.medication}</span>
+                  <span style={{ fontSize: '.74rem', color: 'var(--g500)' }}>{med.category}</span>
+                  <span style={{ fontSize: '.74rem', color: 'var(--g500)' }}>{med.route}</span>
+                  {NURSING_ROUNDS.map(r => (
+                    <div key={r} style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleRound(i, r)}>
+                      {med.rounds[r] === true && <span style={{ color: '#1A7A4A', fontWeight: 700 }}>✓</span>}
+                      {med.rounds[r] === false && <span style={{ color: '#E53E3E', fontWeight: 700 }}>—</span>}
+                      {med.rounds[r] === undefined && <span style={{ color: 'var(--g300)' }}>·</span>}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

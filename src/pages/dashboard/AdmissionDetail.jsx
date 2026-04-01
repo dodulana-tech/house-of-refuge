@@ -55,20 +55,68 @@ const insightColors = {
   action: '#2B6CB0',
 }
 
+const ADVANCE_REASONS = [
+  'Pre-screening complete',
+  'Clinical assessment complete',
+  'Admission approved',
+  'Documentation verified',
+  'Intake complete',
+  'Treatment plan created',
+  'Detox initiated',
+]
+
+const DEFER_REASONS = [
+  'Insufficient documentation',
+  'Bed unavailable',
+  'Awaiting family confirmation',
+  'Medical clearance pending',
+  'Financial arrangement incomplete',
+]
+
+const DECLINE_REASONS = [
+  'Does not meet admission criteria',
+  'Active psychosis — requires higher care',
+  'Violent behaviour history — safety concern',
+  'Refused programme terms',
+  'Duplicate application',
+]
+
+const REFER_REASONS = [
+  'Mild substance use — outpatient appropriate',
+  'Strong community support in place',
+  'Patient preference for outpatient',
+  'Clinical assessment recommends outpatient',
+]
+
 export default function AdmissionDetail() {
   const { user } = useAuth()
-  const [app] = useState(MOCK_APP)
+  const [app, setApp] = useState(MOCK_APP)
   const [confirm, setConfirm] = useState(null)
+  const [actionReason, setActionReason] = useState('')
 
   const currentStepIdx = PIPELINE_STEPS.findIndex(s => s.key === app.status)
 
   const handleAction = (action) => {
     setConfirm(action)
+    setActionReason('')
   }
 
   const confirmAction = () => {
-    // In production this would call supabase/API
+    if (!actionReason) return
+    if (confirm === 'Advance to Next Stage') {
+      const nextIdx = currentStepIdx + 1
+      if (nextIdx < PIPELINE_STEPS.length) {
+        setApp(prev => ({ ...prev, status: PIPELINE_STEPS[nextIdx].key }))
+      }
+    } else if (confirm === 'Refer to Outpatient Pathway') {
+      setApp(prev => ({ ...prev, status: 'outpatient-pathway' }))
+    } else if (confirm === 'Defer Application') {
+      setApp(prev => ({ ...prev, status: 'deferred' }))
+    } else if (confirm === 'Decline Application') {
+      setApp(prev => ({ ...prev, status: 'declined' }))
+    }
     setConfirm(null)
+    setActionReason('')
   }
 
   return (
@@ -225,8 +273,19 @@ export default function AdmissionDetail() {
             <p style={{ fontSize: '.88rem', marginBottom: 12, color: 'var(--charcoal)' }}>
               <strong>Confirm:</strong> Are you sure you want to <strong>{confirm}</strong> application {app.id} ({app.initials})?
             </p>
+            <div className="fg" style={{ marginBottom: 12 }}>
+              <label className="flabel">Reason *</label>
+              <select className="fi" value={actionReason} onChange={e => setActionReason(e.target.value)}>
+                <option value="">Select reason...</option>
+                {(confirm === 'Advance to Next Stage' ? ADVANCE_REASONS
+                  : confirm === 'Refer to Outpatient Pathway' ? REFER_REASONS
+                  : confirm === 'Defer Application' ? DEFER_REASONS
+                  : DECLINE_REASONS
+                ).map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn--primary btn--sm" onClick={confirmAction}>
+              <button className="btn btn--primary btn--sm" onClick={confirmAction} disabled={!actionReason}>
                 Yes, {confirm}
               </button>
               <button className="btn btn--secondary btn--sm" onClick={() => setConfirm(null)}>
@@ -236,25 +295,29 @@ export default function AdmissionDetail() {
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button className="btn btn--primary btn--sm" onClick={() => handleAction('Advance to Next Stage')}>
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={() => handleAction('Advance to Next Stage')}
+              disabled={currentStepIdx >= PIPELINE_STEPS.length - 1 || app.status === 'deferred' || app.status === 'declined' || app.status === 'outpatient-pathway'}
+            >
               Advance to Next Stage
             </button>
-            <button className="btn btn--secondary btn--sm" onClick={() => handleAction('Refer to Outpatient')}>
-              Refer to Outpatient
+            <button className="btn btn--secondary btn--sm" onClick={() => handleAction('Refer to Outpatient Pathway')}>
+              Refer to Outpatient Pathway
             </button>
             <button
               className="btn btn--sm"
               style={{ background: '#D69E2E15', color: '#D69E2E', border: '1px solid #D69E2E30', fontWeight: 600 }}
-              onClick={() => handleAction('Defer')}
+              onClick={() => handleAction('Defer Application')}
             >
-              Defer
+              Defer Application
             </button>
             <button
               className="btn btn--sm"
               style={{ background: '#E53E3E12', color: '#E53E3E', border: '1px solid #E53E3E30', fontWeight: 600 }}
-              onClick={() => handleAction('Decline')}
+              onClick={() => handleAction('Decline Application')}
             >
-              Decline
+              Decline Application
             </button>
           </div>
         )}
