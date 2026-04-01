@@ -25,8 +25,12 @@
   cursor: pointer;
 }
 .brandText {
-  font-family: var(--fd); font-size: 1.1rem; font-weight: 700;
-  color: white; letter-spacing: .04em;
+  font-family: var(--fd); font-size: .95rem; font-weight: 700;
+  color: white; letter-spacing: .04em; line-height: 1.2;
+}
+.brandSub {
+  font-size: .58rem; color: rgba(255,255,255,.35); letter-spacing: .06em;
+  text-transform: uppercase; font-weight: 600;
 }
 .collapseBtn {
   background: rgba(255,255,255,.06); border: none; color: rgba(255,255,255,.5);
@@ -53,10 +57,15 @@
   color: white !important;
   font-weight: 600;
 }
-.navIcon { font-size: 1.1rem; flex-shrink: 0; width: 24px; text-align: center; }
+.navIcon { font-size: 1rem; flex-shrink: 0; width: 22px; text-align: center; }
 .navLabel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .collapsed .navLabel { display: none; }
-.collapsed .navItem { justify-content: center; padding: 11px 8px; }
+.collapsed .navItem { justify-content: center; padding: 10px 8px; }
+.sectionLabel {
+  font-size: .64rem; text-transform: uppercase; letter-spacing: .1em;
+  color: rgba(255,255,255,.3); font-weight: 700;
+  padding: 16px 14px 6px; margin-top: 4px;
+}
 
 /* ── Sidebar Footer ── */
 .sidebarFooter {
@@ -89,7 +98,7 @@
   transition: margin-left .25s cubic-bezier(.4,0,.2,1);
   display: flex; flex-direction: column; min-height: 100vh;
 }
-.collapsed ~ .main { margin-left: 72px; }
+.mainExpanded { margin-left: 72px !important; }
 
 .topbar {
   background: rgba(255,255,255,.7);

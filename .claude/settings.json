@@ -33,7 +33,9 @@
       "Bash(openssl dgst:*)",
       "Bash(openssl base64:*)",
       "Bash(git status:*)",
-      "Bash(grep -l \"react-helmet-async\\\\|Helmet\" src/pages/*.jsx src/pages/**/*.jsx)"
+      "Bash(grep -l \"react-helmet-async\\\\|Helmet\" src/pages/*.jsx src/pages/**/*.jsx)",
+      "Bash(code /Users/debo/Desktop/cooked-indoors/)",
+      "Bash(open -a \"Visual Studio Code\" /Users/debo/Desktop/cooked-indoors/)"
     ]
   }
 }

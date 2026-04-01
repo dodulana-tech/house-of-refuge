@@ -4,75 +4,109 @@ import { useAuth } from '../context/AuthContext'
 import styles from './DashboardLayout.module.css'
 
 /*
-  MECE Sidebar Menu Structure — mapped to HOR Org Chart & SOPs
+  HOR Practice Management Platform — MECE Sidebar
+  7 Pillars mapped to John Akinola's SOPs + Org Chart
 
-  ADMIN / PROGRAM DIRECTOR:
-    - Overview (KPIs, bed occupancy, pipeline)
-    - Admissions Pipeline (8-step process)
-    - Patient Records (all 24 beds)
-    - Staff & HR
-    - Finance & Payments
-    - Reports & M&E
-    - Settings
-
-  CLINICAL (Head of Clinical Services, Nurses, Psychologist):
-    - My Caseload
-    - Patient Records
-    - Daily Schedule
-    - MDT Reviews
-    - Incidents & Behavioral
-    - Clinical Notes
-
-  CHAPLAIN / SPIRITUAL:
-    - My Schedule
-    - Patient Records
-    - Spiritual Formation Tracking
-    - Chapel & Events
-
-  PATIENT:
-    - My Dashboard
-    - Daily Check-in
-    - Treatment Plan
-    - Meals
-    - Payments
-
-  FAMILY:
-    - Patient Progress
-    - Visit Requests
-    - Family Resources
-    - Messages
+  1. Clinical Operations
+  2. Admissions & Discharge
+  3. Residential Operations
+  4. Spiritual & Programme
+  5. People & HR
+  6. Finance & Revenue
+  7. M&E & Compliance
 */
 
 const MENU = {
   admin: [
-    { icon: '📊', to: '/dashboard', label: 'Overview', end: true },
-    { icon: '📋', to: '/dashboard/admissions', label: 'Admissions' },
-    { icon: '🏥', to: '/dashboard/patients', label: 'Patients' },
-    { icon: '👥', to: '/dashboard/staff', label: 'Staff' },
-    { icon: '💰', to: '/dashboard/finance', label: 'Finance' },
-    { icon: '📈', to: '/dashboard/reports', label: 'Reports & M&E' },
-    { icon: '⚙️', to: '/dashboard/settings', label: 'Settings' },
+    { section: 'Overview' },
+    { icon: '📊', to: '/dashboard', label: 'Dashboard', end: true },
+
+    { section: 'Clinical Operations' },
+    { icon: '🏥', to: '/dashboard/patients', label: 'Patient Records' },
+    { icon: '📋', to: '/dashboard/treatment-plans', label: 'Treatment Plans' },
+    { icon: '💊', to: '/dashboard/medication', label: 'Medication (MAR)' },
+    { icon: '🤝', to: '/dashboard/mdt', label: 'MDT Reviews' },
+    { icon: '📝', to: '/dashboard/clinical-notes', label: 'Clinical Notes' },
+
+    { section: 'Admissions & Discharge' },
+    { icon: '📥', to: '/dashboard/admissions', label: 'Admissions Pipeline' },
+    { icon: '📄', to: '/dashboard/consents', label: 'Consent Management' },
+    { icon: '🎓', to: '/dashboard/discharge', label: 'Discharge & Graduation' },
+
+    { section: 'Residential Operations' },
+    { icon: '🛏️', to: '/dashboard/beds', label: 'Bed Management' },
+    { icon: '📅', to: '/dashboard/schedule', label: 'Daily Schedule' },
+    { icon: '⚠️', to: '/dashboard/behavioral', label: 'Behavioral Management' },
+    { icon: '🎫', to: '/dashboard/passes', label: 'Passes & Leave' },
+    { icon: '👨‍👩‍👧', to: '/dashboard/visitation', label: 'Visitation' },
+
+    { section: 'Spiritual & Programme' },
+    { icon: '✝️', to: '/dashboard/spiritual', label: 'Spiritual Formation' },
+    { icon: '📚', to: '/dashboard/life-skills', label: 'Life Skills & Vocational' },
+
+    { section: 'People & HR' },
+    { icon: '👥', to: '/dashboard/staff', label: 'Staff Directory' },
+    { icon: '🔄', to: '/dashboard/shifts', label: 'Shift Scheduling' },
+    { icon: '📈', to: '/dashboard/training', label: 'Training & CPD' },
+
+    { section: 'Finance & Revenue' },
+    { icon: '💰', to: '/dashboard/finance', label: 'Financial Overview' },
+    { icon: '💳', to: '/dashboard/payments', label: 'Payments & Deposits' },
+    { icon: '❤️', to: '/dashboard/donors', label: 'Donors & CRM' },
+    { icon: '🎁', to: '/dashboard/sponsorship', label: 'Equipment Sponsorship' },
+
+    { section: 'M&E & Compliance' },
+    { icon: '📊', to: '/dashboard/outcomes', label: 'Outcome Tracking' },
+    { icon: '🎓', to: '/dashboard/alumni', label: 'Alumni Programme' },
+    { icon: '🔒', to: '/dashboard/safeguarding', label: 'Safeguarding' },
+    { icon: '📋', to: '/dashboard/reports', label: 'Board Reports' },
   ],
   staff: [
+    { section: 'Clinical' },
     { icon: '📊', to: '/dashboard', label: 'Overview', end: true },
     { icon: '📁', to: '/dashboard/caseload', label: 'My Caseload' },
     { icon: '🏥', to: '/dashboard/patients', label: 'Patient Records' },
-    { icon: '📅', to: '/dashboard/schedule', label: 'Daily Schedule' },
+    { icon: '📝', to: '/dashboard/clinical-notes', label: 'Clinical Notes' },
+    { icon: '💊', to: '/dashboard/medication', label: 'Medication (MAR)' },
     { icon: '🤝', to: '/dashboard/mdt', label: 'MDT Reviews' },
-    { icon: '⚠️', to: '/dashboard/incidents', label: 'Incidents' },
-    { icon: '📝', to: '/dashboard/notes', label: 'Clinical Notes' },
+
+    { section: 'Programme' },
+    { icon: '📅', to: '/dashboard/schedule', label: 'Daily Schedule' },
+    { icon: '✝️', to: '/dashboard/spiritual', label: 'Spiritual Formation' },
+    { icon: '📚', to: '/dashboard/life-skills', label: 'Life Skills' },
+
+    { section: 'Operations' },
+    { icon: '⚠️', to: '/dashboard/behavioral', label: 'Behavioral Management' },
+    { icon: '🎫', to: '/dashboard/passes', label: 'Passes & Leave' },
+    { icon: '👨‍👩‍👧', to: '/dashboard/visitation', label: 'Visitation' },
+    { icon: '🔒', to: '/dashboard/safeguarding', label: 'Safeguarding' },
   ],
   patient: [
+    { section: 'My Recovery' },
     { icon: '🏠', to: '/dashboard', label: 'My Dashboard', end: true },
     { icon: '✅', to: '/dashboard/checkin', label: 'Daily Check-in' },
     { icon: '📋', to: '/dashboard/treatment', label: 'Treatment Plan' },
+    { icon: '📅', to: '/dashboard/my-schedule', label: 'My Schedule' },
+
+    { section: 'Daily Life' },
     { icon: '🍽️', to: '/dashboard/meals', label: 'Meals' },
-    { icon: '💳', to: '/dashboard/payments', label: 'Payments' },
+    { icon: '✝️', to: '/dashboard/my-spiritual', label: 'Spiritual Journal' },
+    { icon: '📚', to: '/dashboard/my-skills', label: 'Life Skills Progress' },
+
+    { section: 'Admin' },
+    { icon: '💳', to: '/dashboard/my-payments', label: 'Payments' },
+    { icon: '📖', to: '/dashboard/my-rights', label: 'My Rights' },
   ],
   family: [
-    { icon: '📊', to: '/dashboard', label: 'Progress', end: true },
+    { section: 'Patient' },
+    { icon: '📊', to: '/dashboard', label: 'Progress Overview', end: true },
+    { icon: '📋', to: '/dashboard/milestones', label: 'Recovery Milestones' },
     { icon: '📅', to: '/dashboard/visits', label: 'Visit Requests' },
+
+    { section: 'Support' },
     { icon: '📚', to: '/dashboard/resources', label: 'Family Resources' },
+    { icon: '🤝', to: '/dashboard/family-therapy', label: 'Family Therapy' },
+    { icon: '💳', to: '/dashboard/family-payments', label: 'Payments' },
   ],
 }
 
@@ -86,43 +120,49 @@ export default function DashboardLayout() {
   const menu = MENU[role] || MENU.patient
   const name = user?.name || user?.full_name || 'User'
   const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2)
-  const title = user?.title || (role === 'patient' ? 'Resident' : role === 'family' ? 'Family Member' : 'Staff')
-
-  function handleLogout() {
-    logout()
-    nav('/')
-  }
+  const title = user?.title || (role === 'patient' ? 'Resident' : role === 'family' ? 'Family Member' : role === 'admin' ? 'Program Director' : 'Staff')
 
   return (
     <div className={styles.layout}>
       {/* Sidebar */}
       <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobOpen ? styles.mobOpen : ''}`}>
         <div className={styles.sidebarHeader}>
-          <div className={styles.brand} onClick={() => nav('/')}>
-            <svg width="28" height="18" viewBox="0 0 44 28" fill="none" aria-hidden="true">
+          <button className={styles.brand} onClick={() => nav('/')}>
+            <svg width="24" height="16" viewBox="0 0 44 28" fill="none" aria-hidden="true">
               <path d="M4 26L4 14L22 2L40 14L40 26" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               <path d="M0 15L22 1L44 15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
             </svg>
-            {!collapsed && <span className={styles.brandText}>HOR</span>}
-          </div>
+            {!collapsed && (
+              <div>
+                <div className={styles.brandText}>HOUSE OF REFUGE</div>
+                <div className={styles.brandSub}>Practice Management</div>
+              </div>
+            )}
+          </button>
           <button className={styles.collapseBtn} onClick={() => setCollapsed(c => !c)} aria-label="Toggle sidebar">
-            {collapsed ? '→' : '←'}
+            {collapsed ? '›' : '‹'}
           </button>
         </div>
 
         <nav className={styles.sidebarNav}>
-          {menu.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}
-              onClick={() => setMobOpen(false)}
-            >
-              <span className={styles.navIcon}>{item.icon}</span>
-              {!collapsed && <span className={styles.navLabel}>{item.label}</span>}
-            </NavLink>
-          ))}
+          {menu.map((item, i) => {
+            if (item.section) {
+              if (collapsed) return null
+              return <div key={`s-${i}`} className={styles.sectionLabel}>{item.section}</div>
+            }
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navActive : ''}`}
+                onClick={() => setMobOpen(false)}
+              >
+                <span className={styles.navIcon}>{item.icon}</span>
+                {!collapsed && <span className={styles.navLabel}>{item.label}</span>}
+              </NavLink>
+            )
+          })}
         </nav>
 
         <div className={styles.sidebarFooter}>
@@ -136,23 +176,18 @@ export default function DashboardLayout() {
             )}
           </div>
           {!collapsed && (
-            <button className={styles.logoutBtn} onClick={handleLogout}>Sign Out</button>
+            <button className={styles.logoutBtn} onClick={() => { logout(); nav('/') }}>Sign Out</button>
           )}
         </div>
       </aside>
 
-      {/* Mobile overlay */}
       {mobOpen && <div className={styles.overlay} onClick={() => setMobOpen(false)} />}
 
-      {/* Main content */}
-      <div className={styles.main}>
+      <div className={`${styles.main} ${collapsed ? styles.mainExpanded : ''}`}>
         <header className={styles.topbar}>
           <button className={styles.mobMenu} onClick={() => setMobOpen(true)} aria-label="Open menu">
             <span /><span /><span />
           </button>
-          <div className={styles.topbarLeft}>
-            <h2 className={styles.pageTitle}>House of Refuge</h2>
-          </div>
           <div className={styles.topbarRight}>
             <span className={styles.roleBadge}>{role}</span>
             <span className={styles.topbarName}>{name}</span>
