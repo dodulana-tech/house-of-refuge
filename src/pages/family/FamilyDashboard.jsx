@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../../context/AuthContext'
 import { useNotif } from '../../App'
 import { saveVisitation, getVisitations } from '../../utils/store'
@@ -48,6 +49,10 @@ export default function FamilyDashboard() {
 
   return (
     <>
+      <Helmet>
+        <title>Family Portal | House of Refuge</title>
+        <meta name="description" content="View your loved one's recovery progress, request visits, and access family resources at House of Refuge." />
+      </Helmet>
       <div className="ph"><div className="container">
         <div className="ph__badge"><span className="badge">Family Portal</span></div>
         <h1>Family Dashboard</h1>

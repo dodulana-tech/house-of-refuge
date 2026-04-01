@@ -29,6 +29,10 @@ export default function Payments() {
 
   return (
     <>
+      <Helmet>
+        <title>Payments | House of Refuge</title>
+        <meta name="description" content="Track your treatment payments, outstanding balance, and cost breakdown at House of Refuge." />
+      </Helmet>
       <div className="ph"><div className="container">
         <div className="ph__badge"><span className="badge">Patient Portal</span></div>
         <h1>Payment History</h1>

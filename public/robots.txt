@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /portal
+Disallow: /admin
+Disallow: /family
+Disallow: /login
+Sitemap: https://hor-app.vercel.app/sitemap.xml

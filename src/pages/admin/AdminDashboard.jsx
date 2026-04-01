@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../../context/AuthContext'
 import { getApplications } from '../../utils/store'
 import { fmt } from '../../utils/paystack'
@@ -28,6 +29,10 @@ export default function AdminDashboard() {
 
   return (
     <>
+      <Helmet>
+        <title>Admin Dashboard | House of Refuge</title>
+        <meta name="description" content="Manage patients, applications, and finances from the House of Refuge admin dashboard." />
+      </Helmet>
       <div className="ph"><div className="container">
         <div className="ph__badge"><span className="badge">Staff Portal</span></div>
         <h1>Admin Dashboard</h1>

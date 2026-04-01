@@ -31,7 +31,9 @@
       "Bash(grep -n \"@media\" /Users/debo/Downloads/hor-app/src/styles/global.css /Users/debo/Downloads/hor-app/src/components/*.css /Users/debo/Downloads/hor-app/src/pages/*.css /Users/debo/Downloads/hor-app/src/pages/**/*.css)",
       "Bash(curl -s https://js.paystack.co/v1/inline.js)",
       "Bash(openssl dgst:*)",
-      "Bash(openssl base64:*)"
+      "Bash(openssl base64:*)",
+      "Bash(git status:*)",
+      "Bash(grep -l \"react-helmet-async\\\\|Helmet\" src/pages/*.jsx src/pages/**/*.jsx)"
     ]
   }
 }
