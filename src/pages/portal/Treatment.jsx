@@ -16,7 +16,7 @@ const TREATMENT_PLAN = {
         { text: 'Full orientation and house rules briefing', done: true },
         { text: 'Begin spiritual engagement (voluntary)', done: true },
       ],
-      therapies: ['Medical detox under doctor supervision', '24/7 nursing monitoring', 'Nutritional support', 'Reduced therapeutic demand — rest priority'],
+      therapies: ['Medical detox under doctor supervision', '24/7 nursing monitoring', 'Nutritional support', 'Reduced therapeutic demand, rest priority'],
     },
     {
       name: 'Phase 2: Therapeutic Foundation',
@@ -55,7 +55,7 @@ const TREATMENT_PLAN = {
         { text: 'Pre-discharge assessment completed', done: false },
         { text: 'Family reintegration meeting (Pathway A) or community placement confirmed (B)', done: false },
         { text: 'Personal Relapse Prevention Plan finalized and practiced', done: false },
-        { text: 'Aftercare plan confirmed — church placement, support group, follow-up schedule', done: false },
+        { text: 'Aftercare plan confirmed: church placement, support group, follow-up schedule', done: false },
         { text: 'Alumni Program enrollment', done: false },
         { text: 'Graduation ceremony', done: false },
       ],
@@ -63,7 +63,7 @@ const TREATMENT_PLAN = {
     },
   ],
   team: [
-    { name: 'Program Director', role: 'Qualified Medical Doctor — Clinical & Operational Leader', sessions: 'Admission decisions, MDT chair, weekly doctor review' },
+    { name: 'Program Director', role: 'Qualified Medical Doctor, Clinical & Operational Leader', sessions: 'Admission decisions, MDT chair, weekly doctor review' },
     { name: 'Head of Clinical Services', role: 'Clinical Lead / Head Counselor', sessions: 'Group CBT 3x/week, individual sessions, treatment plan reviews' },
     { name: 'Head Nurse', role: 'Nursing Services Lead (3 rotating shift nurses)', sessions: 'Daily nursing checks, medication administration, detox monitoring' },
     { name: 'Chaplain', role: 'Spiritual Formation Lead', sessions: 'Bible School 5x/week, Sunday Chapel, evening devotions, pastoral counseling' },
@@ -85,7 +85,7 @@ const TREATMENT_PLAN = {
     { criterion: 'Minimum Residency', standard: '12-week programme completed (extendable to 6 months where clinically indicated)' },
     { criterion: 'Clinical Stability', standard: 'No active withdrawal, stable vitals, no psychiatric symptoms, sustained abstinence' },
     { criterion: 'Insight & Commitment', standard: 'Clear insight into addiction, genuine articulated commitment to sustained sobriety' },
-    { criterion: 'Christian Growth', standard: 'Authentic spiritual formation — faithful participation, evidence of internal values transformation' },
+    { criterion: 'Christian Growth', standard: 'Authentic spiritual formation, faithful participation, evidence of internal values transformation' },
     { criterion: 'Relapse Prevention Plan', standard: 'Written PRPP completed, 5+ coping strategies, identified recovery support network' },
     { criterion: 'Reintegration Readiness', standard: 'Confirmed safe post-discharge placement, family/community meeting completed, aftercare finalized' },
   ],
@@ -100,7 +100,7 @@ export default function Treatment() {
       <div className="ph"><div className="container">
         <div className="ph__badge"><span className="badge">Patient Portal</span></div>
         <h1>Treatment Plan</h1>
-        <p>Your personalised 12-week recovery programme — Evidence-Based, Christ-Centered, Trauma-Informed</p>
+        <p>Your personalised 12-week recovery programme. Evidence-Based, Christ-Centered, Trauma-Informed</p>
       </div></div>
 
       <section className="section">
@@ -180,9 +180,9 @@ export default function Treatment() {
           {activeTab === 'graduation' && (
             <div>
               <div className="card" style={{ marginBottom: 18 }}>
-                <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 8 }}>Programme Completion — All 6 Criteria Required</h4>
+                <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 8 }}>Programme Completion: All 6 Criteria Required</h4>
                 <p style={{ fontSize: '.88rem', color: 'var(--g700)', lineHeight: 1.7, marginBottom: 18 }}>
-                  A resident is eligible for graduation when ALL of the following criteria are demonstrated. The graduation ceremony is a therapeutically significant event — it involves family or community supporters, includes the client's personal testimony, and formally releases them into their next chapter.
+                  A resident is eligible for graduation when ALL of the following criteria are demonstrated. The graduation ceremony is a therapeutically significant event. It involves family or community supporters, includes the client's personal testimony, and formally releases them into their next chapter.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {TREATMENT_PLAN.graduationCriteria.map((c, i) => (
@@ -195,12 +195,12 @@ export default function Treatment() {
               </div>
 
               <div className="card">
-                <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', marginBottom: 12 }}>After Graduation — Alumni Programme</h4>
+                <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', marginBottom: 12 }}>After Graduation: Alumni Programme</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
                     'Year 1: Weekly contact (months 1–3), bi-weekly (4–6), monthly (7–12). Home visits at 3, 6, 12 months.',
                     'Year 2: Monthly phone contact, bi-monthly visits. Case closure at 24 months if sustained recovery.',
-                    'Alumni Support Groups: Regular gatherings for graduates — peer accountability, encouragement, fellowship.',
+                    'Alumni Support Groups: Regular gatherings for graduates, offering peer accountability, encouragement, and fellowship.',
                     'Mentorship: Stabilized alumni (6+ months post-discharge) trained as recovery mentors.',
                     'Church placement: Connected to a specific local church and Life Center before discharge.',
                   ].map((t, i) => (

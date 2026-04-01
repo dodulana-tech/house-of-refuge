@@ -5,7 +5,17 @@
       "Bash(npx kill-port:*)",
       "WebFetch(domain:drive.google.com)",
       "WebFetch(domain:docs.google.com)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "Bash(npx vercel:*)",
+      "Bash(/Users/debo/Downloads/hor-app/.env:*)",
+      "Bash(curl -s \"https://fllfmifzfwlkigscgnah.supabase.co/rest/v1/\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGZtaWZ6Zndsa2lnc2NnbmFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDc1NDYsImV4cCI6MjA5MDYyMzU0Nn0.HuSURh3QElDRgBFuBsCyVodJWEEOIr1JLRG2qkhMZK0\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGZtaWZ6Zndsa2lnc2NnbmFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNDc1NDYsImV4cCI6MjA5MDYyMzU0Nn0.HuSURh3QElDRgBFuBsCyVodJWEEOIr1JLRG2qkhMZK0\")",
+      "Bash(SB_URL=\"https://fllfmifzfwlkigscgnah.supabase.co\" SB_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGZtaWZ6Zndsa2lnc2NnbmFoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA0NzU0NiwiZXhwIjoyMDkwNjIzNTQ2fQ.EwNr00SntVZ68bd7fKSAwnKM1vNW79fuvTvWvAiPR-A\" __NEW_LINE_26a400a260e75308__ curl -s \"$SB_URL/rest/v1/profiles?select=email,full_name,role,title&order=role\" -H \"apikey: $SB_KEY\" -H \"Authorization: Bearer $SB_KEY\")",
+      "Bash(SB_URL=\"https://fllfmifzfwlkigscgnah.supabase.co\")",
+      "Bash(SB_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGZtaWZ6Zndsa2lnc2NnbmFoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA0NzU0NiwiZXhwIjoyMDkwNjIzNTQ2fQ.EwNr00SntVZ68bd7fKSAwnKM1vNW79fuvTvWvAiPR-A\")",
+      "Bash(__NEW_LINE_c1730ac223fbd7a5__ curl:*)",
+      "Bash(SB_URL=\"https://fllfmifzfwlkigscgnah.supabase.co\" SB_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGZtaWZ6Zndsa2lnc2NnbmFoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTA0NzU0NiwiZXhwIjoyMDkwNjIzNTQ2fQ.EwNr00SntVZ68bd7fKSAwnKM1vNW79fuvTvWvAiPR-A\" __NEW_LINE_00321cbebf276769__ PATIENT_ID=\"29bd7ce8-ba76-4465-9bb9-0e83c5007603\" __NEW_LINE_00321cbebf276769__ curl -s \"$SB_URL/rest/v1/profiles\" -X POST -H \"apikey: $SB_KEY\" -H \"Authorization: Bearer $SB_KEY\" -H \"Content-Type: application/json\" -H \"Prefer: return=representation\" -d '[:*)",
+      "Bash(npx vite:*)"
     ]
   }
 }

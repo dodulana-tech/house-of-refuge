@@ -31,9 +31,9 @@ export default function FamilyDashboard() {
 
   const familyResources = [
     { title: 'Understanding Addiction as a Family', desc: 'A guide for families supporting a loved one in recovery.' },
-    { title: 'Setting Healthy Boundaries', desc: 'How to support without enabling — practical strategies.' },
+    { title: 'Setting Healthy Boundaries', desc: 'How to support without enabling, with practical strategies.' },
     { title: 'Preparing for Re-entry', desc: 'What to expect and how to prepare for your loved one\'s return home.' },
-    { title: 'Family Therapy — What to Expect', desc: 'How family sessions work and how to make the most of them.' },
+    { title: 'Family Therapy: What to Expect', desc: 'How family sessions work and how to make the most of them.' },
   ]
 
   function handleVisitRequest() {
@@ -51,7 +51,7 @@ export default function FamilyDashboard() {
       <div className="ph"><div className="container">
         <div className="ph__badge"><span className="badge">Family Portal</span></div>
         <h1>Family Dashboard</h1>
-        <p>Welcome, {user?.name} — {user?.relationship} of {patient.name}</p>
+        <p>Welcome, {user?.name}, {user?.relationship} of {patient.name}</p>
       </div></div>
 
       <section className="section">

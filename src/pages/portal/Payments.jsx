@@ -5,10 +5,10 @@ import styles from './Portal.module.css'
 
 const MOCK_PAYMENTS = [
   { id: 1, date: '2026-04-12', desc: 'Booking Deposit', amount: 1000000, status: 'paid', ref: 'HOR_WL_1712937400_ABC12' },
-  { id: 2, date: '2026-04-15', desc: 'Treatment Fee — Month 1', amount: 850000, status: 'paid', ref: 'HOR_TF_1713192000_DEF34' },
-  { id: 3, date: '2026-05-01', desc: 'Medication — Detox Support', amount: 45000, status: 'paid', ref: 'HOR_MED_1714521600_GH56' },
-  { id: 4, date: '2026-05-15', desc: 'Treatment Fee — Month 2', amount: 850000, status: 'pending', ref: '' },
-  { id: 5, date: '2026-06-15', desc: 'Treatment Fee — Month 3', amount: 850000, status: 'upcoming', ref: '' },
+  { id: 2, date: '2026-04-15', desc: 'Month 1 Treatment Fee', amount: 850000, status: 'paid', ref: 'HOR_TF_1713192000_DEF34' },
+  { id: 3, date: '2026-05-01', desc: 'Medication: Detox Support', amount: 45000, status: 'paid', ref: 'HOR_MED_1714521600_GH56' },
+  { id: 4, date: '2026-05-15', desc: 'Month 2 Treatment Fee', amount: 850000, status: 'pending', ref: '' },
+  { id: 5, date: '2026-06-15', desc: 'Month 3 Treatment Fee', amount: 850000, status: 'upcoming', ref: '' },
 ]
 
 const TREATMENT_COST = {

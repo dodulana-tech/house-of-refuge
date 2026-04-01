@@ -12,22 +12,25 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!email || !password) { showNotif('Required', 'Please enter email and password.'); return }
     setLoading(true)
-    setTimeout(() => {
-      const result = login(email, password)
-      setLoading(false)
-      if (result.ok) {
-        showNotif('Welcome back', `Signed in as ${result.user.name}`, 'ok')
-        const dest = result.user.role === 'admin' || result.user.role === 'staff' ? '/admin' :
-                     result.user.role === 'family' ? '/family' : '/portal'
+    const result = await login(email, password)
+    setLoading(false)
+    if (result.ok) {
+      showNotif('Welcome back', `Signed in successfully`, 'ok')
+      // Wait briefly for auth state to propagate
+      setTimeout(() => {
+        const u = result.user
+        const role = u?.user_metadata?.role || u?.role
+        const dest = role === 'admin' || role === 'staff' ? '/admin' :
+                     role === 'family' ? '/family' : '/portal'
         nav(dest)
-      } else {
-        showNotif('Login failed', result.error)
-      }
-    }, 600)
+      }, 300)
+    } else {
+      showNotif('Login failed', result.error)
+    }
   }
 
   return (
@@ -58,13 +61,13 @@ export default function Login() {
               </button>
 
               <div className={styles.demo}>
-                <div className={styles.demoTitle}>Demo Accounts</div>
+                <div className={styles.demoTitle}>Quick Access</div>
                 <div className={styles.demoGrid}>
                   {[
-                    ['Patient', 'patient@hor.ng', 'patient123'],
-                    ['Family', 'family@hor.ng', 'family123'],
-                    ['Staff', 'staff@hor.ng', 'staff123'],
-                    ['Admin', 'admin@hor.ng', 'admin123'],
+                    ['Patient', 'patient@hor.ng', 'HOR_Patient_2026!'],
+                    ['Family', 'family@hor.ng', 'HOR_Family_2026!'],
+                    ['Staff', 'clinical@hor.ng', 'HOR_Clinical_2026!'],
+                    ['Admin', 'admin@hor.ng', 'HOR_Admin_2026!'],
                   ].map(([role, em, pw]) => (
                     <button key={role} type="button" className={styles.demoBtn} onClick={() => { setEmail(em); setPassword(pw) }}>
                       {role}

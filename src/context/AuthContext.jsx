@@ -11,7 +11,7 @@ export const ROLES = {
   ADMIN: 'admin',
 }
 
-// Demo accounts — used when Supabase is not configured
+// Demo accounts - used when Supabase is not configured
 const DEMO_ACCOUNTS = [
   { id: 'P001', email: 'patient@hor.ng', password: 'patient123', role: ROLES.PATIENT, name: 'Chidi Okonkwo', phone: '08012345678', admissionDate: '2026-04-15', status: 'admitted' },
   { id: 'F001', email: 'family@hor.ng', password: 'family123', role: ROLES.FAMILY, name: 'Ngozi Okonkwo', phone: '08098765432', patientId: 'P001', relationship: 'Mother' },

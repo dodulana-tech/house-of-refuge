@@ -1,8 +1,26 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNotif } from '../App'
 import { pay, ref, fmt } from '../utils/paystack'
 import { saveApplication } from '../utils/store'
+import { submitApplication, isSupabaseReady } from '../utils/supabase'
 import styles from './Waitlist.module.css'
+
+const DRAFT_KEY = 'hor_apply_draft'
+
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function saveDraft(step, form) {
+  try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ step, form })) } catch {}
+}
+
+function clearDraft() {
+  try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
+}
 
 const STEPS = [
   { key: 1, label: 'Pathway & Willingness' },
@@ -24,7 +42,7 @@ const INITIAL = {
   coSubstances: '', abstinenceDuration: '', prevTx: '', prevTxDetails: '', medConditions: '', medications: '',
   mentalHealth: '', suicideHistory: '',
   // Exclusion screening
-  activePsychosis: 'no', antipsychoticNeed: 'no', severeCoginitive: 'no', legalDetention: 'no', childrenCohabitation: 'no',
+  activePsychosis: 'no', antipsychoticNeed: 'no', severeCognitive: 'no', legalDetention: 'no', childrenCohabitation: 'no',
   // Insight & Readiness
   insightLevel: '', motivationSource: '', treatmentGoals: '',
   changeReadiness: '', triggerAwareness: '', previousRecoveryLength: '',
@@ -55,7 +73,7 @@ const INSIGHT_LEVELS = [
 const EXCLUSIONS = [
   { key: 'activePsychosis', label: 'Active psychosis or drug-induced psychosis', referral: 'Referral to Yaba Psychiatric Hospital or nearest psychiatric facility' },
   { key: 'antipsychoticNeed', label: 'Requires initiation/titration of antipsychotic medication', referral: 'Referral to psychiatrist; re-assessment upon stabilization' },
-  { key: 'severeCoginitive', label: 'Severe cognitive impairment (cannot participate in group therapy)', referral: 'Referral to neurological or cognitive rehabilitation specialist' },
+  { key: 'severeCognitive', label: 'Severe cognitive impairment (cannot participate in group therapy)', referral: 'Referral to neurological or cognitive rehabilitation specialist' },
   { key: 'legalDetention', label: 'Currently under court order or legal detention', referral: 'Liaise with legal authority; offer outpatient engagement' },
   { key: 'childrenCohabitation', label: 'Requires children or family to live on-site', referral: 'Refer to family-inclusive outpatient services' },
 ]
@@ -128,15 +146,22 @@ function getClinicalSeverity(form) {
 
 export default function Waitlist() {
   const showNotif = useNotif()
-  const [step, setStep] = useState(1)
-  const [form, setForm] = useState(INITIAL)
+  const [step, setStep] = useState(() => loadDraft()?.step || 1)
+  const [form, setForm] = useState(() => { const d = loadDraft(); return d?.form ? { ...INITIAL, ...d.form } : INITIAL })
   const [loading, setLoading] = useState(false)
+
+  // Persist form state on every change
+  useEffect(() => { saveDraft(step, form) }, [step, form])
+
+  // Scroll to top of form on step change
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [step])
 
   const f = k => ({ value: form[k], onChange: e => setForm(p => ({ ...p, [k]: e.target.value })) })
   const fc = k => ({ checked: form[k], onChange: e => setForm(p => ({ ...p, [k]: e.target.checked })) })
 
   const hasExclusion = EXCLUSIONS.some(ex => form[ex.key] === 'yes')
   const activeExclusions = EXCLUSIONS.filter(ex => form[ex.key] === 'yes')
+  const severity = getClinicalSeverity(form)
 
   function getInsightColor(level) {
     const colors = { denial: '#E53E3E', precontemplation: '#DD6B20', contemplation: '#D69E2E', preparation: '#38A169', action: '#2B6CB0' }
@@ -187,7 +212,7 @@ export default function Waitlist() {
   function prev() { setStep(s => Math.max(s - 1, 1)) }
 
   function handleSubmit() {
-    if (!form.consentAdmission || !form.consentDetox || !form.consentConfidentiality || !form.consentRights) {
+    if (!form.consentAdmission || !form.consentDetox || !form.consentConfidentiality || !form.consentRights || !form.consentFinancial) {
       showNotif('Consent required', 'Please acknowledge all consent forms before proceeding.')
       return
     }
@@ -210,20 +235,66 @@ export default function Waitlist() {
         { display_name: 'Pathway', variable_name: 'pathway', value: `Pathway ${form.pathway}` },
         { display_name: 'Insight Level', variable_name: 'insight', value: form.insightLevel },
       ],
-      onSuccess: (r) => {
+      onSuccess: async (r) => {
         app.paymentRef = r.reference
         app.depositPaid = true
         saveApplication(app)
+        // Persist to Supabase
+        if (isSupabaseReady()) {
+          await submitApplication({
+            pathway: form.pathway, willingness_confirm: form.willingnessConfirm,
+            first_name: form.fn, last_name: form.ln, date_of_birth: form.dob || null,
+            gender: form.gender, phone: form.phone, email: form.email,
+            address: form.address, state: form.state, occupation: form.occupation,
+            marital_status: form.maritalStatus, substance: form.substance,
+            substance_other: form.substanceOther, co_substances: form.coSubstances,
+            duration: form.duration, frequency: form.frequency, route_of_use: form.routeOfUse,
+            prev_treatment: form.prevTx, medical_conditions: form.medConditions,
+            medications: form.medications, mental_health: form.mentalHealth,
+            suicide_history: form.suicideHistory, insight_level: form.insightLevel,
+            insight_score: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
+            motivation_source: form.motivationSource, treatment_goals: form.treatmentGoals,
+            change_readiness: form.changeReadiness, trigger_awareness: form.triggerAwareness,
+            family_awareness: form.familyAwareness, family_support: form.familySupport,
+            household_type: form.householdType, dependents: form.dependents,
+            enablers_present: form.enablersPresent, family_therapy_willing: form.familyTherapyWilling,
+            housing_aftercare: form.housingAftercare, pfsp_name: form.pfspName,
+            pfsp_phone: form.pfspPhone, sponsor_type: form.sponsorType,
+            nok_name: form.nokName, nok_relationship: form.nokRel, nok_phone: form.nokPhone,
+            nok_email: form.nokEmail, referral_source: form.referral,
+            consent_admission: form.consentAdmission, consent_detox: form.consentDetox,
+            consent_confidentiality: form.consentConfidentiality, consent_rights: form.consentRights,
+            consent_financial: form.consentFinancial,
+            deposit_paid: true, payment_ref: r.reference, status: 'submitted',
+          })
+        }
         setLoading(false)
         showNotif('Application received!', `Booking deposit paid for ${form.fn}. Ref: ${r.reference}. Our admissions team will contact you within 48 hours.`, 'ok')
+        clearDraft()
         setForm(INITIAL)
         setStep(1)
       },
-      onClose: () => {
+      onClose: async () => {
         app.depositPaid = false
         saveApplication(app)
+        if (isSupabaseReady()) {
+          await submitApplication({
+            pathway: form.pathway, willingness_confirm: form.willingnessConfirm,
+            first_name: form.fn, last_name: form.ln, date_of_birth: form.dob || null,
+            gender: form.gender, phone: form.phone, email: form.email,
+            substance: form.substance, duration: form.duration,
+            insight_level: form.insightLevel,
+            insight_score: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
+            nok_name: form.nokName, nok_phone: form.nokPhone,
+            deposit_paid: false, status: 'submitted',
+          })
+        }
         setLoading(false)
         showNotif('Application saved', 'Your application was saved. You can complete payment later.', 'ok')
+      },
+      onError: (msg) => {
+        setLoading(false)
+        showNotif('Payment Error', msg)
       },
     })
   }
@@ -232,7 +303,7 @@ export default function Waitlist() {
     <>
       <div className="ph"><div className="container">
         <h1>Apply for Admission</h1>
-        <p>12-week residential rehabilitation programme — Evidence-Based, Christ-Centered, Trauma-Informed</p>
+        <p>12-week residential rehabilitation programme: Evidence-Based, Christ-Centered, Trauma-Informed</p>
         <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:16 }}><div style={{ width:32, height:2, background:'rgba(255,255,255,.5)' }} /><span style={{ fontSize:'.72rem', letterSpacing:'.12em', textTransform:'uppercase', color:'rgba(255,255,255,.7)', fontWeight:700 }}>A Freedom Foundation Initiative</span></div>
       </div></div>
 
@@ -250,26 +321,26 @@ export default function Waitlist() {
           <div className={styles.grid}>
             <div className="card">
               <h3 style={{ marginBottom: 4, fontSize: '1.5rem' }}>{STEPS[step - 1].label}</h3>
-              <p style={{ fontSize: '.82rem', color: 'var(--g500)', marginBottom: 24 }}>Step {step} of {STEPS.length} — All information is strictly confidential</p>
+              <p style={{ fontSize: '.82rem', color: 'var(--g500)', marginBottom: 24 }}>Step {step} of {STEPS.length}. All information is strictly confidential</p>
 
               {/* Step 1: Pathway & Willingness */}
               {step === 1 && <>
                 <div className={styles.willingnessBox}>
                   <div className={styles.willingnessTitle}>The Willingness Criterion</div>
                   <p className={styles.willingnessText}>
-                    Admission to House of Refuge requires demonstrated, voluntary willingness to participate in recovery. This is the single most critical requirement — evidence consistently shows that client motivation is the strongest predictor of treatment engagement and long-term outcomes.
+                    Admission to House of Refuge requires demonstrated, voluntary willingness to participate in recovery. This is the single most critical requirement. Evidence consistently shows that client motivation is the strongest predictor of treatment engagement and long-term outcomes.
                   </p>
                   <p className={styles.willingnessText} style={{ fontWeight: 600 }}>
-                    Clients who are not yet willing are NOT turned away — they are enrolled in our Outpatient Engagement Pathway with Motivational Interviewing, psychoeducation, and family counseling.
+                    Clients who are not yet willing are NOT turned away. They are enrolled in our Outpatient Engagement Pathway with Motivational Interviewing, psychoeducation, and family counseling.
                   </p>
                 </div>
 
                 <div className="fg"><label className="flabel">Is the client voluntarily seeking treatment? *</label>
                   <select className="fi" {...f('willingnessConfirm')}>
                     <option value="">Select...</option>
-                    <option value="yes">Yes — client demonstrates voluntary willingness to engage</option>
-                    <option value="family_persuaded">Partially — family has persuaded the client, showing some willingness</option>
-                    <option value="no">No — client denies the problem or resists structured care</option>
+                    <option value="yes">Yes: client demonstrates voluntary willingness to engage</option>
+                    <option value="family_persuaded">Partially: family has persuaded the client, showing some willingness</option>
+                    <option value="no">No: client denies the problem or resists structured care</option>
                   </select>
                 </div>
 
@@ -280,7 +351,7 @@ export default function Waitlist() {
                       This client qualifies for our evidence-based Outpatient Engagement Pathway, which includes:
                     </p>
                     <ul className={styles.outpatientList}>
-                      <li>Motivational Interviewing (MI) — weekly 45–60 min individual sessions</li>
+                      <li>Motivational Interviewing (MI): weekly 45–60 min individual sessions</li>
                       <li>Psychoeducation about addiction as a brain disorder</li>
                       <li>Family Counseling (with consent)</li>
                       <li>Harm Reduction Guidance</li>
@@ -372,7 +443,10 @@ export default function Waitlist() {
                     const updates = { substance: val }
                     // Auto-suggest route of administration based on substance
                     const routes = SUBSTANCE_ROUTES[val]
-                    if (routes && !form.routeOfUse) updates.routeOfUse = routes[0]
+                    if (routes) updates.routeOfUse = routes[0]
+                    else if (!val) updates.routeOfUse = ''
+                    // Clear "Other" text when switching away from Other
+                    if (val !== 'Other') updates.substanceOther = ''
                     setForm(p => ({ ...p, ...updates }))
                   }}>
                     <option value="">Select primary substance...</option>
@@ -390,7 +464,8 @@ export default function Waitlist() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
                       <span style={{ fontSize: '.72rem', color: 'var(--g500)', lineHeight: '26px' }}>Common with {form.substance.split(' / ')[0]}:</span>
                       {SUBSTANCE_CO_USE[form.substance].map(s => {
-                        const already = (form.coSubstances || '').toLowerCase().includes(s.toLowerCase())
+                        const items = (form.coSubstances || '').split(/,\s*/).map(i => i.trim().toLowerCase()).filter(Boolean)
+                        const already = items.some(i => i === s.toLowerCase())
                         return <button key={s} type="button" onClick={() => {
                           if (already) return
                           setForm(p => ({ ...p, coSubstances: p.coSubstances ? `${p.coSubstances}, ${s}` : s }))
@@ -415,7 +490,13 @@ export default function Waitlist() {
                     </select>
                   </div>
                   <div className="fg"><label className="flabel">Frequency of use</label>
-                    <select className="fi" {...f('frequency')}>
+                    <select className="fi" value={form.frequency} onChange={e => {
+                      const val = e.target.value
+                      const updates = { frequency: val }
+                      // Clear abstinence duration when switching away from abstinent
+                      if (val !== 'Currently abstinent') updates.abstinenceDuration = ''
+                      setForm(p => ({ ...p, ...updates }))
+                    }}>
                       <option value="">Select...</option>
                       {['Daily', 'Several times a week', 'Weekly', 'Occasional / Binge', 'Currently abstinent'].map(s => <option key={s}>{s}</option>)}
                     </select>
@@ -445,30 +526,30 @@ export default function Waitlist() {
                 </div>
 
                 {/* Clinical Severity Indicator */}
-                {(form.substance && form.duration) && (() => {
-                  const sev = getClinicalSeverity(form)
-                  return (
-                    <div style={{
-                      background: 'var(--off)', border: '1px solid var(--g100)', borderRadius: 10,
-                      padding: '14px 16px', marginBottom: 18,
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: '.78rem', fontWeight: 700, color: 'var(--charcoal)' }}>Clinical Complexity Estimate</span>
-                        <span style={{ fontSize: '.74rem', fontWeight: 700, color: sev.color, background: `${sev.color}15`, padding: '2px 10px', borderRadius: 12 }}>{sev.label}</span>
-                      </div>
-                      <div style={{ height: 6, background: 'var(--g100)', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${Math.max(sev.pct, 8)}%`, background: sev.color, borderRadius: 3, transition: 'all .4s ease' }} />
-                      </div>
-                      <p style={{ fontSize: '.72rem', color: 'var(--g500)', marginTop: 6 }}>
-                        This estimate helps our clinical team prepare appropriate resources. It updates as you complete the form.
-                      </p>
-                    </div>
-                  )
-                })()}
+                {form.substance && form.duration && <div style={{
+                  background: 'var(--off)', border: '1px solid var(--g100)', borderRadius: 10,
+                  padding: '14px 16px', marginBottom: 18,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: '.78rem', fontWeight: 700, color: 'var(--charcoal)' }}>Clinical Complexity Estimate</span>
+                    <span style={{ fontSize: '.74rem', fontWeight: 700, color: severity.color, background: `${severity.color}15`, padding: '2px 10px', borderRadius: 12 }}>{severity.label}</span>
+                  </div>
+                  <div style={{ height: 6, background: 'var(--g100)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${Math.max(severity.pct, 8)}%`, background: severity.color, borderRadius: 3, transition: 'all .4s ease' }} />
+                  </div>
+                  <p style={{ fontSize: '.72rem', color: 'var(--g500)', marginTop: 6 }}>
+                    This estimate helps our clinical team prepare appropriate resources. It updates as you complete the form.
+                  </p>
+                </div>}
 
                 <div className="frow">
                   <div className="fg"><label className="flabel">Previous treatment attempts</label>
-                    <select className="fi" {...f('prevTx')}>
+                    <select className="fi" value={form.prevTx} onChange={e => {
+                      const val = e.target.value
+                      const updates = { prevTx: val }
+                      if (!val || val === 'None') updates.prevTxDetails = ''
+                      setForm(p => ({ ...p, ...updates }))
+                    }}>
                       <option value="">Select...</option>
                       {['None', '1 attempt', '2–3 attempts', '4 or more'].map(s => <option key={s}>{s}</option>)}
                     </select>
@@ -523,9 +604,9 @@ export default function Waitlist() {
                     <select className="fi" {...f('suicideHistory')}>
                       <option value="">Select...</option>
                       <option value="no">No</option>
-                      <option value="past">Yes — in the past</option>
-                      <option value="recent">Yes — within the last 3 months</option>
-                      <option value="current">Yes — currently</option>
+                      <option value="past">Yes, in the past</option>
+                      <option value="recent">Yes, within the last 3 months</option>
+                      <option value="current">Yes, currently</option>
                     </select>
                   </div>
                 </div>
@@ -537,7 +618,7 @@ export default function Waitlist() {
 
                 <div className={styles.sectionHead}>Exclusion Screening</div>
                 <p style={{ fontSize: '.84rem', color: 'var(--g700)', marginBottom: 14 }}>
-                  The following conditions require referral to a more appropriate service before residential admission. Please answer honestly — no client is turned away empty-handed.
+                  The following conditions require referral to a more appropriate service before residential admission. Please answer honestly. No client is turned away empty-handed.
                 </p>
                 {EXCLUSIONS.map(ex => (
                   <div key={ex.key} className="fg">
@@ -590,25 +671,25 @@ export default function Waitlist() {
                 </div>
 
                 <div className="fg"><label className="flabel">What does the patient hope to achieve from treatment?</label>
-                  <textarea className="fi" {...f('treatmentGoals')} rows={3} placeholder="In the patient's own words — what are they hoping for?" />
+                  <textarea className="fi" {...f('treatmentGoals')} rows={3} placeholder="In the patient's own words, what are they hoping for?" />
                 </div>
 
                 <div className="fg"><label className="flabel">Readiness to commit to 12-week residential programme</label>
                   <select className="fi" {...f('changeReadiness')}>
                     <option value="">Select...</option>
-                    <option value="fully">Fully committed — understands and accepts 12 weeks</option>
-                    <option value="mostly">Mostly committed — some reservations</option>
-                    <option value="uncertain">Uncertain — needs more information</option>
-                    <option value="resistant">Resistant — does not want to stay 12 weeks</option>
+                    <option value="fully">Fully committed: understands and accepts 12 weeks</option>
+                    <option value="mostly">Mostly committed: some reservations</option>
+                    <option value="uncertain">Uncertain: needs more information</option>
+                    <option value="resistant">Resistant: does not want to stay 12 weeks</option>
                   </select>
                 </div>
 
                 <div className="fg"><label className="flabel">Can the patient identify their triggers?</label>
                   <select className="fi" {...f('triggerAwareness')}>
                     <option value="">Select...</option>
-                    <option value="yes">Yes — can name specific people, places, feelings</option>
-                    <option value="some">Somewhat — vague awareness</option>
-                    <option value="no">No — no awareness of triggers</option>
+                    <option value="yes">Yes: can name specific people, places, feelings</option>
+                    <option value="some">Somewhat: vague awareness</option>
+                    <option value="no">No: no awareness of triggers</option>
                   </select>
                 </div>
               </>}
@@ -634,17 +715,17 @@ export default function Waitlist() {
                   <div className="fg"><label className="flabel">Level of family support available</label>
                     <select className="fi" {...f('familySupport')}>
                       <option value="">Select...</option>
-                      <option value="strong">Strong — active involvement expected</option>
-                      <option value="moderate">Moderate — willing but limited availability</option>
-                      <option value="weak">Weak — minimal engagement</option>
-                      <option value="none">None — no family support available</option>
-                      <option value="toxic">Toxic — family may be an enabler or trigger</option>
+                      <option value="strong">Strong: active involvement expected</option>
+                      <option value="moderate">Moderate: willing but limited availability</option>
+                      <option value="weak">Weak: minimal engagement</option>
+                      <option value="none">None: no family support available</option>
+                      <option value="toxic">Toxic: family may be an enabler or trigger</option>
                     </select>
                   </div>
                 </div>
 
                 {form.pathway === 'A' && <>
-                  <div className={styles.sectionHead}>Pathway A — Primary Family Support Person (PFSP)</div>
+                  <div className={styles.sectionHead}>Pathway A: Primary Family Support Person (PFSP)</div>
                   <div className="frow">
                     <div className="fg"><label className="flabel">PFSP Full Name *</label><input className="fi" {...f('pfspName')} placeholder="Name of primary family support person" /></div>
                     <div className="fg"><label className="flabel">PFSP Phone *</label><input className="fi" type="tel" {...f('pfspPhone')} placeholder="+234 801 000 0000" /></div>
@@ -659,16 +740,16 @@ export default function Waitlist() {
                     <div className="fg"><label className="flabel">Has the family given consent for admission?</label>
                       <select className="fi" {...f('familyConsentGiven')}>
                         <option value="">Select...</option>
-                        <option value="yes">Yes — consent documented</option>
-                        <option value="verbal">Verbal consent — written to follow</option>
-                        <option value="pending">Not yet — to be discussed</option>
+                        <option value="yes">Yes: consent documented</option>
+                        <option value="verbal">Verbal consent: written to follow</option>
+                        <option value="pending">Not yet: to be discussed</option>
                       </select>
                     </div>
                   </div>
                 </>}
 
                 {form.pathway === 'B' && <>
-                  <div className={styles.sectionHead}>Pathway B — Community Support</div>
+                  <div className={styles.sectionHead}>Pathway B: Community Support</div>
                   <div className="fg"><label className="flabel">Funding / Sponsorship type</label>
                     <select className="fi" {...f('sponsorType')}>
                       <option value="">Select...</option>
@@ -713,18 +794,18 @@ export default function Waitlist() {
                   <select className="fi" {...f('enablersPresent')}>
                     <option value="">Select...</option>
                     <option value="no">No known enablers</option>
-                    <option value="family">Yes — family members who enable use</option>
-                    <option value="friends">Yes — friends or associates who use</option>
-                    <option value="both">Yes — both family and friends</option>
-                    <option value="environment">Yes — neighbourhood / environment is high-risk</option>
+                    <option value="family">Yes: family members who enable use</option>
+                    <option value="friends">Yes: friends or associates who use</option>
+                    <option value="both">Yes: both family and friends</option>
+                    <option value="environment">Yes: neighbourhood / environment is high-risk</option>
                   </select>
                 </div>
                 <div className="frow">
                   <div className="fg"><label className="flabel">Willingness to participate in family therapy</label>
                     <select className="fi" {...f('familyTherapyWilling')}>
                       <option value="">Select...</option>
-                      <option value="yes">Yes — family is willing</option>
-                      <option value="patient_only">Patient only — family not willing</option>
+                      <option value="yes">Yes: family is willing</option>
+                      <option value="patient_only">Patient only: family not willing</option>
                       <option value="unknown">Not yet discussed</option>
                       <option value="no_family">No family available</option>
                     </select>
@@ -732,9 +813,9 @@ export default function Waitlist() {
                   <div className="fg"><label className="flabel">Stable housing available after discharge</label>
                     <select className="fi" {...f('housingAftercare')}>
                       <option value="">Select...</option>
-                      <option value="yes">Yes — safe, stable environment</option>
-                      <option value="conditional">Conditional — depends on behaviour</option>
-                      <option value="no">No — will need transitional housing</option>
+                      <option value="yes">Yes: safe, stable environment</option>
+                      <option value="conditional">Conditional: depends on behaviour</option>
+                      <option value="no">No: will need transitional housing</option>
                       <option value="unknown">Unknown at this time</option>
                     </select>
                   </div>
@@ -780,7 +861,7 @@ export default function Waitlist() {
                 <div className={styles.reviewGrid}>
                   <div className={styles.reviewBlock}>
                     <div className={styles.reviewTitle}>Pathway</div>
-                    <div className={styles.reviewValue}>Pathway {form.pathway} — {form.pathway === 'A' ? 'Family-Supported' : 'Community-Supported'}</div>
+                    <div className={styles.reviewValue}>Pathway {form.pathway}: {form.pathway === 'A' ? 'Family-Supported' : 'Community-Supported'}</div>
                     <div className={styles.reviewSub}>Willingness: {form.willingnessConfirm === 'yes' ? 'Voluntary' : 'Family-persuaded'}</div>
                   </div>
                   <div className={styles.reviewBlock}>
@@ -790,8 +871,25 @@ export default function Waitlist() {
                   </div>
                   <div className={styles.reviewBlock}>
                     <div className={styles.reviewTitle}>Primary Substance</div>
-                    <div className={styles.reviewValue}>{form.substance}</div>
-                    <div className={styles.reviewSub}>Duration: {form.duration} · {form.frequency || 'Frequency N/A'}</div>
+                    <div className={styles.reviewValue}>{form.substance === 'Other' ? form.substanceOther || 'Other' : form.substance}</div>
+                    <div className={styles.reviewSub}>
+                      Duration: {form.duration} · {form.frequency || 'Frequency N/A'}{form.abstinenceDuration ? ` (${form.abstinenceDuration})` : ''}
+                      {form.routeOfUse ? ` · ${form.routeOfUse}` : ''}
+                    </div>
+                    {form.coSubstances && <div className={styles.reviewSub}>Co-use: {form.coSubstances}</div>}
+                  </div>
+                  <div className={styles.reviewBlock}>
+                    <div className={styles.reviewTitle}>Clinical Profile</div>
+                    <div className={styles.reviewValue} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: severity.color, flexShrink: 0 }} />
+                      {severity.label}
+                    </div>
+                    <div className={styles.reviewSub}>
+                      Mental health: {form.mentalHealth || 'Not specified'}
+                      {form.suicideHistory && form.suicideHistory !== 'no' ? ` · Self-harm: ${form.suicideHistory}` : ''}
+                    </div>
+                    {form.medConditions && <div className={styles.reviewSub}>Medical: {form.medConditions}</div>}
+                    {form.medications && <div className={styles.reviewSub}>Medications: {form.medications}</div>}
                   </div>
                   <div className={styles.reviewBlock}>
                     <div className={styles.reviewTitle}>Insight Level</div>
@@ -820,11 +918,11 @@ export default function Waitlist() {
                 </p>
                 <div className={styles.consentList}>
                   {[
-                    ['consentAdmission', 'Admission Agreement — I understand and accept the programme rules, expectations, and my rights and responsibilities at HOR.'],
-                    ['consentDetox', 'Detoxification Consent — I understand the detoxification process, possible withdrawal symptoms, and that medical support will be provided.'],
-                    ['consentConfidentiality', 'Confidentiality Agreement — I commit to protecting the privacy of fellow residents and understand HOR protects mine.'],
-                    ['consentRights', 'Rights & Responsibilities Charter — I have been informed of my rights as an HOR resident including the right to leave at any time.'],
-                    ['consentFinancial', 'Financial Agreement — I understand the fee structure, deposit terms, and payment obligations.'],
+                    ['consentAdmission', 'Admission Agreement: I understand and accept the programme rules, expectations, and my rights and responsibilities at HOR.'],
+                    ['consentDetox', 'Detoxification Consent: I understand the detoxification process, possible withdrawal symptoms, and that medical support will be provided.'],
+                    ['consentConfidentiality', 'Confidentiality Agreement: I commit to protecting the privacy of fellow residents and understand HOR protects mine.'],
+                    ['consentRights', 'Rights & Responsibilities Charter: I have been informed of my rights as an HOR resident including the right to leave at any time.'],
+                    ['consentFinancial', 'Financial Agreement: I understand the fee structure, deposit terms, and payment obligations.'],
                   ].map(([key, text]) => (
                     <label key={key} className={styles.consentItem}>
                       <input type="checkbox" {...fc(key)} />
@@ -834,7 +932,7 @@ export default function Waitlist() {
                 </div>
 
                 <div className={styles.paynote}>
-                  <div className={styles.payTitle}>Booking Deposit — {fmt(1000000)}</div>
+                  <div className={styles.payTitle}>Booking Deposit: {fmt(1000000)}</div>
                   <p className={styles.payText}>
                     A refundable {fmt(1000000)} booking deposit secures your position. It is fully applied to treatment fees on admission. If your application is unsuccessful or no bed is available, you will be fully refunded.
                   </p>
@@ -903,7 +1001,7 @@ export default function Waitlist() {
                 <p style={{ fontSize: '.82rem', color: 'var(--g700)', marginBottom: 12 }}>All five must be met for residential admission:</p>
                 <div className={styles.criteriaList}>
                   {[
-                    ['Willingness', 'Voluntary readiness to engage — assessed via clinical interview and URICA'],
+                    ['Willingness', 'Voluntary readiness to engage, assessed via clinical interview and URICA'],
                     ['SUD Diagnosis', 'Moderate-to-severe Substance Use Disorder (DSM-5 criteria)'],
                     ['Medical Stability', 'Stable or manageable within HOR\'s 24/7 nursing clinical scope'],
                     ['Functional Capacity', 'Cognitive capacity to participate in group therapy and counseling'],

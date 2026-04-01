@@ -22,7 +22,7 @@ export default function About() {
             <h2>Born out of faith, built for transformation</h2>
             <div className="dv" />
             <p style={{ marginBottom:14 }}>House of Refuge is an initiative of <strong>Freedom Foundation Nigeria</strong>, an NGO founded and supported by our present house church. What began as a pastoral response to drug-affected families in our congregation has grown into a fully planned, clinically governed 24-bed residential rehabilitation facility.</p>
-            <p style={{ marginBottom:14 }}>Situated in <strong>Lekki, Lagos</strong>, the centre offers a faith-integrated, medically supervised residential programme for individuals struggling with substance use disorders — providing care that is holistic, dignified, and genuinely transformative.</p>
+            <p style={{ marginBottom:14 }}>Situated in <strong>Lekki, Lagos</strong>, the centre offers a faith-integrated, medically supervised residential programme for individuals struggling with substance use disorders. The care provided is holistic, dignified, and genuinely transformative.</p>
             <p>The project is professionally managed by <strong>ConsultForAfrica</strong>, a specialist management consultancy contracted to oversee all pre-launch and ongoing operational workstreams, targeting a go-live of <strong>April 15, 2026</strong>.</p>
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
@@ -46,11 +46,11 @@ export default function About() {
           <div className="sh"><div className="sh__lbl">Our Values</div><h2>What drives everything we do</h2></div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:20 }}>
             {[
-              { icon:'❤️', t:'Compassion',          d:'Every resident is treated with dignity, respect, and unconditional care — no matter their background or history.' },
+              { icon:'❤️', t:'Compassion',          d:'Every resident is treated with dignity, respect, and unconditional care, no matter their background or history.' },
               { icon:'🔬', t:'Clinical Excellence',  d:'Evidence-based protocols, qualified medical staff, and rigorous governance ensure the safest outcomes.' },
-              { icon:'✝️', t:'Faith Foundation',     d:'Biblical truth and spiritual healing are woven through every aspect of the programme — addressing the whole person.' },
+              { icon:'✝️', t:'Faith Foundation',     d:'Biblical truth and spiritual healing are woven through every aspect of the programme, addressing the whole person.' },
               { icon:'👨‍👩‍👧', t:'Family Involvement',   d:'Healing happens best in community. Families are partners in the recovery journey, not bystanders.' },
-              { icon:'🌱', t:'Lasting Change',       d:'Our aftercare extends well beyond discharge — planting seeds for lifelong transformation and reintegration.' },
+              { icon:'🌱', t:'Lasting Change',       d:'Our aftercare extends well beyond discharge, planting seeds for lifelong transformation and reintegration.' },
               { icon:'🤝', t:'Accountability',       d:'Every donation, clinical decision, and outcome is tracked, reported, and held to the highest standards.' },
             ].map(v => (
               <div key={v.t} className="card" style={{ textAlign:'center', padding:'28px 18px' }}>
@@ -66,7 +66,7 @@ export default function About() {
       <section className="cta">
         <div className="container">
           <h2>Come alongside us</h2>
-          <p>There are many ways to be part of this work — donate, volunteer, refer, or pray.</p>
+          <p>There are many ways to be part of this work: donate, volunteer, refer, or pray.</p>
           <div className="cta__acts">
             <button className="btn btn--white" onClick={() => nav('/donate')}>Give Today</button>
             <button className="btn btn--outline-white" onClick={() => nav('/contact')}>Get in Touch</button>

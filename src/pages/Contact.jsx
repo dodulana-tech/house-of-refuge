@@ -19,7 +19,7 @@ export default function Contact() {
     <>
       <div className="ph"><div className="container">
         <h1>Contact Us</h1>
-        <p>We'd love to hear from you — patient, family, volunteer, or donor</p>
+        <p>We'd love to hear from you, whether patient, family, volunteer, or donor</p>
         <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:16 }}><div style={{ width:32, height:2, background:'rgba(255,255,255,.5)' }} /><span style={{ fontSize:'.72rem', letterSpacing:'.12em', textTransform:'uppercase', color:'rgba(255,255,255,.7)', fontWeight:700 }}>A Freedom Foundation Initiative</span></div>
       </div></div>
 
@@ -69,7 +69,7 @@ export default function Contact() {
                 <h4>Bank Transfer Details</h4>
                 {[
                   ['Bank Name',      'Freedom Foundation'],
-                  ['Account Name',   'House of Refuge — Rehab Centre'],
+                  ['Account Name',   'House of Refuge Rehab Centre'],
                   ['Account Number', 'Contact us for details'],
                 ].map(([k,v]) => (
                   <div key={k} className={styles.bankRow}>

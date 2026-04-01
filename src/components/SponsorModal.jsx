@@ -40,7 +40,7 @@ export default function SponsorModal() {
         <button className={styles.close} onClick={closeModal}>×</button>
         <h3>Sponsor this item</h3>
         <p>Complete your sponsorship via Paystack</p>
-        <div className={styles.itemTag}>{item.name} — {fmt(item.total)}{item.sfx || ''}</div>
+        <div className={styles.itemTag}>{item.name}: {fmt(item.total)}{item.sfx || ''}</div>
         <div className="fg"><label className="flabel">Your Name</label>
           <input className="fi" value={name} onChange={e => setName(e.target.value)} placeholder="Full name" />
         </div>

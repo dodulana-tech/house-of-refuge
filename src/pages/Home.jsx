@@ -21,10 +21,10 @@ export default function Home() {
 
         <div className={styles.heroContent}>
           <div className={styles.left}>
-            <div className={`${styles.eyebrow} fu`}>A Freedom Foundation Initiative</div>
             <h1 className={`${styles.title} fu fu1`}>Restoring Lives,<br /><em>Rebuilding Futures</em></h1>
+            <div className={`${styles.eyebrow} fu`}>A Freedom Foundation Initiative</div>
             <p className={`${styles.sub} fu fu2`}>
-              A 24-bed residential drug rehabilitation centre rooted in faith, clinical excellence, and community — serving Lagos and beyond.
+              A 24-bed residential drug rehabilitation centre rooted in faith, clinical excellence, and community, serving Lagos and beyond.
             </p>
             <div className={`${styles.acts} fu fu3`}>
               <button className="btn btn--primary" onClick={() => nav('/donate')}>Donate Now</button>
@@ -61,8 +61,8 @@ export default function Home() {
         <div className="container">
           <div className={styles.mGrid}>
             <div className={styles.mVis}>
-              <blockquote className={styles.quote}>"...setting the captives free — one life at a time."</blockquote>
-              <cite className={styles.cite}>— House of Refuge Vision Statement</cite>
+              <blockquote className={styles.quote}>"...setting the captives free, one life at a time."</blockquote>
+              <cite className={styles.cite}>House of Refuge Vision Statement</cite>
               <div className={styles.mDivider} />
               <div className={styles.mOrgs}>
                 <div className={styles.mOrgLbl}>An initiative of</div>
@@ -72,7 +72,7 @@ export default function Home() {
             </div>
             <div>
               <div className="sh__lbl">Our Mission</div>
-              <h2>Healing the whole person — body, mind &amp; soul</h2>
+              <h2>Healing the whole person: body, mind &amp; soul</h2>
               <div className="dv" />
               <p style={{ fontSize: '1.02rem', lineHeight: 1.8, marginBottom: 18 }}>
                 House of Refuge is a 24-bed inpatient drug rehabilitation centre launching in Lekki, Lagos. We combine evidence-based clinical care with faith-based recovery support to help individuals overcome addiction and reintegrate into society.
@@ -85,7 +85,7 @@ export default function Home() {
                 ].map(p => (
                   <div key={p.t} className={styles.pillar}>
                     <div className={styles.pillarIcon}>{p.icon}</div>
-                    <p className={styles.pillarTxt}><strong>{p.t}</strong> — {p.d}</p>
+                    <p className={styles.pillarTxt}><strong>{p.t}</strong>: {p.d}</p>
                   </div>
                 ))}
               </div>
@@ -124,7 +124,7 @@ export default function Home() {
           <div className="sh">
             <div className="sh__lbl">Equipment Drive</div>
             <h2>32 items needed before launch day</h2>
-            <p>From patient monitors to laptops to counselling furniture — every item sponsored creates a better recovery environment.</p>
+            <p>From patient monitors to laptops to counselling furniture. Every item sponsored creates a better recovery environment.</p>
           </div>
           <div className={styles.eqGrid}>
             <div className="card" style={{ textAlign:'center' }}>

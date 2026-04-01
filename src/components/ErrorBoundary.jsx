@@ -16,7 +16,7 @@ export default class ErrorBoundary extends React.Component {
         <div style={{ padding: '120px 24px 80px', textAlign: 'center', maxWidth: 500, margin: '0 auto' }}>
           <h2 style={{ fontFamily: 'var(--fd)', marginBottom: 12 }}>Something went wrong</h2>
           <p style={{ marginBottom: 24, fontSize: '.92rem' }}>
-            We're sorry — an unexpected error occurred. Please try refreshing the page.
+            We're sorry. An unexpected error occurred. Please try refreshing the page.
           </p>
           <button
             className="btn btn--primary"

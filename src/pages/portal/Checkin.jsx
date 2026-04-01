@@ -171,7 +171,7 @@ export default function Checkin() {
                 <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 14 }}>Why check in daily?</h4>
                 <div className={styles.whyList}>
                   {[
-                    'Builds self-awareness — the foundation of recovery',
+                    'Builds self-awareness, the foundation of recovery',
                     'Helps your care team spot patterns early',
                     'Tracks your progress over weeks and months',
                     'Provides data for treatment plan adjustments',

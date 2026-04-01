@@ -33,13 +33,13 @@ export default function Dashboard() {
     { time: '8:00 AM', event: 'Breakfast', type: 'meal' },
     { time: '8:30 AM', event: 'Morning Community Meeting', type: 'therapy' },
     { time: '9:00 AM', event: 'Bible School / Spiritual Formation (2 hrs)', type: 'spiritual' },
-    { time: '11:00 AM', event: 'Group Therapy — CBT / Relapse Prevention', type: 'therapy' },
+    { time: '11:00 AM', event: 'Group Therapy: CBT / Relapse Prevention', type: 'therapy' },
     { time: '12:30 PM', event: 'Lunch', type: 'meal' },
     { time: '1:30 PM', event: 'Life Skills Training Group', type: 'therapy' },
     { time: '2:30 PM', event: 'Vocational Skills / Creative Therapies', type: 'activity' },
     { time: '3:30 PM', event: 'Individual Counseling (scheduled)', type: 'therapy' },
     { time: '4:00 PM', event: 'Sports / Gym / Recreation', type: 'activity' },
-    { time: '5:00 PM', event: 'Personal Time — prayer, Bible study', type: 'spiritual' },
+    { time: '5:00 PM', event: 'Personal Time: prayer, Bible study', type: 'spiritual' },
     { time: '6:00 PM', event: 'Dinner', type: 'meal' },
     { time: '7:00 PM', event: 'Evening Chapel / Discipleship Group', type: 'spiritual' },
     { time: '8:30 PM', event: 'Wrap-Up Meeting & Accountability', type: 'therapy' },
@@ -125,7 +125,7 @@ export default function Dashboard() {
               </div>
 
               <div className="card">
-                <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', marginBottom: 10 }}>Core Values — FREE</h4>
+                <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', marginBottom: 10 }}>Core Values: FREE</h4>
                 <div style={{ fontSize: '.78rem', color: 'var(--g700)', lineHeight: 1.7 }}>
                   <strong>F</strong>reedom · <strong>R</strong>esponsibility · <strong>E</strong>xemplary Leadership · <strong>E</strong>mpathy
                 </div>

@@ -11,7 +11,7 @@ export const SPONSOR_ITEMS = [
   { id:10, cat:'medical',    name:'Autoclave',                    desc:'Steam sterilizer for instruments, dressings and clinical equipment',                             qty:1,  total:380000  },
   { id:11, cat:'medical',    name:'Drip Stands',                  desc:'Adjustable IV poles for intravenous fluid administration during detox care',                     qty:5,  total:90000   },
   { id:12, cat:'medical',    name:'Bed Lockers',                  desc:"Secure bedside storage units for each resident's personal and medical items",                   qty:12, total:300000  },
-  { id:13, cat:'medical',    name:'Patient Monitor',              desc:'Multi-parameter vital signs monitor — ECG, SpO₂, blood pressure, temperature',                  qty:2,  total:1360000 },
+  { id:13, cat:'medical',    name:'Patient Monitor',              desc:'Multi-parameter vital signs monitor: ECG, SpO₂, blood pressure, temperature',                  qty:2,  total:1360000 },
   { id:14, cat:'medical',    name:'Digital Sphygmomanometer',     desc:'Electronic blood pressure monitors for accurate and repeatable BP readings',                    qty:3,  total:105000  },
   { id:15, cat:'medical',    name:'Mercury Sphygmomanometer',     desc:'Traditional mercury BP device for clinical baseline measurements',                               qty:2,  total:56000   },
   { id:16, cat:'medical',    name:'Non-Contact Thermometer',      desc:'Infrared forehead thermometer for rapid temperature screening',                                  qty:5,  total:75000   },
@@ -30,7 +30,7 @@ export const SPONSOR_ITEMS = [
   { id:29, cat:'additional', name:'Counselling Room Furniture',   desc:'Comfortable sofa sets, chairs and centre table for individual counselling sessions',           qty:2,  total:500000  },
   { id:30, cat:'additional', name:'Projector & Screen',           desc:'HD projector and pull-down screen for group therapy sessions, educational films and Bible school', qty:1, total:280000 },
   { id:31, cat:'additional', name:'Library & Educational Books',  desc:'Bibles, devotional guides, recovery workbooks, life skills and vocational training materials', qty:1,  total:200000  },
-  { id:32, cat:'additional', name:'Exercise & Recreation Equipment', desc:'Resistance bands, dumbbells, footballs, table tennis — supporting physical wellness',       qty:1,  total:350000  },
+  { id:32, cat:'additional', name:'Exercise & Recreation Equipment', desc:'Resistance bands, dumbbells, footballs, table tennis, supporting physical wellness',       qty:1,  total:350000  },
 ]
 
 export const CAT_LABELS = {
