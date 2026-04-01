@@ -8,9 +8,9 @@ import React, { useState } from 'react'
 */
 
 const MOCK_INCIDENTS = [
-  { id: 1, patient: 'Ibrahim Musa', tier: 1, type: 'Lateness to sessions', date: '2026-04-01', response: 'Verbal warning documented', status: 'resolved', reportedBy: 'House Master' },
-  { id: 2, patient: 'Chidi Okonkwo', tier: 1, type: 'Dormitory cleanliness', date: '2026-03-29', response: 'Written reflection exercise assigned', status: 'resolved', reportedBy: 'House Master' },
-  { id: 3, patient: 'Adaeze Nnamdi', tier: 2, type: 'Persistent negative attitude', date: '2026-03-25', response: 'Formal reprimand, loss of phone privileges', status: 'monitoring', reportedBy: 'Clinical Lead' },
+  { id: 1, patient: 'IM', tier: 1, type: 'Lateness to sessions', date: '2026-04-01', response: 'Verbal warning documented', status: 'resolved', reportedBy: 'HM' },
+  { id: 2, patient: 'CO', tier: 1, type: 'Dormitory cleanliness', date: '2026-03-29', response: 'Written reflection exercise assigned', status: 'resolved', reportedBy: 'HM' },
+  { id: 3, patient: 'AN', tier: 2, type: 'Persistent negative attitude', date: '2026-03-25', response: 'Formal reprimand, loss of phone privileges', status: 'monitoring', reportedBy: 'CL' },
 ]
 
 const tierConfig = {

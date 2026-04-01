@@ -14,10 +14,10 @@ const PHASES = {
 }
 
 const PATIENTS = [
-  { id: 'P001', name: 'Chidi Okonkwo', gender: 'Male', age: 32, day: 23, phase: 'foundation', substance: 'Alcohol', pathway: 'A', insight: 'contemplation', mood: 4, cravings: 2, counselor: 'Dr. Amina Ibrahim', status: 'admitted' },
-  { id: 'P002', name: 'Adaeze Nnamdi', gender: 'Female', age: 28, day: 45, phase: 'deepening', substance: 'Tramadol', pathway: 'A', insight: 'preparation', mood: 3, cravings: 3, counselor: 'Folake Adebayo', status: 'admitted' },
-  { id: 'P003', name: 'Kunle Adeyemi', gender: 'Male', age: 41, day: 74, phase: 'reintegration', substance: 'Cannabis', pathway: 'B', insight: 'action', mood: 5, cravings: 1, counselor: 'Dr. Amina Ibrahim', status: 'admitted' },
-  { id: 'P004', name: 'Ibrahim Musa', gender: 'Male', age: 24, day: 8, phase: 'stabilization', substance: 'Heroin', pathway: 'A', insight: 'precontemplation', mood: 2, cravings: 4, counselor: 'Folake Adebayo', status: 'admitted' },
+  { id: 'P001', initials: 'CO', gender: 'M', age: 32, day: 23, phase: 'foundation', substance: 'Alcohol', pathway: 'A', insight: 'contemplation', mood: 4, cravings: 2, counselor: 'AI', bed: 'A1', status: 'admitted' },
+  { id: 'P002', initials: 'AN', gender: 'F', age: 28, day: 45, phase: 'deepening', substance: 'Tramadol', pathway: 'A', insight: 'preparation', mood: 3, cravings: 3, counselor: 'FA', bed: 'B3', status: 'admitted' },
+  { id: 'P003', initials: 'KA', gender: 'M', age: 41, day: 74, phase: 'reintegration', substance: 'Cannabis', pathway: 'B', insight: 'action', mood: 5, cravings: 1, counselor: 'AI', bed: 'A5', status: 'admitted' },
+  { id: 'P004', initials: 'IM', gender: 'M', age: 24, day: 8, phase: 'stabilization', substance: 'Heroin', pathway: 'A', insight: 'precontemplation', mood: 2, cravings: 4, counselor: 'FA', bed: 'C2', status: 'admitted' },
 ]
 
 const moodColors = ['', '#E53E3E', '#DD6B20', '#D69E2E', '#38A169', '#2B6CB0']
@@ -29,7 +29,7 @@ export default function Patients() {
 
   const filtered = PATIENTS
     .filter(p => filter === 'all' || p.phase === filter)
-    .filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(p => !search || p.initials.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div>
@@ -73,10 +73,10 @@ export default function Patients() {
                     color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '.82rem', fontWeight: 700, flexShrink: 0,
                   }}>
-                    {p.name.split(' ').map(n => n[0]).join('')}
+                    {p.initials.split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)' }}>{p.name}</div>
+                    <div style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)' }}>{p.initials}</div>
                     <div style={{ fontSize: '.76rem', color: 'var(--g500)' }}>
                       {p.gender}, {p.age}y · ID: {p.id} · Pathway {p.pathway} · {p.substance}
                     </div>
