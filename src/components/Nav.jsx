@@ -23,7 +23,7 @@ export default function Nav() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  const portalLink = '/d'
+  const portalLink = '/dashboard'
   const portalLabel = 'Dashboard'
 
   return (

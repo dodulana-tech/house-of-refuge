@@ -14,7 +14,7 @@ import Contact from './pages/Contact'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 
-// Lazy load portal/admin/family pages (legacy routes — redirect to /d)
+// Lazy load portal/admin/family pages (legacy routes — redirect to /dashboard)
 const Dashboard = lazy(() => import('./pages/portal/Dashboard'))
 const Checkin = lazy(() => import('./pages/portal/Checkin'))
 const Treatment = lazy(() => import('./pages/portal/Treatment'))
@@ -58,27 +58,19 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
-      <Route path="/donate" element={<Donate />} />
+      <Route path="/dashboardonate" element={<Donate />} />
       <Route path="/sponsor" element={<Sponsor />} />
       <Route path="/apply" element={<Waitlist />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<Login />} />
 
-      {/* Patient Portal */}
-      <Route path="/portal" element={<Protected roles={['patient']}><Dashboard /></Protected>} />
-      <Route path="/portal/checkin" element={<Protected roles={['patient']}><Checkin /></Protected>} />
-      <Route path="/portal/treatment" element={<Protected roles={['patient']}><Treatment /></Protected>} />
-      <Route path="/portal/meals" element={<Protected roles={['patient']}><Meals /></Protected>} />
-      <Route path="/portal/payments" element={<Protected roles={['patient']}><Payments /></Protected>} />
-
-      {/* Family Portal */}
-      <Route path="/family" element={<Protected roles={['family']}><FamilyDashboard /></Protected>} />
-
-      {/* Admin / Staff (legacy) */}
-      <Route path="/admin" element={<Protected roles={['staff', 'admin']}><Navigate to="/d" replace /></Protected>} />
+      {/* Legacy routes — redirect to unified dashboard */}
+      <Route path="/portal/*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/family/*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/admin/*" element={<Navigate to="/dashboard" replace />} />
 
       {/* ── Unified Dashboard (HMIS) ── */}
-      <Route path="/d" element={<Protected roles={['patient', 'family', 'staff', 'admin']}><DashboardLayout /></Protected>}>
+      <Route path="/dashboard" element={<Protected roles={['patient', 'family', 'staff', 'admin']}><DashboardLayout /></Protected>}>
         <Route index element={<DOverview />} />
         <Route path="admissions" element={<DAdmissions />} />
         <Route path="patients" element={<DPatients />} />
