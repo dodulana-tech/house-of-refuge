@@ -54,7 +54,7 @@ const BOUNDARY_CONCERNS = [
 export default function SafeguardingDashboard() {
   const [incidents, setIncidents] = useState(initIncidents)
   const [showIncidentForm, setShowIncidentForm] = useState(false)
-  const [incidentForm, setIncidentForm] = useState({ type: '', reporter: '', description: '', action: '' })
+  const [incidentForm, setIncidentForm] = useState({ type: '', reporter: '', location: '', incidentDate: '', incidentTime: '', personsInvolved: [], witnesses: '', description: '', actions: [] })
 
   const trainedCount = STAFF_TRAINING.filter(s => s.safeguardingTrained).length
   const compliancePct = Math.round((trainedCount / STAFF_TRAINING.length) * 100)
@@ -63,17 +63,25 @@ export default function SafeguardingDashboard() {
 
   const handleSubmitIncident = e => {
     e.preventDefault()
-    if (!incidentForm.type || !incidentForm.reporter || !incidentForm.description) return
+    if (!incidentForm.type || !incidentForm.reporter || !incidentForm.location) return
+    const descParts = [
+      `Location: ${incidentForm.location}`,
+      incidentForm.incidentDate ? `Date: ${incidentForm.incidentDate}` : '',
+      incidentForm.incidentTime ? `Time: ${incidentForm.incidentTime}` : '',
+      incidentForm.personsInvolved.length ? `Persons involved: ${incidentForm.personsInvolved.join(', ')}` : '',
+      `Witnesses: ${incidentForm.witnesses || 'Not specified'}`,
+    ].filter(Boolean).join('. ')
+    const actionText = incidentForm.actions.length ? incidentForm.actions.join('; ') : 'Pending review by DSL'
     setIncidents(prev => [{
       id: Date.now(),
       date: new Date().toISOString().split('T')[0],
       type: incidentForm.type,
       reporter: incidentForm.reporter,
-      description: incidentForm.description,
-      action: incidentForm.action || 'Pending review by DSL',
+      description: descParts,
+      action: actionText,
       status: 'investigating',
     }, ...prev])
-    setIncidentForm({ type: '', reporter: '', description: '', action: '' })
+    setIncidentForm({ type: '', reporter: '', location: '', incidentDate: '', incidentTime: '', personsInvolved: [], witnesses: '', description: '', actions: [] })
     setShowIncidentForm(false)
   }
 
@@ -216,21 +224,81 @@ export default function SafeguardingDashboard() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Reporter (Staff Initials)</label>
-                <input type="text" value={incidentForm.reporter} onChange={e => setIncidentForm(p => ({ ...p, reporter: e.target.value }))}
-                  placeholder="e.g. BO" style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }} />
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Reporter (Staff)</label>
+                <select value={incidentForm.reporter} onChange={e => setIncidentForm(p => ({ ...p, reporter: e.target.value }))}
+                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }}>
+                  <option value="">Select reporter</option>
+                  {['EA (Program Director)', 'AI (Clinical Lead)', 'BO (Head Nurse)', 'EN (Chaplain)', 'FA (Program Manager)', 'DO (House Master)', 'AB (Nurse)', 'CE (Nurse)', 'TA (Psychologist)', 'MO (Social Worker)'].map(s => (
+                    <option key={s} value={s.split(' ')[0]}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Location</label>
+                <select value={incidentForm.location} onChange={e => setIncidentForm(p => ({ ...p, location: e.target.value }))}
+                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }}>
+                  <option value="">Select location</option>
+                  {['Dormitory', 'Common area', 'Clinical room', 'Kitchen', 'Garden/Grounds', 'Off-site'].map(l => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Date of Incident</label>
+                <input type="date" value={incidentForm.incidentDate} onChange={e => setIncidentForm(p => ({ ...p, incidentDate: e.target.value }))}
+                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Time of Incident</label>
+                <select value={incidentForm.incidentTime} onChange={e => setIncidentForm(p => ({ ...p, incidentTime: e.target.value }))}
+                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }}>
+                  <option value="">Select time range</option>
+                  {['06:00–08:00 (Early morning)', '08:00–12:00 (Morning)', '12:00–14:00 (Midday)', '14:00–18:00 (Afternoon)', '18:00–22:00 (Evening)', '22:00–06:00 (Night)'].map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Persons Involved</label>
+                <select multiple value={incidentForm.personsInvolved} onChange={e => setIncidentForm(p => ({ ...p, personsInvolved: Array.from(e.target.selectedOptions, o => o.value) }))}
+                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem', minHeight: 80 }}>
+                  <optgroup label="Patients">
+                    {['CO', 'AN', 'KA', 'IM'].map(pt => <option key={pt} value={`Patient ${pt}`}>Patient {pt}</option>)}
+                  </optgroup>
+                  <optgroup label="Staff">
+                    {['EA', 'AI', 'BO', 'EN', 'FA', 'DO', 'AB', 'CE', 'TA', 'MO'].map(st => <option key={st} value={`Staff ${st}`}>Staff {st}</option>)}
+                  </optgroup>
+                </select>
+                <div style={{ fontSize: '.68rem', color: 'var(--g400)', marginTop: 2 }}>Hold Ctrl/Cmd to select multiple</div>
+              </div>
+              <div>
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Witnesses Present</label>
+                <select value={incidentForm.witnesses} onChange={e => setIncidentForm(p => ({ ...p, witnesses: e.target.value }))}
+                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }}>
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
               </div>
               <div style={{ gridColumn: 'span 2' }}>
-                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Description</label>
-                <textarea value={incidentForm.description} onChange={e => setIncidentForm(p => ({ ...p, description: e.target.value }))}
-                  rows={3} placeholder="Describe the incident in detail..."
-                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem', resize: 'vertical' }} />
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Immediate Action Taken</label>
-                <textarea value={incidentForm.action} onChange={e => setIncidentForm(p => ({ ...p, action: e.target.value }))}
-                  rows={2} placeholder="What was done immediately to ensure safety..."
-                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem', resize: 'vertical' }} />
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 8 }}>Immediate Actions Taken</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 6 }}>
+                  {['Ensured safety of individual at risk', 'Provided medical/emergency support', 'Separated alleged perpetrator', 'Notified nursing staff', 'Notified Program Director', 'Notified DSL', 'Documented in client file', 'Family/emergency contact notified'].map(action => (
+                    <label key={action} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.8rem', cursor: 'pointer' }}>
+                      <input type="checkbox"
+                        checked={incidentForm.actions.includes(action)}
+                        onChange={e => {
+                          setIncidentForm(p => ({
+                            ...p,
+                            actions: e.target.checked
+                              ? [...p.actions, action]
+                              : p.actions.filter(a => a !== action)
+                          }))
+                        }} />
+                      {action}
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
             <button type="submit"

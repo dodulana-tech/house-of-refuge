@@ -21,9 +21,9 @@ const PIPELINE_STAGES = [
 ]
 
 const MOCK_APPS = [
-  { id: 'APP001', first_name: 'Tunde', last_name: 'Bakare', substance: 'Cocaine', insight_level: 'contemplation', family_support: 'strong', pathway: 'A', deposit_paid: true, created_at: '2026-03-28', status: 'pre-screening', email: 'tunde@example.com', phone: '08011111111' },
-  { id: 'APP002', first_name: 'Grace', last_name: 'Obi', substance: 'Alcohol', insight_level: 'preparation', family_support: 'moderate', pathway: 'A', deposit_paid: true, created_at: '2026-03-25', status: 'clinical-assessment', email: 'grace@example.com', phone: '08022222222' },
-  { id: 'APP003', first_name: 'Ahmed', last_name: 'Yusuf', substance: 'Multiple', insight_level: 'denial', family_support: 'weak', pathway: 'B', deposit_paid: false, created_at: '2026-03-20', status: 'outpatient-pathway', email: 'ahmed@example.com', phone: '08033333333' },
+  { id: 'APP001', first_name: 'Tunde', last_name: 'Bakare', initials: 'TB', substance: 'Cocaine', insight_level: 'contemplation', family_support: 'strong', pathway: 'A', deposit_paid: true, created_at: '2026-03-28', status: 'pre-screening', email: 'tunde@example.com', phone: '08011111111' },
+  { id: 'APP002', first_name: 'Grace', last_name: 'Obi', initials: 'GO', substance: 'Alcohol', insight_level: 'preparation', family_support: 'moderate', pathway: 'A', deposit_paid: true, created_at: '2026-03-25', status: 'clinical-assessment', email: 'grace@example.com', phone: '08022222222' },
+  { id: 'APP003', first_name: 'Ahmed', last_name: 'Yusuf', initials: 'AY', substance: 'Multiple', insight_level: 'denial', family_support: 'weak', pathway: 'B', deposit_paid: false, created_at: '2026-03-20', status: 'outpatient-pathway', email: 'ahmed@example.com', phone: '08033333333' },
 ]
 
 const insightColors = { denial: '#E53E3E', precontemplation: '#DD6B20', contemplation: '#D69E2E', preparation: '#38A169', action: '#2B6CB0' }
@@ -82,7 +82,7 @@ export default function Admissions() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)' }}>
-                    {app.first_name || app.fn} {app.last_name || app.ln}
+                    {app.initials || ((app.first_name || app.fn || '').charAt(0) + (app.last_name || app.ln || '').charAt(0)).toUpperCase()}
                   </div>
                   <div style={{ fontSize: '.78rem', color: 'var(--g500)', marginTop: 2 }}>
                     {app.email} · {app.phone} · Applied: {new Date(app.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}

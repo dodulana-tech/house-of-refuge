@@ -49,17 +49,34 @@ const initSchedule = () => {
   return s
 }
 
+const HANDOVER_KEY_EVENTS = [
+  'Medication administered on schedule',
+  'Vital signs within normal limits',
+  'Behavioral incident occurred',
+  'New admission processed',
+  'Pass return processed',
+  'Medical concern escalated',
+  'Emergency protocol activated',
+  'No significant events',
+]
+
+const PATIENT_INITIALS = ['CO', 'AN', 'KA', 'IM']
+
+const ALERT_TYPES = ['Medication change', 'Behavioral concern', 'Medical watch', 'Suicide risk', 'Fall risk', 'Visitor restriction', 'Discharge pending']
+
+const SUPPLY_ISSUES = ['None', 'Medication running low', 'Equipment malfunction', 'Supply shortage reported']
+
 const initHandoverNotes = () => {
   const notes = {}
   DAYS.forEach(d => {
     notes[d] = {
-      'Day→Evening': '',
-      'Evening→Night': '',
-      'Night→Day': '',
+      'Day→Evening': { keyEvents: [], patientAlerts: [], supplyIssues: 'None' },
+      'Evening→Night': { keyEvents: [], patientAlerts: [], supplyIssues: 'None' },
+      'Night→Day': { keyEvents: [], patientAlerts: [], supplyIssues: 'None' },
     }
   })
-  notes['Mon']['Day→Evening'] = 'Client J.A. reported mild headache at 1PM. Paracetamol administered.'
-  notes['Mon']['Evening→Night'] = 'All clients settled. Group session completed successfully.'
+  notes['Mon']['Day→Evening'] = { keyEvents: ['Medication administered on schedule'], patientAlerts: ['CO — Medical watch'], supplyIssues: 'None' }
+  notes['Mon']['Evening→Night'] = { keyEvents: ['No significant events'], patientAlerts: [], supplyIssues: 'None' }
   return notes
 }
 
@@ -228,18 +245,65 @@ export default function ShiftScheduler() {
           ))}
         </div>
 
-        {['Day→Evening', 'Evening→Night', 'Night→Day'].map(transition => (
-          <div key={transition} style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: '.78rem', fontWeight: 700, display: 'block', marginBottom: 4 }}>{transition} Handover</label>
-            <textarea
-              value={handoverNotes[selectedDay][transition]}
-              onChange={e => handleNoteChange(selectedDay, transition, e.target.value)}
-              placeholder={`Enter handover notes for ${transition} transition on ${selectedDay}...`}
-              rows={2}
-              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid var(--g200)', fontSize: '.82rem', resize: 'vertical' }}
-            />
-          </div>
-        ))}
+        {['Day→Evening', 'Evening→Night', 'Night→Day'].map(transition => {
+          const noteData = handoverNotes[selectedDay][transition]
+          return (
+            <div key={transition} style={{ marginBottom: 20, padding: 14, background: 'var(--off)', borderRadius: 8 }}>
+              <div style={{ fontSize: '.85rem', fontWeight: 700, marginBottom: 10, color: 'var(--charcoal)' }}>{transition} Handover</div>
+
+              {/* Key Events */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 6, color: 'var(--g500)' }}>Key Events This Shift</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 4 }}>
+                  {HANDOVER_KEY_EVENTS.map(evt => (
+                    <label key={evt} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.8rem', cursor: 'pointer' }}>
+                      <input type="checkbox"
+                        checked={noteData.keyEvents.includes(evt)}
+                        onChange={e => {
+                          const updated = e.target.checked
+                            ? [...noteData.keyEvents, evt]
+                            : noteData.keyEvents.filter(v => v !== evt)
+                          handleNoteChange(selectedDay, transition, { ...noteData, keyEvents: updated })
+                        }} />
+                      {evt}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Patient Alerts */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 6, color: 'var(--g500)' }}>Patient Alerts to Carry Forward</label>
+                <select multiple
+                  value={noteData.patientAlerts}
+                  onChange={e => {
+                    const selected = Array.from(e.target.selectedOptions, o => o.value)
+                    handleNoteChange(selectedDay, transition, { ...noteData, patientAlerts: selected })
+                  }}
+                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.8rem', minHeight: 80 }}>
+                  {PATIENT_INITIALS.flatMap(p =>
+                    ALERT_TYPES.map(a => {
+                      const val = `${p} — ${a}`
+                      return <option key={val} value={val}>{val}</option>
+                    })
+                  )}
+                </select>
+                <div style={{ fontSize: '.68rem', color: 'var(--g400)', marginTop: 2 }}>Hold Ctrl/Cmd to select multiple</div>
+              </div>
+
+              {/* Supply Issues */}
+              <div>
+                <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4, color: 'var(--g500)' }}>Equipment / Supply Issues</label>
+                <select
+                  value={noteData.supplyIssues}
+                  onChange={e => handleNoteChange(selectedDay, transition, { ...noteData, supplyIssues: e.target.value })}
+                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }}>
+                  {SUPPLY_ISSUES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

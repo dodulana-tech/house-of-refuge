@@ -54,15 +54,15 @@ const MOCK_KPIs = {
           { label: '9:00 AM — Bible School / Spiritual Formation', count: null, color: 'var(--gold)' },
           { label: '11:00 AM — Group CBT / Relapse Prevention', count: null, color: 'var(--blue)' },
           { label: '1:30 PM — Life Skills Training Group', count: null, color: '#1A7A4A' },
-          { label: '3:30 PM — Individual Counseling (Chidi O.)', count: null, color: '#805AD5' },
+          { label: '3:30 PM — Individual Counseling (CO)', count: null, color: '#805AD5' },
         ],
       },
       {
         title: 'Patient Alerts',
         items: [
-          { label: 'Ibrahim M. — Day 8, detox monitoring (CIWA)', count: 'HIGH', color: '#E53E3E' },
-          { label: 'Chidi O. — Week 4 treatment plan review due', count: 'DUE', color: '#DD6B20' },
-          { label: 'Adaeze N. — Mood trend declining (3 days)', count: 'WATCH', color: '#D69E2E' },
+          { label: 'IM — Day 8, detox monitoring (CIWA)', count: 'HIGH', color: '#E53E3E' },
+          { label: 'CO — Week 4 treatment plan review due', count: 'DUE', color: '#DD6B20' },
+          { label: 'AN — Mood trend declining (3 days)', count: 'WATCH', color: '#D69E2E' },
         ],
       },
     ],
@@ -91,8 +91,8 @@ const MOCK_KPIs = {
     ],
   },
   family: {
-    title: "Chidi's Progress",
-    subtitle: 'Family Dashboard — Ngozi Okonkwo (Mother)',
+    title: 'Patient Progress',
+    subtitle: 'Family Dashboard — Mother',
     cards: [
       { n: 'Day 23', label: 'Programme Day', sub: 'of 84 days', color: 'var(--blue)' },
       { n: 'Positive', label: 'Overall Progress', sub: 'Care team assessment', color: '#1A7A4A' },

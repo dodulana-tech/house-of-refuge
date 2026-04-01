@@ -20,11 +20,11 @@ const REVENUE = {
 }
 
 const TRANSACTIONS = [
-  { date: '2026-04-01', desc: 'Booking Deposit — Chidi Okonkwo', type: 'deposit', amount: 1000000, status: 'verified', ref: 'HOR_WL_001' },
-  { date: '2026-03-28', desc: 'Booking Deposit — Adaeze Nnamdi', type: 'deposit', amount: 1000000, status: 'verified', ref: 'HOR_WL_002' },
-  { date: '2026-03-25', desc: 'Booking Deposit — Kunle Adeyemi', type: 'deposit', amount: 1000000, status: 'verified', ref: 'HOR_WL_003' },
-  { date: '2026-04-01', desc: 'Treatment Fee — Month 1 (Chidi)', type: 'treatment', amount: 850000, status: 'verified', ref: 'HOR_TF_001' },
-  { date: '2026-03-30', desc: 'Treatment Fee — Month 2 (Kunle)', type: 'treatment', amount: 850000, status: 'verified', ref: 'HOR_TF_002' },
+  { date: '2026-04-01', desc: 'Booking Deposit — CO', type: 'deposit', amount: 1000000, status: 'verified', ref: 'HOR_WL_001' },
+  { date: '2026-03-28', desc: 'Booking Deposit — AN', type: 'deposit', amount: 1000000, status: 'verified', ref: 'HOR_WL_002' },
+  { date: '2026-03-25', desc: 'Booking Deposit — KA', type: 'deposit', amount: 1000000, status: 'verified', ref: 'HOR_WL_003' },
+  { date: '2026-04-01', desc: 'Treatment Fee — Month 1 (CO)', type: 'treatment', amount: 850000, status: 'verified', ref: 'HOR_TF_001' },
+  { date: '2026-03-30', desc: 'Treatment Fee — Month 2 (KA)', type: 'treatment', amount: 850000, status: 'verified', ref: 'HOR_TF_002' },
   { date: '2026-03-28', desc: 'Donation — Anonymous', type: 'donation', amount: 250000, status: 'verified', ref: 'HOR_D_001' },
   { date: '2026-03-25', desc: 'Equipment Sponsorship — Laptop x2', type: 'sponsorship', amount: 900000, status: 'verified', ref: 'HOR_S_001' },
   { date: '2026-03-20', desc: 'Donation — Mrs. Adeyemi', type: 'donation', amount: 100000, status: 'verified', ref: 'HOR_D_002' },

@@ -156,14 +156,20 @@ export default function PassManagement() {
                 value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} />
             </div>
             <div>
-              <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Guardian Name</label>
-              <input type="text" placeholder="Full name" style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
-                value={form.guardian} onChange={e => setForm({ ...form, guardian: e.target.value })} />
+              <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Guardian Relationship</label>
+              <select style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
+                value={form.guardian} onChange={e => setForm({ ...form, guardian: e.target.value })}>
+                <option value="">Select guardian...</option>
+                {['PFSP (Primary Family Support Person)', 'Next of Kin', 'Spouse', 'Parent', 'Sibling', 'Pastor/Church leader', 'Other approved guardian'].map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
             </div>
             <div>
               <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Reason</label>
-              <input type="text" placeholder="Pass reason" style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
-                value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} />
+              <select style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
+                value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })}>
+                <option value="">Select reason...</option>
+                {['Family visit', 'Medical appointment', 'Church attendance', 'Vocational training', 'Community reintegration activity', 'Personal errand (approved)', 'Emergency — family death', 'Emergency — family hospitalization'].map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
             </div>
           </div>
 

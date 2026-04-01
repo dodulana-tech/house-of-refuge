@@ -230,7 +230,10 @@ export default function MedicationMAR() {
             </select>
           </div>
           <div className="fg"><label className="flabel">Medication Name & Strength *</label>
-            <input className="fi" value={medForm.medication} onChange={e => setMedForm(p => ({ ...p, medication: e.target.value }))} placeholder="e.g. Diazepam 10mg" />
+            <select className="fi" value={medForm.medication} onChange={e => setMedForm(p => ({ ...p, medication: e.target.value }))}>
+              <option value="">Select medication...</option>
+              {['Diazepam 5mg', 'Diazepam 10mg', 'Chlordiazepoxide 10mg', 'Chlordiazepoxide 25mg', 'Thiamine 100mg', 'Multivitamin', 'Paracetamol 500mg', 'Paracetamol 1g', 'Ibuprofen 400mg', 'Metoclopramide 10mg', 'Promethazine 25mg', 'Carbamazepine 200mg', 'Haloperidol 5mg (non-opioid)', 'Chlorpromazine 100mg', 'Amitriptyline 25mg', 'Fluoxetine 20mg', 'Risperidone 2mg', 'Lorazepam 1mg', 'Vitamin B Complex', 'Folic Acid 5mg', 'Ferrous Sulphate 200mg', 'Artemether-Lumefantrine (antimalarial)', 'Ciprofloxacin 500mg', 'Amoxicillin 500mg', 'Other (specify to doctor)'].map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
           </div>
           <div className="frow">
             <div className="fg"><label className="flabel">Route *</label>

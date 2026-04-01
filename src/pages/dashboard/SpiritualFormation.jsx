@@ -85,14 +85,19 @@ export default function SpiritualFormation() {
   const { user } = useAuth()
   const [notes, setNotes] = useState(INITIAL_NOTES)
   const [showNoteForm, setShowNoteForm] = useState(false)
-  const [noteForm, setNoteForm] = useState({ patient: '', topic: '', text: '' })
+  const [noteForm, setNoteForm] = useState({ patient: '', topic: '', engagementLevel: '', spiritualIndicators: [], recommendedAction: '' })
 
   const handleAddNote = () => {
-    if (!noteForm.patient || !noteForm.topic || !noteForm.text) return
+    if (!noteForm.patient || !noteForm.topic || !noteForm.engagementLevel) return
+    const textParts = [
+      `Engagement: ${noteForm.engagementLevel}`,
+      noteForm.spiritualIndicators.length ? `Indicators: ${noteForm.spiritualIndicators.join(', ')}` : '',
+      noteForm.recommendedAction ? `Action: ${noteForm.recommendedAction}` : '',
+    ].filter(Boolean).join('. ')
     setNotes([{
-      id: Date.now(), patient: noteForm.patient, topic: noteForm.topic, text: noteForm.text, date: '2026-03-31',
+      id: Date.now(), patient: noteForm.patient, topic: noteForm.topic, text: textParts, date: '2026-03-31',
     }, ...notes])
-    setNoteForm({ patient: '', topic: '', text: '' })
+    setNoteForm({ patient: '', topic: '', engagementLevel: '', spiritualIndicators: [], recommendedAction: '' })
     setShowNoteForm(false)
   }
 
@@ -131,10 +136,40 @@ export default function SpiritualFormation() {
             </div>
           </div>
           <div style={{ marginTop: 12 }}>
-            <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Note</label>
-            <textarea rows={3} placeholder="Pastoral observation or note..."
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)', resize: 'vertical' }}
-              value={noteForm.text} onChange={e => setNoteForm({ ...noteForm, text: e.target.value })} />
+            <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Engagement Level</label>
+            <select style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
+              value={noteForm.engagementLevel} onChange={e => setNoteForm({ ...noteForm, engagementLevel: e.target.value })}>
+              <option value="">Select engagement level</option>
+              {['Highly engaged', 'Engaged', 'Partially engaged', 'Resistant', 'Absent'].map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 6 }}>Spiritual Indicators Observed</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 4 }}>
+              {['Active in prayer', 'Engaging with Scripture', 'Showing genuine remorse', 'Testimony emerging', 'Asking faith questions', 'Resisting spiritual input', 'Processing guilt/shame', 'Showing forgiveness', 'Community integration'].map(indicator => (
+                <label key={indicator} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.8rem', cursor: 'pointer' }}>
+                  <input type="checkbox"
+                    checked={noteForm.spiritualIndicators.includes(indicator)}
+                    onChange={e => {
+                      setNoteForm(prev => ({
+                        ...prev,
+                        spiritualIndicators: e.target.checked
+                          ? [...prev.spiritualIndicators, indicator]
+                          : prev.spiritualIndicators.filter(i => i !== indicator)
+                      }))
+                    }} />
+                  {indicator}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Recommended Action</label>
+            <select style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
+              value={noteForm.recommendedAction} onChange={e => setNoteForm({ ...noteForm, recommendedAction: e.target.value })}>
+              <option value="">Select recommended action</option>
+              {['Continue current approach', 'Increase pastoral sessions', 'Refer to clinical team', 'Prepare for church placement', 'No action needed'].map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
           </div>
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
             <button className="btn btn--primary" style={{ padding: '8px 20px' }} onClick={handleAddNote}>Save Note</button>
