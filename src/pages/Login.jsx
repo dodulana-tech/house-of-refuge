@@ -20,15 +20,13 @@ export default function Login() {
     const result = await login(email, password)
     setLoading(false)
     if (result.ok) {
-      showNotif('Welcome back', `Signed in successfully`, 'ok')
-      // Wait briefly for auth state to propagate
-      setTimeout(() => {
-        const u = result.user
-        const role = u?.user_metadata?.role || u?.role
-        const dest = role === 'admin' || role === 'staff' ? '/admin' :
-                     role === 'family' ? '/family' : '/portal'
-        nav(dest)
-      }, 300)
+      const u = result.user || {}
+      const role = u.role || u.user_metadata?.role || 'patient'
+      const name = u.name || u.full_name || u.user_metadata?.full_name || email
+      showNotif('Welcome back', `Signed in as ${name}`, 'ok')
+      const dest = role === 'admin' || role === 'staff' ? '/admin' :
+                   role === 'family' ? '/family' : '/portal'
+      nav(dest)
     } else {
       showNotif('Login failed', result.error)
     }

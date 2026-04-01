@@ -32,7 +32,8 @@ export function useModal() { return useContext(ModalContext) }
 
 // ── Protected Route ───────────────────────────────────────
 function Protected({ children, roles }) {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
+  if (loading) return <div style={{ padding: '120px 24px', textAlign: 'center' }}><span className="spin" /></div>
   if (!user) return <Navigate to="/login" replace />
   if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />
   return children
