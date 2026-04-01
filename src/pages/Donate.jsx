@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useNotif } from '../App'
 import { pay, ref, fmt } from '../utils/paystack'
 import styles from './Donate.module.css'
@@ -62,6 +63,10 @@ export default function Donate() {
 
   return (
     <>
+      <Helmet>
+        <title>Donate | House of Refuge</title>
+        <meta name="description" content="Donate to House of Refuge and fund free and subsidised drug rehabilitation care for those who cannot afford treatment." />
+      </Helmet>
       <div className="ph"><div className="container">
         <h1>Donate to House of Refuge</h1>
         <p>Your generosity funds free and subsidised care for those who cannot afford treatment</p>

@@ -1,11 +1,11 @@
 .grid { display: grid; grid-template-columns: 1.2fr .85fr; gap: 32px; align-items: start; }
 
 .freq { display: flex; background: var(--g100); padding: 4px; border-radius: 10px; margin-bottom: 20px; }
-.freqBtn { flex: 1; padding: 9px; border-radius: 7px; font-size: .85rem; font-weight: 600; font-family: var(--fb); border: none; background: none; cursor: pointer; transition: var(--tr); color: var(--g500); }
+.freqBtn { flex: 1; padding: 11px; border-radius: 7px; font-size: .85rem; font-weight: 600; font-family: var(--fb); border: none; background: none; cursor: pointer; transition: var(--tr); color: var(--g500); }
 .freqActive { background: white; color: var(--charcoal); box-shadow: var(--sh-sm); }
 
 .amtGrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; margin-bottom: 16px; }
-.amtBtn { padding: 14px 10px; border-radius: 10px; text-align: center; border: 1.5px solid var(--g300); background: white; font-size: .92rem; font-weight: 600; font-family: var(--fb); color: var(--charcoal); cursor: pointer; transition: var(--tr); }
+.amtBtn { padding: 14px 12px; border-radius: 10px; text-align: center; border: 1.5px solid var(--g300); background: white; font-size: .92rem; font-weight: 600; font-family: var(--fb); color: var(--charcoal); cursor: pointer; transition: var(--tr); }
 .amtBtn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-lt); }
 .amtSel { border-color: var(--blue) !important; color: var(--blue) !important; background: var(--blue-lt) !important; }
 

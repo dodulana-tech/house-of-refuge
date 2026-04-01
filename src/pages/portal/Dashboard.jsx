@@ -1,4 +1,5 @@
 import React from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import styles from './Portal.module.css'
@@ -51,6 +52,10 @@ export default function Dashboard() {
 
   return (
     <>
+      <Helmet>
+        <title>My Dashboard | House of Refuge</title>
+        <meta name="description" content="View your recovery progress, daily schedule, and quick actions in the House of Refuge patient portal." />
+      </Helmet>
       <div className="ph"><div className="container">
         <div className="ph__badge"><span className="badge">Patient Portal</span></div>
         <h1>Welcome, {user?.name?.split(' ')[0]}</h1>

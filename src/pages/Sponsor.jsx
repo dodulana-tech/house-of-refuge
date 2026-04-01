@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useModal } from '../App'
 import { fmt } from '../utils/paystack'
 import { SPONSOR_ITEMS, CAT_LABELS, TOTAL_GOAL } from '../data/items'
@@ -19,6 +20,10 @@ export default function Sponsor() {
 
   return (
     <>
+      <Helmet>
+        <title>Sponsor Equipment | House of Refuge</title>
+        <meta name="description" content="Sponsor medical and facility equipment for House of Refuge to help equip the rehabilitation centre before launch." />
+      </Helmet>
       <div className="ph"><div className="container">
         <h1>Sponsor an Item</h1>
         <p>32 items needed to fully equip the facility. Your gift goes directly to saving lives</p>

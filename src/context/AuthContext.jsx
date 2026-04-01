@@ -12,12 +12,12 @@ export const ROLES = {
 }
 
 // Demo accounts - used when Supabase is not configured
-const DEMO_ACCOUNTS = [
+const DEMO_ACCOUNTS = import.meta.env.DEV ? [
   { id: 'P001', email: 'patient@hor.ng', password: 'patient123', role: ROLES.PATIENT, name: 'Chidi Okonkwo', phone: '08012345678', admissionDate: '2026-04-15', status: 'admitted' },
   { id: 'F001', email: 'family@hor.ng', password: 'family123', role: ROLES.FAMILY, name: 'Ngozi Okonkwo', phone: '08098765432', patientId: 'P001', relationship: 'Mother' },
   { id: 'S001', email: 'staff@hor.ng', password: 'staff123', role: ROLES.STAFF, name: 'Dr. Amina Ibrahim', phone: '08055667788', department: 'Clinical', title: 'Head of Clinical Services' },
   { id: 'A001', email: 'admin@hor.ng', password: 'admin123', role: ROLES.ADMIN, name: 'Emmanuel Abutu', phone: '09011277600', department: 'Administration', title: 'Program Director' },
-]
+] : []
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => load('user', null))
@@ -66,9 +66,38 @@ export function AuthProvider({ children }) {
     // Try Supabase first
     if (isSupabaseReady()) {
       const { data, error } = await sbSignIn({ email, password })
-      if (error) return { ok: false, error: error.message }
-      // Profile will be set via auth state listener
-      return { ok: true, user: data.user }
+      if (error) {
+        // Fallback to demo accounts on Supabase error
+        const account = DEMO_ACCOUNTS.find(a => a.email === email && a.password === password)
+        if (account) {
+          const { password: _, ...userData } = account
+          save('user', userData)
+          setUser(userData)
+          return { ok: true, user: userData }
+        }
+        return { ok: false, error: error.message }
+      }
+      // Fetch profile directly after sign-in
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
+      if (profile) {
+        const userData = { ...profile, name: profile.full_name }
+        save('user', userData)
+        setUser(userData)
+        return { ok: true, user: userData }
+      }
+      // Profile not found — use auth metadata as fallback
+      const meta = data.user.user_metadata || {}
+      const userData = {
+        id: data.user.id,
+        email: data.user.email,
+        name: meta.full_name || email,
+        full_name: meta.full_name || email,
+        role: meta.role || 'patient',
+        phone: meta.phone || '',
+      }
+      save('user', userData)
+      setUser(userData)
+      return { ok: true, user: userData }
     }
 
     // Fallback to demo accounts
@@ -105,6 +134,10 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     if (isSupabaseReady()) await sbSignOut()
+    // Clear all HOR data from storage
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('hor_'))
+    keys.forEach(k => localStorage.removeItem(k))
+    try { sessionStorage.removeItem('hor_apply_draft') } catch {}
     remove('user')
     setUser(null)
   }, [])

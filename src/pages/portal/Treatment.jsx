@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../../context/AuthContext'
 import styles from './Portal.module.css'
 
@@ -97,6 +98,10 @@ export default function Treatment() {
 
   return (
     <>
+      <Helmet>
+        <title>Treatment Plan | House of Refuge</title>
+        <meta name="description" content="View your personalised 12-week recovery treatment plan, weekly schedule, care team, and graduation criteria." />
+      </Helmet>
       <div className="ph"><div className="container">
         <div className="ph__badge"><span className="badge">Patient Portal</span></div>
         <h1>Treatment Plan</h1>

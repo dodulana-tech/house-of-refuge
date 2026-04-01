@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useNotif } from '../App'
 import styles from './Contact.module.css'
 
@@ -17,6 +18,10 @@ export default function Contact() {
 
   return (
     <>
+      <Helmet>
+        <title>Contact Us | House of Refuge</title>
+        <meta name="description" content="Get in touch with House of Refuge for admissions, donations, volunteering, or general enquiries." />
+      </Helmet>
       <div className="ph"><div className="container">
         <h1>Contact Us</h1>
         <p>We'd love to hear from you, whether patient, family, volunteer, or donor</p>

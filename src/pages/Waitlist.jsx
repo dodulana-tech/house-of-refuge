@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useNotif } from '../App'
 import { pay, ref, fmt } from '../utils/paystack'
 import { saveApplication } from '../utils/store'
@@ -301,6 +302,10 @@ export default function Waitlist() {
 
   return (
     <>
+      <Helmet>
+        <title>Apply for Admission | House of Refuge</title>
+        <meta name="description" content="Apply for admission to the House of Refuge 12-week residential drug rehabilitation programme in Lekki, Lagos." />
+      </Helmet>
       <div className="ph"><div className="container">
         <h1>Apply for Admission</h1>
         <p>12-week residential rehabilitation programme: Evidence-Based, Christ-Centered, Trauma-Informed</p>

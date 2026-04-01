@@ -28,7 +28,10 @@
       "Bash(grep -n \"max-width\\\\|min-width\" /Users/debo/Downloads/hor-app/src/styles/global.css /Users/debo/Downloads/hor-app/src/components/*.css /Users/debo/Downloads/hor-app/src/pages/*.css /Users/debo/Downloads/hor-app/src/pages/**/*.css)",
       "Bash(grep -r \"opacity\\\\|color\\\\|#[0-9a-f]\\\\{3,6\\\\}\" /Users/debo/Downloads/hor-app/src/styles --include=\"*.css\")",
       "Bash(grep -n \"overflow-x\\\\|white-space.*nowrap\" /Users/debo/Downloads/hor-app/src/styles/global.css /Users/debo/Downloads/hor-app/src/components/*.css /Users/debo/Downloads/hor-app/src/pages/*.css /Users/debo/Downloads/hor-app/src/pages/**/*.css)",
-      "Bash(grep -n \"@media\" /Users/debo/Downloads/hor-app/src/styles/global.css /Users/debo/Downloads/hor-app/src/components/*.css /Users/debo/Downloads/hor-app/src/pages/*.css /Users/debo/Downloads/hor-app/src/pages/**/*.css)"
+      "Bash(grep -n \"@media\" /Users/debo/Downloads/hor-app/src/styles/global.css /Users/debo/Downloads/hor-app/src/components/*.css /Users/debo/Downloads/hor-app/src/pages/*.css /Users/debo/Downloads/hor-app/src/pages/**/*.css)",
+      "Bash(curl -s https://js.paystack.co/v1/inline.js)",
+      "Bash(openssl dgst:*)",
+      "Bash(openssl base64:*)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext, useCallback } from 'react'
+import React, { useState, createContext, useContext, useCallback, Suspense, lazy } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Nav from './components/Nav'
@@ -12,13 +12,16 @@ import Sponsor from './pages/Sponsor'
 import Waitlist from './pages/Waitlist'
 import Contact from './pages/Contact'
 import Login from './pages/Login'
-import Dashboard from './pages/portal/Dashboard'
-import Checkin from './pages/portal/Checkin'
-import Treatment from './pages/portal/Treatment'
-import Meals from './pages/portal/Meals'
-import Payments from './pages/portal/Payments'
-import FamilyDashboard from './pages/family/FamilyDashboard'
-import AdminDashboard from './pages/admin/AdminDashboard'
+import NotFound from './pages/NotFound'
+
+// Lazy load portal/admin/family pages
+const Dashboard = lazy(() => import('./pages/portal/Dashboard'))
+const Checkin = lazy(() => import('./pages/portal/Checkin'))
+const Treatment = lazy(() => import('./pages/portal/Treatment'))
+const Meals = lazy(() => import('./pages/portal/Meals'))
+const Payments = lazy(() => import('./pages/portal/Payments'))
+const FamilyDashboard = lazy(() => import('./pages/family/FamilyDashboard'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 
 // ── Contexts ──────────────────────────────────────────────
 export const NotifContext = createContext(null)
@@ -68,7 +71,7 @@ function AppRoutes() {
       <Route path="/admin" element={<Protected roles={['staff', 'admin']}><AdminDashboard /></Protected>} />
 
       {/* Catch-all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
@@ -92,7 +95,9 @@ export default function App() {
           <ScrollTop />
           <Nav />
           <main>
-            <AppRoutes />
+            <Suspense fallback={<div style={{ padding: '120px 24px', textAlign: 'center' }}><span className="spin" /></div>}>
+              <AppRoutes />
+            </Suspense>
           </main>
           <Footer />
           <Notification notif={notif} />

@@ -1,4 +1,5 @@
 import React from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useNavigate } from 'react-router-dom'
 import styles from './Home.module.css'
 
@@ -7,6 +8,10 @@ export default function Home() {
 
   return (
     <>
+      <Helmet>
+        <title>House of Refuge | Drug Rehabilitation Centre, Lagos</title>
+        <meta name="description" content="A 24-bed residential drug rehabilitation centre in Lekki, Lagos offering faith-based recovery rooted in clinical excellence." />
+      </Helmet>
       {/* ── Hero ── */}
       <section className={styles.hero}>
         <svg className={styles.archBg} viewBox="0 0 520 520" fill="none" aria-hidden="true">
@@ -27,8 +32,8 @@ export default function Home() {
               A 24-bed residential drug rehabilitation centre rooted in faith, clinical excellence, and community, serving Lagos and beyond.
             </p>
             <div className={`${styles.acts} fu fu3`}>
-              <button className="btn btn--primary" onClick={() => nav('/donate')}>Donate Now</button>
-              <button className="btn btn--secondary" onClick={() => nav('/apply')}>Apply for Admission</button>
+              <button type="button" className="btn btn--primary" onClick={() => nav('/donate')}>Donate Now</button>
+              <button type="button" className="btn btn--secondary" onClick={() => nav('/apply')}>Apply for Admission</button>
             </div>
           </div>
           <div className={`${styles.right} fu fu4`}>
@@ -145,7 +150,7 @@ export default function Home() {
             </div>
           </div>
           <div style={{ textAlign:'center', marginTop:28 }}>
-            <button className="btn btn--primary" onClick={() => nav('/sponsor')}>View Full Sponsorship List</button>
+            <button type="button" className="btn btn--primary" onClick={() => nav('/sponsor')}>View Full Sponsorship List</button>
           </div>
         </div>
       </section>
@@ -156,8 +161,8 @@ export default function Home() {
           <h2>Be part of something that changes everything</h2>
           <p>Every donation, every prayer, every referral brings a life back from the brink.</p>
           <div className="cta__acts">
-            <button className="btn btn--white"         onClick={() => nav('/donate')}>Make a Donation</button>
-            <button className="btn btn--outline-white" onClick={() => nav('/sponsor')}>Sponsor Equipment</button>
+            <button type="button" className="btn btn--white"         onClick={() => nav('/donate')}>Make a Donation</button>
+            <button type="button" className="btn btn--outline-white" onClick={() => nav('/sponsor')}>Sponsor Equipment</button>
           </div>
         </div>
       </section>

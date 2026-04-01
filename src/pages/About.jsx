@@ -1,11 +1,16 @@
 // About.jsx
 import React from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useNavigate } from 'react-router-dom'
 
 export default function About() {
   const nav = useNavigate()
   return (
     <>
+      <Helmet>
+        <title>About Us | House of Refuge</title>
+        <meta name="description" content="Learn about House of Refuge, a Freedom Foundation initiative providing faith-based drug rehabilitation in Lekki, Lagos." />
+      </Helmet>
       <div className="ph"><div className="container">
         <h1>About House of Refuge</h1>
         <p>A church-rooted initiative meeting one of Lagos's most pressing needs</p>

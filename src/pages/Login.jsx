@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useNotif } from '../App'
@@ -35,6 +36,10 @@ export default function Login() {
 
   return (
     <>
+      <Helmet>
+        <title>Sign In | House of Refuge</title>
+        <meta name="description" content="Sign in to access your House of Refuge patient portal, family dashboard, or staff panel." />
+      </Helmet>
       <div className="ph"><div className="container">
         <h1>Sign In</h1>
         <p>Access your patient portal, family dashboard, or staff panel</p>
@@ -49,17 +54,18 @@ export default function Login() {
 
               <div className="fg">
                 <label className="flabel">Email Address</label>
-                <input className="fi" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
+                <input className="fi" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
               </div>
               <div className="fg">
                 <label className="flabel">Password</label>
-                <input className="fi" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" />
+                <input className="fi" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" />
               </div>
 
               <button className="btn btn--primary btn--full" type="submit" disabled={loading}>
                 {loading ? <span className="spin" /> : 'Sign In'}
               </button>
 
+              {import.meta.env.DEV && (
               <div className={styles.demo}>
                 <div className={styles.demoTitle}>Quick Access</div>
                 <div className={styles.demoGrid}>
@@ -75,6 +81,7 @@ export default function Login() {
                   ))}
                 </div>
               </div>
+              )}
 
               <p style={{ fontSize: '.82rem', textAlign: 'center', marginTop: 16 }}>
                 Don't have an account? <Link to="/apply" style={{ color: 'var(--blue)', fontWeight: 600 }}>Apply for Admission</Link>

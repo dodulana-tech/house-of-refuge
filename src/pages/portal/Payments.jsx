@@ -1,4 +1,5 @@
 import React from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
 import styles from './Portal.module.css'

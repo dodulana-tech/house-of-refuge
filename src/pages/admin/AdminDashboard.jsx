@@ -37,16 +37,16 @@ export default function AdminDashboard() {
       <section className="section">
         <div className="container">
           {/* Tabs */}
-          <div className={styles.tabs}>
+          <div className={styles.tabs} role="tablist">
             {[['overview', 'Overview'], ['patients', 'Current Patients'], ['applications', 'Applications'], ['finance', 'Finance']].map(([k, l]) => (
-              <button key={k} className={`${styles.tab} ${tab === k ? styles.tabActive : ''}`} onClick={() => setTab(k)}>
+              <button key={k} role="tab" aria-selected={tab === k} aria-controls={`tabpanel-${k}`} id={`tab-${k}`} className={`${styles.tab} ${tab === k ? styles.tabActive : ''}`} onClick={() => setTab(k)}>
                 {l}
               </button>
             ))}
           </div>
 
           {/* Overview */}
-          {tab === 'overview' && <>
+          {tab === 'overview' && <div role="tabpanel" id="tabpanel-overview" aria-labelledby="tab-overview">
             <div className={styles.statsRow}>
               {[
                 { n: '4', l: 'Current Patients', c: 'var(--blue)' },
@@ -108,11 +108,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          </>}
+          </div>}
 
           {/* Patients tab */}
           {tab === 'patients' && (
-            <div className={styles.patientCards}>
+            <div className={styles.patientCards} role="tabpanel" id="tabpanel-patients" aria-labelledby="tab-patients">
               {MOCK_PATIENTS.map(p => (
                 <div key={p.id} className="card">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
 
           {/* Applications tab */}
           {tab === 'applications' && (
-            <div>
+            <div role="tabpanel" id="tabpanel-applications" aria-labelledby="tab-applications">
               <div className={styles.appHeader}>
                 <h3 style={{ fontSize: '1.3rem' }}>Application Pipeline</h3>
                 <div className={styles.appCounts}>
@@ -172,7 +172,7 @@ export default function AdminDashboard() {
 
           {/* Finance tab */}
           {tab === 'finance' && (
-            <div className={styles.financeGrid}>
+            <div className={styles.financeGrid} role="tabpanel" id="tabpanel-finance" aria-labelledby="tab-finance">
               <div className="card" style={{ textAlign: 'center' }}>
                 <div className={styles.finLabel}>Deposits Received</div>
                 <div className={styles.finAmount} style={{ color: '#1A7A4A' }}>{fmt(3000000)}</div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useNotif } from '../../App'
@@ -41,6 +42,10 @@ export default function Checkin() {
   if (submitted) {
     return (
       <>
+        <Helmet>
+          <title>Daily Check-in | House of Refuge</title>
+          <meta name="description" content="Complete your daily wellness check-in to help your care team track your recovery progress." />
+        </Helmet>
         <div className="ph"><div className="container">
           <div className="ph__badge"><span className="badge">Patient Portal</span></div>
           <h1>Check-in Complete</h1>
@@ -67,6 +72,10 @@ export default function Checkin() {
 
   return (
     <>
+      <Helmet>
+        <title>Daily Check-in | House of Refuge</title>
+        <meta name="description" content="Complete your daily wellness check-in to help your care team track your recovery progress." />
+      </Helmet>
       <div className="ph"><div className="container">
         <div className="ph__badge"><span className="badge">Patient Portal</span></div>
         <h1>Daily Check-in</h1>

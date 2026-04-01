@@ -35,7 +35,7 @@ export default function SponsorModal() {
   }
 
   return (
-    <div className={styles.overlay} onClick={e => e.target === e.currentTarget && closeModal()}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Sponsor item" onClick={e => e.target === e.currentTarget && closeModal()} onKeyDown={e => e.key === 'Escape' && closeModal()}>
       <div className={styles.modal}>
         <button className={styles.close} onClick={closeModal}>×</button>
         <h3>Sponsor this item</h3>

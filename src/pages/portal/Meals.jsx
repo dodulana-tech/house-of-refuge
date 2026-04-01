@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../../context/AuthContext'
 import { useNotif } from '../../App'
 import { saveMealOrder, getMealOrders } from '../../utils/store'
@@ -62,6 +63,10 @@ export default function Meals() {
 
   return (
     <>
+      <Helmet>
+        <title>Meal Orders | House of Refuge</title>
+        <meta name="description" content="Order nutritious, medically appropriate meals for your stay at House of Refuge, powered by CookedIndoors." />
+      </Helmet>
       <div className="ph"><div className="container">
         <div className="ph__badge"><span className="badge">Patient Portal</span></div>
         <h1>Meal Ordering</h1>

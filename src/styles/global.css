@@ -72,7 +72,7 @@ p { font-size: 1rem; line-height: 1.75; color: var(--g700); }
 /* ── Buttons ───────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 13px 26px; border-radius: var(--rs);
+  padding: 14px 26px; border-radius: var(--rs);
   font-weight: 600; font-size: .93rem;
   transition: var(--tr); cursor: pointer; border: none;
   font-family: var(--fb);
@@ -113,7 +113,7 @@ p { font-size: 1rem; line-height: 1.75; color: var(--g700); }
   backdrop-filter: blur(8px);
 }
 .btn--outline-white:hover { background: rgba(255,255,255,.2); }
-.btn--sm { padding: 9px 16px; font-size: .82rem; }
+.btn--sm { padding: 12px 16px; font-size: .82rem; }
 .btn--full { width: 100%; justify-content: center; }
 .btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
 
@@ -121,7 +121,7 @@ p { font-size: 1rem; line-height: 1.75; color: var(--g700); }
 .fg { margin-bottom: 18px; }
 .flabel { display: block; margin-bottom: 5px; font-size: .82rem; font-weight: 600; color: var(--charcoal); }
 .fi {
-  width: 100%; padding: 11px 14px;
+  width: 100%; padding: 13px 14px;
   border: 1.5px solid rgba(197,199,212,.5);
   border-radius: var(--rs);
   font-size: .93rem; color: var(--charcoal);
@@ -138,7 +138,7 @@ p { font-size: 1rem; line-height: 1.75; color: var(--g700); }
 
 /* ── Badges ────────────────────────────────────────────── */
 .badge {
-  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  display: inline-block; padding: 6px 12px; border-radius: 20px;
   font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
   backdrop-filter: blur(8px);
 }
@@ -250,6 +250,12 @@ p { font-size: 1rem; line-height: 1.75; color: var(--g700); }
 @media (max-width: 860px) {
   .frow { grid-template-columns: 1fr; }
 }
+@media (max-width: 680px) {
+  .container { padding: 0 16px; }
+  .section { padding: 48px 0; }
+  .ph { padding: 100px 0 40px; }
+}
 @media (max-width: 520px) {
   .section { padding: 56px 0; }
+  .frow { gap: 12px; }
 }
