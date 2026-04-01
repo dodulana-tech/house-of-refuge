@@ -45,6 +45,7 @@ const MENU = {
 
     { section: 'Spiritual & Programme' },
     { icon: '✝️', to: '/dashboard/spiritual', label: 'Spiritual Formation' },
+    { icon: '🕊️', to: '/dashboard/spiritual-milestones', label: 'Spiritual Milestones' },
     { icon: '📚', to: '/dashboard/life-skills', label: 'Life Skills & Vocational' },
 
     { section: 'People & HR' },
@@ -101,6 +102,7 @@ const MENU = {
     { section: 'Daily Life' },
     { icon: '🍽️', to: '/dashboard/meals', label: 'Meals' },
     { icon: '✝️', to: '/dashboard/my-spiritual', label: 'Spiritual Journal' },
+    { icon: '🕊️', to: '/dashboard/my-devotional', label: 'Daily Devotional' },
     { icon: '📚', to: '/dashboard/my-skills', label: 'Life Skills Progress' },
 
     { section: 'Admin' },

@@ -63,6 +63,10 @@ const DPatientSchedule = lazy(() => import('./pages/dashboard/PatientSchedule'))
 const DPatientTimeline = lazy(() => import('./pages/dashboard/PatientTimeline'))
 const DRiskAssessment = lazy(() => import('./pages/dashboard/RiskAssessment'))
 const DFamilyTherapy = lazy(() => import('./pages/dashboard/FamilyTherapyTracker'))
+const DSpiritualMilestones = lazy(() => import('./pages/dashboard/SpiritualMilestones'))
+const DClinicalOutcomes = lazy(() => import('./pages/dashboard/ClinicalOutcomes'))
+const DAlumniProtocol = lazy(() => import('./pages/dashboard/AlumniProtocol'))
+const DDevotional = lazy(() => import('./pages/dashboard/DevotionalContent'))
 const DAlumniDetail = lazy(() => import('./pages/dashboard/AlumniDetail'))
 const DBehavioralDetail = lazy(() => import('./pages/dashboard/BehavioralDetail'))
 const DDonorDetail = lazy(() => import('./pages/dashboard/DonorDetail'))
@@ -157,6 +161,7 @@ function AppRoutes() {
 
         {/* Pillar 4: Spiritual & Programme */}
         <Route path="spiritual" element={<DSpiritualFormation />} />
+        <Route path="spiritual-milestones" element={<DSpiritualMilestones />} />
         <Route path="life-skills" element={<DLifeSkillsTracker />} />
 
         {/* Pillar 5: People & HR */}
@@ -174,8 +179,8 @@ function AppRoutes() {
         <Route path="sponsorship" element={<DEquipmentSponsorship />} />
 
         {/* Pillar 7: M&E & Compliance */}
-        <Route path="outcomes" element={<DOutcomeTracking />} />
-        <Route path="alumni" element={<DAlumniCRM />} />
+        <Route path="outcomes" element={<DClinicalOutcomes />} />
+        <Route path="alumni" element={<DAlumniProtocol />} />
         <Route path="alumni/:id" element={<DAlumniDetail />} />
         <Route path="safeguarding" element={<DSafeguarding />} />
         <Route path="reports" element={<DBoardReports />} />
@@ -188,6 +193,7 @@ function AppRoutes() {
         <Route path="my-spiritual" element={<DOverview />} />
         <Route path="my-skills" element={<DOverview />} />
         <Route path="my-payments" element={<Payments />} />
+        <Route path="my-devotional" element={<DDevotional />} />
         <Route path="my-rights" element={<DPatientRights />} />
 
         {/* Family-specific routes */}
