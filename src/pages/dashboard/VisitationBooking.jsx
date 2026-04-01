@@ -58,7 +58,7 @@ export default function VisitationBooking() {
   const [visits, setVisits] = useState(INITIAL_VISITS)
   const [tab, setTab] = useState('calendar')
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ patient: '', visitor: '', relationship: '', timeSlot: '', visitors: 1, date: NEXT_SUNDAYS[0] || '' })
+  const [form, setForm] = useState({ patient: '', visitor: '', relationship: '', timeSlot: '', visitors: '1', children: 'None', specialRequirements: [], date: NEXT_SUNDAYS[0] || '' })
 
   const pendingVisits = visits.filter(v => v.status === 'pending')
   const pastVisits = visits.filter(v => v.status === 'completed')
@@ -68,12 +68,13 @@ export default function VisitationBooking() {
   const handleDecline = (id) => setVisits(visits.map(v => v.id === id ? { ...v, status: 'declined' } : v))
 
   const handleSubmit = () => {
-    if (!form.patient || !form.visitor || !form.relationship || !form.timeSlot || !form.date) return
+    if (!form.patient || !form.relationship || !form.timeSlot || !form.date) return
+    const visitorLabel = `${form.relationship} (${form.visitors} visitor${form.visitors !== '1' ? 's' : ''}${form.children !== 'None' ? `, ${form.children} child${form.children !== '1' ? 'ren' : ''}` : ''})`
     setVisits([{
-      id: Date.now(), patient: form.patient, visitor: form.visitor, relationship: form.relationship,
-      timeSlot: form.timeSlot, visitors: form.visitors, date: form.date, status: 'pending',
+      id: Date.now(), patient: form.patient, visitor: visitorLabel, relationship: form.relationship,
+      timeSlot: form.timeSlot, visitors: parseInt(form.visitors) || 1, date: form.date, status: 'pending',
     }, ...visits])
-    setForm({ patient: '', visitor: '', relationship: '', timeSlot: '', visitors: 1, date: NEXT_SUNDAYS[0] || '' })
+    setForm({ patient: '', visitor: '', relationship: '', timeSlot: '', visitors: '1', children: 'None', specialRequirements: [], date: NEXT_SUNDAYS[0] || '' })
     setShowForm(false)
   }
 
@@ -127,16 +128,11 @@ export default function VisitationBooking() {
               </select>
             </div>
             <div>
-              <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Visitor Name</label>
-              <input type="text" placeholder="Full name" style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
-                value={form.visitor} onChange={e => setForm({ ...form, visitor: e.target.value })} />
-            </div>
-            <div>
-              <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Relationship</label>
+              <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Visitor Relationship</label>
               <select style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
                 value={form.relationship} onChange={e => setForm({ ...form, relationship: e.target.value })}>
-                <option value="">Select</option>
-                {['Parent', 'Sibling', 'Spouse', 'Child', 'Guardian', 'Pastor', 'Friend', 'Other'].map(r => <option key={r} value={r}>{r}</option>)}
+                <option value="">Select relationship</option>
+                {['Spouse', 'Parent', 'Sibling', 'Child (adult)', 'Extended family', 'Pastor/Church leader', 'Friend (approved)', 'Employer'].map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
             <div>
@@ -156,8 +152,41 @@ export default function VisitationBooking() {
             </div>
             <div>
               <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Number of Visitors</label>
-              <input type="number" min={1} max={10} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
-                value={form.visitors} onChange={e => setForm({ ...form, visitors: parseInt(e.target.value) || 1 })} />
+              <select style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
+                value={form.visitors} onChange={e => setForm({ ...form, visitors: e.target.value })}>
+                {['1', '2', '3', '4', '5+'].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Children Accompanying</label>
+              <select style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
+                value={form.children} onChange={e => setForm({ ...form, children: e.target.value })}>
+                {['None', '1', '2', '3+'].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <label style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 6 }}>Special Requirements</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['Wheelchair access', 'Interpreter needed', 'Extended visit requested', 'Brought items for inspection', 'None'].map(req => (
+                  <label key={req} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.8rem', cursor: 'pointer' }}>
+                    <input type="checkbox"
+                      checked={form.specialRequirements.includes(req)}
+                      onChange={e => {
+                        if (req === 'None') {
+                          setForm(prev => ({ ...prev, specialRequirements: e.target.checked ? ['None'] : [] }))
+                        } else {
+                          setForm(prev => ({
+                            ...prev,
+                            specialRequirements: e.target.checked
+                              ? [...prev.specialRequirements.filter(r => r !== 'None'), req]
+                              : prev.specialRequirements.filter(r => r !== req)
+                          }))
+                        }
+                      }} />
+                    {req}
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
