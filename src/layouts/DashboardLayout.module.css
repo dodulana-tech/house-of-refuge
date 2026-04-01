@@ -19,18 +19,20 @@
 .sidebarHeader {
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,.08);
+  min-height: 60px;
 }
 .brand {
   display: flex; align-items: center; gap: 10px;
-  cursor: pointer;
+  cursor: pointer; overflow: hidden; min-width: 0;
 }
 .brandText {
-  font-family: var(--fd); font-size: .95rem; font-weight: 700;
+  font-family: var(--fd); font-size: .82rem; font-weight: 700;
   color: white; letter-spacing: .04em; line-height: 1.2;
+  white-space: nowrap;
 }
 .brandSub {
-  font-size: .58rem; color: rgba(255,255,255,.35); letter-spacing: .06em;
-  text-transform: uppercase; font-weight: 600;
+  font-size: .54rem; color: rgba(255,255,255,.35); letter-spacing: .06em;
+  text-transform: uppercase; font-weight: 600; white-space: nowrap;
 }
 .collapseBtn {
   background: rgba(255,255,255,.06); border: none; color: rgba(255,255,255,.5);
