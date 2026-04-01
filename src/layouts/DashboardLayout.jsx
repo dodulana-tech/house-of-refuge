@@ -49,6 +49,10 @@ const MENU = {
     { icon: '🔄', to: '/dashboard/shifts', label: 'Shift Scheduling' },
     { icon: '📈', to: '/dashboard/training', label: 'Training & CPD' },
 
+    { section: 'Supply Chain & Inventory' },
+    { icon: '📦', to: '/dashboard/inventory', label: 'Inventory Management' },
+    { icon: '🎁', to: '/dashboard/sponsorship', label: 'Equipment Sponsorship' },
+
     { section: 'Finance & Revenue' },
     { icon: '💰', to: '/dashboard/finance', label: 'Financial Overview' },
     { icon: '💳', to: '/dashboard/payments', label: 'Payments & Deposits' },

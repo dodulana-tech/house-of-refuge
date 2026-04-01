@@ -50,6 +50,7 @@ const DDonorCRM = lazy(() => import('./pages/dashboard/DonorCRM'))
 const DOutcomeTracking = lazy(() => import('./pages/dashboard/OutcomeTracking'))
 const DAlumniCRM = lazy(() => import('./pages/dashboard/AlumniCRM'))
 const DSafeguarding = lazy(() => import('./pages/dashboard/SafeguardingDashboard'))
+const DInventory = lazy(() => import('./pages/dashboard/InventoryManagement'))
 
 // ── Contexts ──────────────────────────────────────────────
 export const NotifContext = createContext(null)
@@ -146,6 +147,7 @@ function AppRoutes() {
         <Route path="finance" element={<DFinance />} />
         <Route path="payments" element={<Payments />} />
         <Route path="donors" element={<DDonorCRM />} />
+        <Route path="inventory" element={<DInventory />} />
         <Route path="sponsorship" element={<DComingSoon title="Equipment Sponsorship" description="32-item sponsorship tracking" features={['Item sponsorship status and progress', 'Sponsor recognition and receipts', 'Delivery and installation tracking', 'Budget vs actual for equipment drive', 'Public sponsorship page integration']} />} />
 
         {/* Pillar 7: M&E & Compliance */}
