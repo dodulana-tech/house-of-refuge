@@ -57,13 +57,29 @@ function ScrollTop() {
   return null
 }
 
+function AppShell() {
+  const { pathname } = useLocation()
+  const isDashboard = pathname.startsWith('/dashboard')
+  return (
+    <>
+      {!isDashboard && <Nav />}
+      <main>
+        <Suspense fallback={<div style={{ padding: '120px 24px', textAlign: 'center' }}><span className="spin" /></div>}>
+          <AppRoutes />
+        </Suspense>
+      </main>
+      {!isDashboard && <Footer />}
+    </>
+  )
+}
+
 function AppRoutes() {
   return (
     <Routes>
       {/* Public */}
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
-      <Route path="/dashboardonate" element={<Donate />} />
+      <Route path="/donate" element={<Donate />} />
       <Route path="/sponsor" element={<Sponsor />} />
       <Route path="/apply" element={<Waitlist />} />
       <Route path="/contact" element={<Contact />} />
@@ -161,13 +177,7 @@ export default function App() {
       <NotifContext.Provider value={showNotif}>
         <ModalContext.Provider value={{ openModal, closeModal, modal }}>
           <ScrollTop />
-          <Nav />
-          <main>
-            <Suspense fallback={<div style={{ padding: '120px 24px', textAlign: 'center' }}><span className="spin" /></div>}>
-              <AppRoutes />
-            </Suspense>
-          </main>
-          <Footer />
+          <AppShell />
           <Notification notif={notif} />
           <SponsorModal />
         </ModalContext.Provider>
