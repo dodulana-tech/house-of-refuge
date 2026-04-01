@@ -33,6 +33,23 @@ const DBehavioral = lazy(() => import('./pages/dashboard/BehavioralManagement'))
 const DFinance = lazy(() => import('./pages/dashboard/Finance'))
 const DStaff = lazy(() => import('./pages/dashboard/StaffDirectory'))
 const DComingSoon = lazy(() => import('./pages/dashboard/ComingSoon'))
+const DMAR = lazy(() => import('./pages/dashboard/MedicationMAR'))
+const DPatientDetail = lazy(() => import('./pages/dashboard/PatientDetail'))
+const DClinicalNotes = lazy(() => import('./pages/dashboard/ClinicalNotes'))
+const DAdmissionDetail = lazy(() => import('./pages/dashboard/AdmissionDetail'))
+const DConsentManager = lazy(() => import('./pages/dashboard/ConsentManager'))
+const DDischargeTracker = lazy(() => import('./pages/dashboard/DischargeTracker'))
+const DPassManagement = lazy(() => import('./pages/dashboard/PassManagement'))
+const DVisitationBooking = lazy(() => import('./pages/dashboard/VisitationBooking'))
+const DDailySchedule = lazy(() => import('./pages/dashboard/DailySchedule'))
+const DSpiritualFormation = lazy(() => import('./pages/dashboard/SpiritualFormation'))
+const DLifeSkillsTracker = lazy(() => import('./pages/dashboard/LifeSkillsTracker'))
+const DShiftScheduler = lazy(() => import('./pages/dashboard/ShiftScheduler'))
+const DTrainingTracker = lazy(() => import('./pages/dashboard/TrainingTracker'))
+const DDonorCRM = lazy(() => import('./pages/dashboard/DonorCRM'))
+const DOutcomeTracking = lazy(() => import('./pages/dashboard/OutcomeTracking'))
+const DAlumniCRM = lazy(() => import('./pages/dashboard/AlumniCRM'))
+const DSafeguarding = lazy(() => import('./pages/dashboard/SafeguardingDashboard'))
 
 // ── Contexts ──────────────────────────────────────────────
 export const NotifContext = createContext(null)
@@ -96,43 +113,45 @@ function AppRoutes() {
 
         {/* Pillar 1: Clinical Operations */}
         <Route path="patients" element={<DPatients />} />
+        <Route path="patients/:id" element={<DPatientDetail />} />
         <Route path="caseload" element={<DPatients />} />
         <Route path="treatment-plans" element={<DComingSoon title="Treatment Plans" description="Columbia Model treatment plan management" features={['Individual treatment plan per patient', 'Goal tracking with progress indicators', 'MDT review scheduling (Week 4, Week 8, pre-discharge)', 'PRPP development and documentation', 'Treatment plan co-authorship with patient']} />} />
-        <Route path="medication" element={<DComingSoon title="Medication Administration" description="MAR — Medication Administration Record" features={['Medication inventory and stock management', 'Prescription tracking per patient', 'CIWA-Ar (alcohol) and COWS (opioid) withdrawal monitoring', 'Nursing round documentation (6 AM, 12 PM, 6 PM, 10:30 PM)', 'Controlled substance tracking — no opioids policy']} />} />
+        <Route path="medication" element={<DMAR />} />
         <Route path="mdt" element={<DComingSoon title="MDT Case Reviews" description="Multi-Disciplinary Team governance" features={['Weekly MDT meeting scheduling and minutes', 'Treatment plan review tracking (Week 4, 8, pre-discharge)', 'Care plan decisions and action items', 'Attendance tracking per discipline', 'Emergency MDT for critical incidents']} />} />
-        <Route path="clinical-notes" element={<DComingSoon title="Clinical Notes" description="HIPAA-compliant clinical documentation" features={['Individual session notes (CBT, MI)', 'Group therapy attendance and notes', 'Nursing shift notes', 'Chaplain pastoral notes', 'Progress notes with timestamps and author audit trail']} />} />
+        <Route path="clinical-notes" element={<DClinicalNotes />} />
 
         {/* Pillar 2: Admissions & Discharge */}
         <Route path="admissions" element={<DAdmissions />} />
-        <Route path="consents" element={<DComingSoon title="Consent Management" description="Digital consent form tracking" features={['Admission Agreement', 'Detoxification Consent', 'Confidentiality Agreement', 'Family Confidentiality Agreement (Pathway A)', 'Belongings Receipt', 'Financial Agreement', 'Rights & Responsibilities Charter']} />} />
-        <Route path="discharge" element={<DComingSoon title="Discharge & Graduation" description="4 discharge types, 6 graduation criteria tracking" features={['Planned Graduation — 6 criteria checklist', 'Administrative Discharge — behavioral protocol', 'Clinical Referral — psychiatric/medical transfer', 'Self-Discharge (AMA) — harm reduction + safety plan', 'Re-admission processing (30-day gap rule)', 'Graduation ceremony management']} />} />
+        <Route path="admissions/:id" element={<DAdmissionDetail />} />
+        <Route path="consents" element={<DConsentManager />} />
+        <Route path="discharge" element={<DDischargeTracker />} />
 
         {/* Pillar 3: Residential Operations */}
         <Route path="beds" element={<DBeds />} />
-        <Route path="schedule" element={<DComingSoon title="Daily Schedule" description="5:30 AM – 11:00 PM operational schedule compliance" features={['Daily schedule template per SOP', 'Attendance tracking per session', 'Schedule deviations requiring Program Director approval', 'Modified schedule for Weeks 1–2 (Detox Phase)', 'Sunday modified schedule (Chapel 9–11:30 AM, family visits PM)']} />} />
+        <Route path="schedule" element={<DDailySchedule />} />
         <Route path="behavioral" element={<DBehavioral />} />
-        <Route path="passes" element={<DComingSoon title="Passes & Leave" description="Pass management per SOP Section 5.4" features={['3-Hour Pass (family, 1 month min residency)', '24-Hour Pass (conduct-based, Program Director approval)', '48-Hour Weekend Pass (clean drug screen required)', 'Emergency Pass (family death/hospitalization)', 'Post-pass assessment on return', 'Automatic discipline if return under influence']} />} />
-        <Route path="visitation" element={<DComingSoon title="Visitation Management" description="Sunday 12:00–6:00 PM per SOP Section 5.4.2" features={['Visit request and approval workflow', 'Visitor registration and designated area management', 'Children safeguarding (never alone with resident)', 'Friend visits require Program Officer approval', 'Contraband check protocols', 'Max 6 hours, once per week']} />} />
+        <Route path="passes" element={<DPassManagement />} />
+        <Route path="visitation" element={<DVisitationBooking />} />
 
         {/* Pillar 4: Spiritual & Programme */}
-        <Route path="spiritual" element={<DComingSoon title="Spiritual Formation" description="Christ-centered spiritual development tracking" features={['Daily devotion attendance (Morning Prayer, Evening Chapel)', 'Bible School progress (Mon–Fri, 2hrs)', 'Sunday Chapel attendance and participation', 'Spiritual formation assessment for graduation', 'Chaplain pastoral notes', 'Church placement planning for discharge']} />} />
-        <Route path="life-skills" element={<DComingSoon title="Life Skills & Vocational" description="13 Life Skills Group modules per SOP Chapter 7" features={['Morning Community Meeting (daily)', 'Care Planning Group (Thursday)', 'CBT & Relapse Prevention (3x/week)', 'Psychoeducation (2x/week)', 'Relaxation & Stress Management (Friday)', 'Vocational assessment and training', 'Cooking, Nutrition, Creative Writing, Current Affairs']} />} />
+        <Route path="spiritual" element={<DSpiritualFormation />} />
+        <Route path="life-skills" element={<DLifeSkillsTracker />} />
 
         {/* Pillar 5: People & HR */}
         <Route path="staff" element={<DStaff />} />
-        <Route path="shifts" element={<DComingSoon title="Shift Scheduling" description="24/7 coverage management" features={['3 rotating nursing shifts', 'House Master on-site coverage', 'Security shift management', 'Shift handover documentation', 'On-call clinical escalation pathway', 'Leave and absence tracking']} />} />
-        <Route path="training" element={<DComingSoon title="Training & CPD" description="Mandatory training and certification tracking" features={['Safeguarding training (30 days from hire)', 'Trauma-informed care certification', 'De-escalation and crisis management', 'First Aid and CPR', 'Professional license renewal tracking', 'Individual Development Plans (IDPs)']} />} />
+        <Route path="shifts" element={<DShiftScheduler />} />
+        <Route path="training" element={<DTrainingTracker />} />
 
         {/* Pillar 6: Finance & Revenue */}
         <Route path="finance" element={<DFinance />} />
         <Route path="payments" element={<Payments />} />
-        <Route path="donors" element={<DComingSoon title="Donor CRM" description="Individual and corporate donor management" features={['Donor profiles and giving history', 'Recurring donation tracking', 'Corporate sponsorship pipeline', 'Grant application tracking', 'Tax receipt generation', 'Donor communication log']} />} />
+        <Route path="donors" element={<DDonorCRM />} />
         <Route path="sponsorship" element={<DComingSoon title="Equipment Sponsorship" description="32-item sponsorship tracking" features={['Item sponsorship status and progress', 'Sponsor recognition and receipts', 'Delivery and installation tracking', 'Budget vs actual for equipment drive', 'Public sponsorship page integration']} />} />
 
         {/* Pillar 7: M&E & Compliance */}
-        <Route path="outcomes" element={<DComingSoon title="Outcome Tracking" description="Programme M&E per SOP Chapter 8.5" features={['Graduation rate tracking', 'Relapse rate monitoring', 'Employment rate post-discharge', 'Church attendance rates', 'Family reunification rates', 'Quarterly board reports']} />} />
-        <Route path="alumni" element={<DComingSoon title="Alumni Programme" description="24-month post-discharge monitoring" features={['Year 1: weekly→bi-weekly→monthly contact', 'Year 2: monthly contact, bi-monthly visits', 'Home/workplace visitation at 3, 6, 12 months', 'Alumni support groups and mentorship', 'Relapse response and re-admission pathway', 'Case closure at 24 months']} />} />
-        <Route path="safeguarding" element={<DComingSoon title="Safeguarding" description="Zero-tolerance protection framework" features={['Incident reporting and investigation', 'Staff safeguarding training compliance', 'Professional boundary monitoring', 'Whistleblowing protection', 'Designated Safeguarding Lead dashboard', 'Board safeguarding committee reports']} />} />
+        <Route path="outcomes" element={<DOutcomeTracking />} />
+        <Route path="alumni" element={<DAlumniCRM />} />
+        <Route path="safeguarding" element={<DSafeguarding />} />
         <Route path="reports" element={<DComingSoon title="Board Reports" description="Governance and compliance reporting" features={['Monthly progress reports', 'Quarterly M&E reports', 'Financial stewardship reports', 'Safeguarding compliance reports', 'Operational readiness tracking', 'Regulatory compliance (NDLEA, MOH)']} />} />
 
         {/* Patient-specific routes */}
