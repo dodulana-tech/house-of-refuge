@@ -50,8 +50,9 @@ export default function Nav() {
             {user ? (
               <>
                 <NavLink to={portalLink} className={({ isActive }) => `${styles.link} ${isActive ? styles.active : ''}`}>{portalLabel}</NavLink>
-                <button className={styles.userBtn} onClick={() => { logout(); nav('/') }}>
-                  <span className={styles.userAvatar}>{user.name?.split(' ').map(n => n[0]).join('')}</span>
+                <button className={styles.userBtn} onClick={() => { logout(); nav('/') }} title="Sign Out">
+                  <span className={styles.userAvatar}>{(user.name || user.full_name || '?').split(' ').map(n => n[0]).join('')}</span>
+                  <span className={styles.signOut}>Sign Out</span>
                 </button>
               </>
             ) : (

@@ -53,6 +53,8 @@
   font-size: .68rem; font-weight: 700; letter-spacing: .02em;
 }
 .userName { font-size: .82rem; font-weight: 600; color: var(--charcoal); }
+.signOut { font-size: .78rem; font-weight: 600; color: var(--g500); transition: var(--tr); }
+.userBtn:hover .signOut { color: #E53E3E; }
 
 /* Hamburger */
 .ham {
