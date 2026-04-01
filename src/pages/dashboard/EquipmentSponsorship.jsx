@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
+import { load, save } from '../../utils/store'
 import { SPONSOR_ITEMS, CAT_LABELS, TOTAL_GOAL } from '../../data/items'
 
 /*
@@ -9,6 +10,7 @@ import { SPONSOR_ITEMS, CAT_LABELS, TOTAL_GOAL } from '../../data/items'
   HIPAA: no patient data.
 */
 
+const STORE_KEY = 'equip_sponsorship'
 const SPONSOR_STATUSES = ['Unsponsored', 'Partially Sponsored', 'Fully Sponsored', 'Delivered', 'Installed']
 const statusColors = { Unsponsored: 'var(--g400)', 'Partially Sponsored': '#DD6B20', 'Fully Sponsored': '#1A7A4A', Delivered: 'var(--blue)', Installed: '#805AD5' }
 const DELIVERY_STATUSES = ['Pending', 'Ordered', 'In Transit', 'Delivered', 'Installed']
@@ -16,9 +18,10 @@ const DELIVERY_STATUSES = ['Pending', 'Ordered', 'In Transit', 'Delivered', 'Ins
 const DONORS = ['Anonymous', 'Mrs. Adeyemi', 'Pastor Johnson', 'Okonkwo Foundation', 'GTBank CSR', 'Shell Nigeria', 'MTN Foundation', 'Dangote Foundation', 'NDLEA Partners', 'Individual Donor']
 
 function initItemState() {
+  const saved = load(STORE_KEY, null)
+  if (saved) return saved
   const state = {}
   SPONSOR_ITEMS.forEach(item => {
-    // Mock: some items pre-sponsored
     const preSponsored = [2, 6, 14, 17, 25].includes(item.id)
     state[item.id] = {
       status: preSponsored ? 'Fully Sponsored' : 'Unsponsored',
@@ -27,6 +30,7 @@ function initItemState() {
       delivery: preSponsored ? 'Delivered' : 'Pending',
     }
   })
+  save(STORE_KEY, state)
   return state
 }
 
@@ -36,7 +40,11 @@ export default function EquipmentSponsorship() {
   const [itemStates, setItemStates] = useState(initItemState)
 
   const handleField = (id, field, val) => {
-    setItemStates(prev => ({ ...prev, [id]: { ...prev[id], [field]: val } }))
+    setItemStates(prev => {
+      const next = { ...prev, [id]: { ...prev[id], [field]: val } }
+      save(STORE_KEY, next)
+      return next
+    })
   }
 
   const categories = ['all', 'general', 'medical', 'additional']
@@ -126,11 +134,12 @@ export default function EquipmentSponsorship() {
                 </div>
                 <div>
                   <label style={{ fontSize: '.7rem', color: 'var(--g500)', display: 'block', marginBottom: 2 }}>Sponsor</label>
-                  <select value={st.sponsor} onChange={e => handleField(item.id, 'sponsor', e.target.value)}
-                    style={{ width: '100%', padding: '5px 6px', borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.78rem' }}>
-                    <option value="">-- Select --</option>
-                    {DONORS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                  <input type="text" value={st.sponsor} onChange={e => handleField(item.id, 'sponsor', e.target.value)}
+                    list={`donors-${item.id}`} placeholder="Type or select sponsor"
+                    style={{ width: '100%', padding: '5px 6px', borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.78rem' }} />
+                  <datalist id={`donors-${item.id}`}>
+                    {DONORS.map(d => <option key={d} value={d} />)}
+                  </datalist>
                 </div>
                 <div>
                   <label style={{ fontSize: '.7rem', color: 'var(--g500)', display: 'block', marginBottom: 2 }}>Date Sponsored</label>
