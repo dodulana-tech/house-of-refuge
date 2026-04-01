@@ -31,4 +31,24 @@
   padding: 10px 14px; border-radius: 8px;
   margin-bottom: 18px;
 }
-.secure { font-size: .72rem; color: var(--g500); text-align: center; margin-top: 10px; }
+.amountToggle {
+  display: flex; gap: 0; margin-bottom: 16px;
+  border: 1.5px solid var(--g200); border-radius: 8px; overflow: hidden;
+}
+.toggleBtn {
+  flex: 1; padding: 10px; font-size: .82rem; font-weight: 600;
+  border: none; background: white; cursor: pointer; transition: var(--tr);
+  color: var(--g500); font-family: var(--fb);
+}
+.toggleBtn:first-child { border-right: 1.5px solid var(--g200); }
+.toggleActive { background: var(--blue) !important; color: white !important; }
+
+.detailLink {
+  display: block; width: 100%; text-align: center;
+  font-size: .82rem; color: var(--blue); font-weight: 600;
+  margin-top: 12px; background: none; border: none; cursor: pointer;
+  font-family: var(--fb);
+}
+.detailLink:hover { text-decoration: underline; }
+
+.secure { font-size: .72rem; color: var(--g500); text-align: center; margin-top: 8px; }

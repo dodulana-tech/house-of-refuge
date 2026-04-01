@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
+import { Link } from 'react-router-dom'
 import { useModal } from '../App'
 import { fmt } from '../utils/paystack'
 import { SPONSOR_ITEMS, CAT_LABELS, TOTAL_GOAL } from '../data/items'
@@ -56,7 +57,7 @@ export default function Sponsor() {
             {visible.map(item => (
               <div key={item.id} className={`${styles.card} card`}>
                 <div className={styles.cardCat}>{CAT_LABELS[item.cat]}</div>
-                <div className={styles.cardName}>{item.name}</div>
+                <Link to={`/sponsor/${item.id}`} className={styles.cardName}>{item.name}</Link>
                 <p className={styles.cardDesc}>{item.desc}</p>
                 <div className={styles.cardFoot}>
                   <div>

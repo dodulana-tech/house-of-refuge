@@ -9,6 +9,7 @@ import Home from './pages/Home'
 import About from './pages/About'
 import Donate from './pages/Donate'
 import Sponsor from './pages/Sponsor'
+import SponsorItem from './pages/SponsorItem'
 import Waitlist from './pages/Waitlist'
 import Contact from './pages/Contact'
 import Login from './pages/Login'
@@ -107,6 +108,7 @@ function AppRoutes() {
       <Route path="/about" element={<About />} />
       <Route path="/donate" element={<Donate />} />
       <Route path="/sponsor" element={<Sponsor />} />
+      <Route path="/sponsor/:id" element={<SponsorItem />} />
       <Route path="/apply" element={<Waitlist />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<Login />} />

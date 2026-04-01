@@ -16,7 +16,8 @@
 .grid    { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
 .card    { display: flex; flex-direction: column; }
 .cardCat { font-size: .68rem; color: var(--g500); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
-.cardName{ font-size: 1rem; font-family: var(--fd); font-weight: 600; margin-bottom: 6px; color: var(--charcoal); }
+.cardName{ font-size: 1rem; font-family: var(--fd); font-weight: 600; margin-bottom: 6px; color: var(--charcoal); text-decoration: none; display: block; }
+.cardName:hover { color: var(--blue); }
 .cardDesc{ font-size: .8rem; color: var(--g700); line-height: 1.6; margin-bottom: 14px; flex: 1; }
 .cardFoot{ display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
 .cardAmt { font-size: .98rem; font-weight: 700; color: var(--blue); }
