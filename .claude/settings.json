@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Bash(npx kill-port:*)",
+      "WebFetch(domain:drive.google.com)",
+      "WebFetch(domain:docs.google.com)",
+      "Bash(npx vite:*)"
+    ]
+  }
+}

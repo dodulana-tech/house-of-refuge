@@ -1,0 +1,171 @@
+.grid { display: grid; grid-template-columns: 1.5fr .85fr; gap: 32px; align-items: start; }
+
+/* Stepper */
+.stepper {
+  display: flex; justify-content: center; gap: 0; margin-bottom: 36px;
+  overflow-x: auto; padding: 0 8px;
+}
+.stepDot { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; max-width: 120px; position: relative; }
+.stepDot::after {
+  content: ''; position: absolute; top: 18px; left: 55%; right: -45%;
+  height: 2px; background: var(--g100); z-index: 0;
+}
+.stepDot:last-child::after { display: none; }
+.stepCircle {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--g100); color: var(--g500);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fd); font-size: .9rem; font-weight: 700;
+  z-index: 1; transition: var(--tr);
+}
+.stepActive .stepCircle { background: var(--blue); color: white; }
+.stepDone .stepCircle { background: #1A7A4A; color: white; }
+.stepDone::after { background: #1A7A4A; }
+.stepLabel { font-size: .64rem; color: var(--g500); font-weight: 600; text-align: center; }
+.stepActive .stepLabel { color: var(--blue); }
+.stepDone .stepLabel { color: #1A7A4A; }
+
+.sectionHead {
+  font-size: .87rem; font-weight: 700; color: var(--blue);
+  padding-bottom: 10px; border-bottom: 1px solid var(--g100);
+  margin: 22px 0 16px;
+}
+
+/* Willingness box */
+.willingnessBox {
+  background: rgba(26,95,173,.06); border: 1px solid rgba(26,95,173,.15);
+  border-radius: 12px; padding: 18px 20px; margin-bottom: 20px;
+}
+.willingnessTitle { font-weight: 700; font-size: .92rem; color: var(--blue); margin-bottom: 8px; }
+.willingnessText { font-size: .84rem; color: var(--g700); line-height: 1.7; margin-bottom: 6px; }
+
+/* Outpatient Pathway box */
+.outpatientBox {
+  background: var(--gold-lt); border: 1px solid rgba(192,138,48,.25);
+  border-radius: 12px; padding: 18px 20px; margin-top: 14px;
+}
+.outpatientTitle { font-weight: 700; font-size: .92rem; color: #7A5A15; margin-bottom: 8px; }
+.outpatientList { list-style: none; display: flex; flex-direction: column; gap: 6px; padding: 0; }
+.outpatientList li { font-size: .82rem; color: #8A6520; padding-left: 16px; position: relative; }
+.outpatientList li::before { content: ''; position: absolute; left: 0; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+/* Pathway cards */
+.pathwayGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.pathwayCard {
+  padding: 18px; border-radius: 12px; border: 2px solid var(--g100);
+  background: white; text-align: left; cursor: pointer; transition: var(--tr);
+}
+.pathwayCard:hover { border-color: var(--g300); }
+.pathwaySelected { border-color: var(--blue); background: rgba(26,95,173,.04); }
+.pathwayLabel { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--blue); font-weight: 700; margin-bottom: 4px; }
+.pathwayTitle { font-weight: 700; font-size: .95rem; color: var(--charcoal); margin-bottom: 6px; }
+.pathwayDesc { font-size: .78rem; color: var(--g500); line-height: 1.6; margin-bottom: 10px; }
+.pathwayReqs { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pathwayReqs li { font-size: .76rem; color: var(--g700); padding-left: 14px; position: relative; }
+.pathwayReqs li::before { content: ''; position: absolute; left: 0; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
+
+/* Insight cards */
+.insightGrid { display: flex; flex-direction: column; gap: 8px; }
+.insightCard {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; border-radius: 10px;
+  border: 2px solid var(--g100); background: white;
+  text-align: left; transition: var(--tr); cursor: pointer;
+}
+.insightCard:hover { border-color: var(--g300); }
+.insightSelected { border-width: 2px; }
+.insightDot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.insightDotSm { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.insightLabel { font-weight: 700; font-size: .88rem; color: var(--charcoal); }
+.insightDesc { font-size: .78rem; color: var(--g500); margin-top: 2px; }
+
+/* Alert box */
+.alertBox {
+  background: #FFF5F5; border: 1px solid #FED7D7; border-radius: 10px;
+  padding: 14px 16px; font-size: .84rem; color: #C53030; margin-top: 12px;
+  line-height: 1.65;
+}
+
+/* Review grid */
+.reviewGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.reviewBlock {
+  padding: 14px 16px; border-radius: 10px;
+  background: var(--off); border: 1px solid var(--g100);
+}
+.reviewTitle { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--g500); font-weight: 700; margin-bottom: 4px; }
+.reviewValue { font-weight: 700; font-size: .92rem; color: var(--charcoal); }
+.reviewSub { font-size: .76rem; color: var(--g500); margin-top: 2px; }
+
+/* Consent forms */
+.consentList { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.consentItem {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 14px; border-radius: 10px;
+  background: var(--off); border: 1px solid var(--g100);
+  cursor: pointer; transition: var(--tr); font-size: .82rem; color: var(--g700); line-height: 1.6;
+}
+.consentItem:hover { background: rgba(26,95,173,.04); }
+.consentItem input { margin-top: 3px; flex-shrink: 0; }
+
+/* Payment note */
+.paynote {
+  background: var(--gold-lt); border: 1px solid rgba(192,138,48,.25);
+  border-radius: 10px; padding: 18px; margin-top: 18px;
+}
+.payTitle { font-weight: 700; font-size: .92rem; color: #7A5A15; margin-bottom: 6px; }
+.payText  { font-size: .8rem; color: #8A6520; line-height: 1.65; margin-bottom: 12px; }
+.payBreakdown { display: flex; flex-direction: column; gap: 6px; }
+.payBreakdown > div {
+  display: flex; justify-content: space-between;
+  font-size: .78rem; color: #8A6520; padding: 4px 0;
+  border-bottom: 1px dashed rgba(192,138,48,.2);
+}
+.payBreakdown > div:last-child { border-bottom: none; font-weight: 700; }
+
+/* Medical test note */
+.medTestNote {
+  background: rgba(26,95,173,.04); border: 1px solid rgba(26,95,173,.12);
+  border-radius: 10px; padding: 14px 16px; margin-top: 14px;
+}
+.medTestTitle { font-weight: 700; font-size: .84rem; color: var(--blue); margin-bottom: 6px; }
+
+/* Navigation buttons */
+.navBtns { display: flex; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--g100); }
+
+/* Process steps */
+.psteps { display: flex; flex-direction: column; gap: 0; }
+.ps { display: flex; gap: 14px; padding-bottom: 18px; position: relative; }
+.ps::before {
+  content: ''; position: absolute; left: 15px; top: 34px; bottom: 0;
+  width: 2px; background: var(--g100);
+}
+.ps:last-child::before { display: none; }
+.psN {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: var(--blue); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fd); font-size: .82rem; font-weight: 700;
+}
+.psT { font-size: .86rem; font-weight: 600; margin-bottom: 2px; color: var(--charcoal); }
+.psD { font-size: .76rem; color: var(--g700); line-height: 1.5; }
+
+/* Selection criteria sidebar */
+.criteriaList { display: flex; flex-direction: column; gap: 8px; }
+.criteriaItem { padding: 8px 10px; border-radius: 8px; background: var(--off); border: 1px solid var(--g100); }
+.criteriaTitle { font-weight: 700; font-size: .78rem; color: var(--blue); margin-bottom: 2px; }
+.criteriaDesc { font-size: .72rem; color: var(--g500); }
+
+/* Phase list sidebar */
+.phaseList { display: flex; flex-direction: column; gap: 8px; }
+.phaseItem { display: flex; gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--off); border: 1px solid var(--g100); }
+.phaseWeeks { font-size: .68rem; font-weight: 700; color: var(--blue); min-width: 52px; white-space: nowrap; }
+.phaseTitle { font-weight: 700; font-size: .78rem; color: var(--charcoal); }
+.phaseDesc { font-size: .72rem; color: var(--g500); }
+
+@media (max-width: 860px) {
+  .grid { grid-template-columns: 1fr; }
+  .reviewGrid { grid-template-columns: 1fr; }
+  .pathwayGrid { grid-template-columns: 1fr; }
+  .stepper { gap: 0; }
+  .stepLabel { font-size: .56rem; }
+}

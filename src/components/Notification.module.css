@@ -1,0 +1,18 @@
+.notif {
+  position: fixed; top: 84px; right: 20px; z-index: 999;
+  background: rgba(255,255,255,.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.1);
+  border: 1px solid rgba(255,255,255,.4);
+  border-left: 4px solid var(--blue);
+  transform: translateX(140%);
+  transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+  max-width: 320px; min-width: 260px;
+}
+.show { transform: translateX(0); }
+.ok   { border-left-color: #1A7A4A; }
+.title { font-weight: 600; font-size: .88rem; margin-bottom: 3px; color: var(--charcoal); }
+.msg   { font-size: .8rem; color: var(--g700); }

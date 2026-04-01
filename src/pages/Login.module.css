@@ -1,0 +1,18 @@
+.wrap { max-width: 440px; margin: 0 auto; }
+
+.demo {
+  margin-top: 24px; padding-top: 20px;
+  border-top: 1px solid var(--g100);
+}
+.demoTitle {
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--g500); font-weight: 700; margin-bottom: 10px; text-align: center;
+}
+.demoGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.demoBtn {
+  padding: 8px 12px; border-radius: 6px;
+  background: var(--off); border: 1px solid var(--g100);
+  font-size: .78rem; font-weight: 600; color: var(--g700);
+  transition: var(--tr);
+}
+.demoBtn:hover { background: var(--blue-lt); color: var(--blue); border-color: var(--blue); }

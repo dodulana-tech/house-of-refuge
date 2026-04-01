@@ -1,0 +1,25 @@
+.footer {
+  background: linear-gradient(135deg, rgba(43,45,66,.97), rgba(43,45,66,.92));
+  backdrop-filter: blur(12px);
+  color: rgba(255,255,255,.55); padding: 56px 0 28px;
+}
+.grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 36px; margin-bottom: 36px; }
+.brand p { font-size: .84rem; line-height: 1.7; margin-top: 10px; max-width: 240px; }
+.logoText { font-family: var(--fd); color: white; font-size: 1.15rem; font-weight: 700; }
+.logoTag  { font-size: .62rem; opacity: .4; font-style: italic; margin-top: 2px; }
+.orgs { font-size: .78rem; margin-top: 14px; display: flex; gap: 6px; flex-wrap: wrap; }
+.orgs a { color: rgba(255,255,255,.7); transition: color .2s; }
+.orgs a:hover { color: white; }
+.dot { opacity: .3; }
+.colTitle { color: white; font-weight: 600; font-size: .84rem; margin-bottom: 14px; letter-spacing: .04em; }
+.links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.links a, .links span { font-size: .82rem; transition: color .2s; }
+.links a:hover { color: white; }
+.btm {
+  border-top: 1px solid rgba(255,255,255,.1);
+  padding-top: 20px;
+  display: flex; justify-content: space-between;
+  font-size: .74rem; flex-wrap: wrap; gap: 8px;
+}
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }

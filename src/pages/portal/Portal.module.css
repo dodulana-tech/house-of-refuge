@@ -1,0 +1,169 @@
+/* Dashboard grid */
+.dashGrid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 24px; }
+
+/* Progress card */
+.progressCard {
+  background: white; border-radius: var(--r); border: 1px solid var(--g100);
+  padding: 24px 28px; box-shadow: var(--sh-sm); margin-bottom: 28px;
+}
+.progressHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.dayBadge {
+  background: var(--blue); color: white; padding: 6px 14px;
+  border-radius: 20px; font-size: .82rem; font-weight: 700;
+}
+.phases { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; }
+.phase { opacity: .4; }
+.phaseCurrent { opacity: 1; }
+.phaseDone { opacity: .7; }
+.phaseBar { height: 8px; background: var(--g100); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+.phaseFill { height: 100%; background: var(--blue); border-radius: 4px; transition: width .6s; }
+.phaseDone .phaseFill { background: #1A7A4A; }
+.phaseLabel { font-size: .78rem; font-weight: 700; color: var(--charcoal); }
+.phaseDays { font-size: .68rem; color: var(--g500); }
+
+/* Schedule */
+.schedule { display: flex; flex-direction: column; gap: 0; }
+.schedItem { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--g100); align-items: center; }
+.schedItem:last-child { border-bottom: none; }
+.schedTime { font-size: .78rem; font-weight: 600; color: var(--g500); min-width: 68px; }
+.schedEvent { display: flex; align-items: center; gap: 8px; font-size: .86rem; font-weight: 500; }
+.schedDot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sched_therapy { background: var(--blue); }
+.sched_spiritual { background: var(--gold); }
+.sched_meal { background: #38A169; }
+.sched_activity { background: #805AD5; }
+
+/* Actions */
+.actions { display: flex; flex-direction: column; gap: 8px; }
+
+/* Check-in list */
+.checkinList { display: flex; flex-direction: column; gap: 0; }
+.checkinItem { padding: 10px 0; border-bottom: 1px solid var(--g100); }
+.checkinItem:last-child { border-bottom: none; }
+.checkinDate { font-size: .72rem; font-weight: 600; color: var(--g500); text-transform: uppercase; letter-spacing: .04em; }
+.checkinMeta { display: flex; gap: 12px; font-size: .82rem; font-weight: 600; margin-top: 2px; }
+.checkinNote { font-size: .8rem; color: var(--g700); margin-top: 4px; font-style: italic; }
+.viewAll { display: block; font-size: .82rem; color: var(--blue); font-weight: 600; margin-top: 10px; text-align: center; }
+
+/* Checkin form grid */
+.checkinGrid { display: grid; grid-template-columns: 1.5fr .85fr; gap: 32px; align-items: start; }
+
+/* Rating row */
+.sliderSection { margin-bottom: 22px; }
+.ratingRow { display: flex; gap: 8px; margin-top: 6px; }
+.ratingBtn {
+  width: 48px; height: 48px; border-radius: 10px;
+  border: 2px solid var(--g100); background: white;
+  font-size: 1rem; font-weight: 700; color: var(--g500);
+  transition: var(--tr); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.ratingBtn:hover { border-color: var(--g300); }
+.ratingActive { border-width: 2px; }
+.ratingLabels { display: flex; justify-content: space-between; font-size: .7rem; color: var(--g500); margin-top: 4px; }
+
+/* Why list */
+.whyList { display: flex; flex-direction: column; gap: 8px; }
+.whyItem { font-size: .82rem; color: var(--g700); padding: 8px 10px; border-radius: 6px; background: var(--off); border-left: 3px solid var(--blue); }
+
+/* Treatment plan */
+.tabs { display: flex; gap: 4px; margin-bottom: 28px; border-bottom: 2px solid var(--g100); }
+.tab {
+  padding: 10px 18px; border: none; background: none;
+  font-size: .88rem; font-weight: 600; color: var(--g500);
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: var(--tr); cursor: pointer;
+}
+.tab:hover { color: var(--charcoal); }
+.tabActive { color: var(--blue); border-bottom-color: var(--blue); }
+
+.planGrid { display: flex; flex-direction: column; gap: 18px; }
+.phaseCard { border-left: 4px solid var(--g100); }
+.phaseCardCurrent { border-left-color: var(--blue); }
+.phaseCardHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px; }
+.phaseMeta { font-size: .78rem; color: var(--g500); margin-bottom: 14px; }
+
+.goalsList { margin-bottom: 14px; }
+.goalsTitle { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--g500); font-weight: 700; margin-bottom: 8px; }
+.goalItem { display: flex; gap: 8px; padding: 6px 0; font-size: .86rem; color: var(--g700); }
+.goalDone { text-decoration: line-through; opacity: .6; }
+.goalCheck { flex-shrink: 0; width: 18px; color: var(--blue); font-weight: 700; }
+.goalDone .goalCheck { color: #1A7A4A; }
+.goalText { flex: 1; }
+.goalProgress { margin-left: 8px; font-size: .72rem; color: var(--blue); font-weight: 700; }
+
+.therapiesList {}
+.therapyTags { display: flex; flex-wrap: wrap; gap: 6px; }
+.therapyTag { padding: 4px 10px; border-radius: 14px; font-size: .72rem; font-weight: 600; background: var(--blue-lt); color: var(--blue); }
+
+/* Schedule grid */
+.scheduleGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.dayItems { display: flex; flex-direction: column; gap: 6px; }
+.dayItem { font-size: .84rem; color: var(--g700); padding: 6px 8px; border-radius: 6px; background: var(--off); }
+
+/* Care team */
+.teamGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.teamAvatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--blue-lt); color: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 700; margin-bottom: 10px;
+}
+.teamRole { font-size: .82rem; color: var(--blue); font-weight: 500; }
+.teamSessions { font-size: .78rem; color: var(--g500); margin-top: 4px; }
+
+/* Meals */
+.mealInfo {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 28px; flex-wrap: wrap; gap: 8px;
+}
+.mealBrand { font-size: .84rem; color: var(--g700); }
+.mealNote { font-size: .78rem; color: var(--g500); }
+.mealSlot { margin-bottom: 32px; }
+.mealSlotHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.mealTime { font-size: .82rem; color: var(--g500); font-weight: 600; }
+.mealGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.mealCard {
+  padding: 16px; border-radius: 10px; border: 2px solid var(--g100);
+  background: white; text-align: left; cursor: pointer;
+  transition: var(--tr);
+}
+.mealCard:hover { border-color: var(--g300); box-shadow: var(--sh-sm); }
+.mealSelected { border-color: var(--blue); background: var(--blue-lt); }
+.mealName { font-weight: 700; font-size: .88rem; color: var(--charcoal); margin-bottom: 4px; }
+.mealDesc { font-size: .78rem; color: var(--g500); margin-bottom: 8px; }
+.mealMeta { display: flex; justify-content: space-between; align-items: center; font-size: .72rem; color: var(--g500); }
+.mealTags { display: flex; gap: 4px; }
+.mealTag { padding: 2px 6px; border-radius: 8px; background: var(--gold-lt); color: var(--gold); font-weight: 600; font-size: .66rem; }
+
+/* Payments */
+.paymentSummary { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 16px; margin-bottom: 28px; }
+.payLabel { font-size: .78rem; color: var(--g500); font-weight: 600; margin-bottom: 4px; }
+.payAmount { font-family: var(--fd); font-size: 1.8rem; font-weight: 700; color: var(--charcoal); }
+.payGrid { display: grid; grid-template-columns: 1.5fr .85fr; gap: 24px; align-items: start; }
+
+.txList { display: flex; flex-direction: column; gap: 0; }
+.txItem { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--g100); flex-wrap: wrap; gap: 8px; }
+.txItem:last-child { border-bottom: none; }
+.txDate { font-size: .72rem; color: var(--g500); font-weight: 600; }
+.txDesc { font-weight: 600; font-size: .88rem; color: var(--charcoal); }
+.txRef { font-size: .68rem; color: var(--g500); font-family: monospace; }
+.txRight { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.txAmount { font-weight: 700; font-size: .92rem; }
+
+.costList { display: flex; flex-direction: column; gap: 0; }
+.costRow {
+  display: flex; justify-content: space-between; padding: 8px 0;
+  border-bottom: 1px solid var(--g100); font-size: .84rem;
+}
+.costRow:last-child { border-bottom: none; }
+.costRow span:first-child { color: var(--g500); }
+.costRow span:last-child { font-weight: 600; color: var(--charcoal); }
+
+@media (max-width: 860px) {
+  .dashGrid { grid-template-columns: 1fr; }
+  .checkinGrid { grid-template-columns: 1fr; }
+  .phases { grid-template-columns: 1fr; }
+  .paymentSummary { grid-template-columns: 1fr; }
+  .payGrid { grid-template-columns: 1fr; }
+}

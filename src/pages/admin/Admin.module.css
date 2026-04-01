@@ -1,0 +1,77 @@
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 28px; border-bottom: 2px solid var(--g100); padding-bottom: 0; }
+.tab {
+  padding: 10px 18px; border: none; background: none;
+  font-size: .88rem; font-weight: 600; color: var(--g500);
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: var(--tr); cursor: pointer;
+}
+.tab:hover { color: var(--charcoal); }
+.tabActive { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* Stats row */
+.statsRow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.statCard { text-align: center; padding: 20px; }
+.statN { font-family: var(--fd); font-size: 2rem; font-weight: 700; line-height: 1.1; }
+.statL { font-size: .78rem; color: var(--g500); margin-top: 4px; }
+
+/* Admin grid */
+.adminGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+/* Patient list */
+.patientList { display: flex; flex-direction: column; gap: 0; }
+.patientRow {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--g100);
+}
+.patientRow:last-child { border-bottom: none; }
+.patientName { display: flex; align-items: center; gap: 10px; }
+.patientAvatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--blue-lt); color: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .72rem; font-weight: 700; flex-shrink: 0;
+}
+.patientAvatarLg {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--blue-lt); color: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .88rem; font-weight: 700; flex-shrink: 0;
+}
+.patientMeta { display: flex; gap: 10px; align-items: center; font-size: .78rem; }
+.insightBadge { padding: 3px 8px; border-radius: 12px; font-size: .68rem; font-weight: 700; text-transform: capitalize; }
+
+/* Patient cards */
+.patientCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.patientDetail { display: flex; flex-direction: column; gap: 6px; }
+.patientDetail > div { display: flex; justify-content: space-between; font-size: .82rem; padding: 4px 0; border-bottom: 1px solid var(--g100); }
+.patientDetail > div:last-child { border-bottom: none; }
+.patientDetail span:first-child { color: var(--g500); }
+.patientDetail span:last-child { font-weight: 600; }
+
+/* Applications */
+.appList { display: flex; flex-direction: column; gap: 0; }
+.appItem {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--g100);
+}
+.appItem:last-child { border-bottom: none; }
+.appRight { display: flex; gap: 6px; align-items: center; }
+.appStatus { font-size: .72rem; text-transform: capitalize; color: var(--g500); font-weight: 600; }
+
+.appHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.appCounts { display: flex; gap: 8px; }
+.appCardRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+.appMeta { display: flex; gap: 16px; font-size: .82rem; color: var(--g700); flex-wrap: wrap; }
+
+/* Finance */
+.financeGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.finLabel { font-size: .78rem; color: var(--g500); font-weight: 600; margin-bottom: 6px; }
+.finAmount { font-family: var(--fd); font-size: 1.8rem; font-weight: 700; }
+
+@media (max-width: 860px) {
+  .statsRow { grid-template-columns: 1fr 1fr; }
+  .adminGrid { grid-template-columns: 1fr; }
+  .patientRow { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .patientMeta { flex-wrap: wrap; }
+}

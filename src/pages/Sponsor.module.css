@@ -1,0 +1,26 @@
+.progress { background: var(--blue-lt); border-radius: 12px; padding: 18px 20px; margin-bottom: 28px; }
+.progRow  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.progLbl  { font-size: .85rem; color: var(--charcoal); }
+.progPct  { font-size: .82rem; font-weight: 700; color: var(--blue); }
+
+.filters { display: flex; gap: 9px; margin-bottom: 28px; flex-wrap: wrap; }
+.fbtn {
+  padding: 7px 16px; border-radius: 20px;
+  font-size: .82rem; font-weight: 600;
+  border: 1.5px solid var(--g300); background: white;
+  cursor: pointer; transition: var(--tr); font-family: var(--fb); color: var(--g700);
+}
+.fbtn:hover  { border-color: var(--blue); color: var(--blue); }
+.factive     { background: var(--blue) !important; border-color: var(--blue) !important; color: white !important; }
+
+.grid    { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+.card    { display: flex; flex-direction: column; }
+.cardCat { font-size: .68rem; color: var(--g500); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+.cardName{ font-size: 1rem; font-family: var(--fd); font-weight: 600; margin-bottom: 6px; color: var(--charcoal); }
+.cardDesc{ font-size: .8rem; color: var(--g700); line-height: 1.6; margin-bottom: 14px; flex: 1; }
+.cardFoot{ display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+.cardAmt { font-size: .98rem; font-weight: 700; color: var(--blue); }
+.cardQty { font-size: .72rem; color: var(--g500); margin-top: 2px; }
+
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }

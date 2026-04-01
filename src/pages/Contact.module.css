@@ -1,0 +1,16 @@
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+
+.infoList { display: flex; flex-direction: column; gap: 20px; margin-bottom: 24px; }
+.infoItem { display: flex; gap: 14px; align-items: flex-start; }
+.infoIcon { width: 42px; height: 42px; border-radius: 10px; background: var(--blue-lt); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+.infoLbl  { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--g500); font-weight: 600; margin-bottom: 3px; }
+.infoVal  { font-size: .93rem; font-weight: 500; color: var(--charcoal); }
+
+.bank   { background: var(--blue); border-radius: var(--r); padding: 22px; }
+.bank h4{ font-family: var(--fd); font-size: 1.15rem; color: white; margin-bottom: 14px; }
+.bankRow{ display: flex; justify-content: space-between; font-size: .83rem; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.15); }
+.bankRow:last-child { border-bottom: none; }
+.bankRow span:first-child { color: rgba(255,255,255,.6); }
+.bankRow span:last-child  { font-weight: 600; color: white; }
+
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }

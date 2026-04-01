@@ -1,0 +1,42 @@
+export const SPONSOR_ITEMS = [
+  { id:1,  cat:'general',    name:'Laptop',                      desc:"For residents' learning, education and digital literacy activities",                               qty:10, total:4500000 },
+  { id:2,  cat:'general',    name:'Industrial Gas Cooker',        desc:'For safe and efficient large-scale meal preparation',                                              qty:1,  total:900000  },
+  { id:3,  cat:'general',    name:'Solar Power System',           desc:'Sustainable electricity solution for the entire facility including backup',                       qty:1,  total:2500000 },
+  { id:4,  cat:'general',    name:'Broadband Internet',           desc:'High-speed internet for therapy tools, staff admin and educational resources',                    qty:1,  total:1440000, sfx:'/year' },
+  { id:5,  cat:'general',    name:'Air Conditioners',             desc:'For resident rooms, therapy spaces and clinical areas',                                           qty:5,  total:1750000 },
+  { id:6,  cat:'general',    name:'Kitchen Utensils',             desc:'Blenders, pots, pans, fridge, kettles, plates, cups, cutlery, microwave and more',               qty:1,  total:700000  },
+  { id:7,  cat:'general',    name:'Toiletries (Annual)',          desc:'Soap, toothbrush, toothpaste, tissue, detergent and sanitary supplies per resident',             qty:1,  total:440000,  sfx:'/year' },
+  { id:8,  cat:'medical',    name:'Dressing Drums',               desc:'Stainless steel drums for storing sterile wound dressing materials',                             qty:4,  total:180000  },
+  { id:9,  cat:'medical',    name:'Instrument Trolley',           desc:'Mobile stainless-steel tray for organizing and transporting medical instruments',                qty:2,  total:170000  },
+  { id:10, cat:'medical',    name:'Autoclave',                    desc:'Steam sterilizer for instruments, dressings and clinical equipment',                             qty:1,  total:380000  },
+  { id:11, cat:'medical',    name:'Drip Stands',                  desc:'Adjustable IV poles for intravenous fluid administration during detox care',                     qty:5,  total:90000   },
+  { id:12, cat:'medical',    name:'Bed Lockers',                  desc:"Secure bedside storage units for each resident's personal and medical items",                   qty:12, total:300000  },
+  { id:13, cat:'medical',    name:'Patient Monitor',              desc:'Multi-parameter vital signs monitor — ECG, SpO₂, blood pressure, temperature',                  qty:2,  total:1360000 },
+  { id:14, cat:'medical',    name:'Digital Sphygmomanometer',     desc:'Electronic blood pressure monitors for accurate and repeatable BP readings',                    qty:3,  total:105000  },
+  { id:15, cat:'medical',    name:'Mercury Sphygmomanometer',     desc:'Traditional mercury BP device for clinical baseline measurements',                               qty:2,  total:56000   },
+  { id:16, cat:'medical',    name:'Non-Contact Thermometer',      desc:'Infrared forehead thermometer for rapid temperature screening',                                  qty:5,  total:75000   },
+  { id:17, cat:'medical',    name:'Stethoscopes',                 desc:'Dual-head clinical stethoscopes for auscultation of cardiac and lung sounds',                   qty:7,  total:126000  },
+  { id:18, cat:'medical',    name:'Scrubs & Clinical Uniforms',   desc:'Matching scrub sets for nursing staff, medical doctor and care aide team',                      qty:14, total:168000  },
+  { id:19, cat:'medical',    name:'Pulse Oximeters',              desc:'Fingertip SpO₂ and pulse rate monitors for continuous resident monitoring',                      qty:5,  total:60000   },
+  { id:20, cat:'additional', name:'Examination Couch',            desc:'Padded clinical couch for physical assessments, medical examinations and minor procedures',     qty:2,  total:190000  },
+  { id:21, cat:'additional', name:'Medication Storage Cabinet',   desc:'Lockable, secure cabinet for controlled substance and prescription medication storage',         qty:2,  total:170000  },
+  { id:22, cat:'additional', name:'Oxygen Concentrator',          desc:'Portable oxygen delivery system for detox emergencies and respiratory support',                 qty:1,  total:380000  },
+  { id:23, cat:'additional', name:'Nebuliser Machine',            desc:'Aerosol drug delivery for respiratory conditions and bronchospasm management',                  qty:2,  total:70000   },
+  { id:24, cat:'additional', name:'Digital Weighing Scale',       desc:'Medical-grade weighing scale for tracking resident health metrics and nutrition progress',       qty:2,  total:50000   },
+  { id:25, cat:'additional', name:'Wheelchair',                   desc:'Standard foldable wheelchair for mobility-impaired residents and post-detox recovery support',  qty:2,  total:170000  },
+  { id:26, cat:'additional', name:'PPE Supplies',                 desc:'Gloves, face masks, aprons and protective gear for clinical and nursing staff',                 qty:1,  total:480000,  sfx:'/year' },
+  { id:27, cat:'additional', name:'Sharps Disposal Containers',   desc:'Certified biohazard sharps bins for safe disposal of needles and clinical waste',              qty:12, total:60000,   sfx:'/year' },
+  { id:28, cat:'additional', name:'First Aid Cabinets',           desc:'Fully stocked wall-mounted first aid kits for all residential and common areas',               qty:4,  total:120000  },
+  { id:29, cat:'additional', name:'Counselling Room Furniture',   desc:'Comfortable sofa sets, chairs and centre table for individual counselling sessions',           qty:2,  total:500000  },
+  { id:30, cat:'additional', name:'Projector & Screen',           desc:'HD projector and pull-down screen for group therapy sessions, educational films and Bible school', qty:1, total:280000 },
+  { id:31, cat:'additional', name:'Library & Educational Books',  desc:'Bibles, devotional guides, recovery workbooks, life skills and vocational training materials', qty:1,  total:200000  },
+  { id:32, cat:'additional', name:'Exercise & Recreation Equipment', desc:'Resistance bands, dumbbells, footballs, table tennis — supporting physical wellness',       qty:1,  total:350000  },
+]
+
+export const CAT_LABELS = {
+  general:    'General Facility',
+  medical:    'Medical & Clinical',
+  additional: 'Additional Items',
+}
+
+export const TOTAL_GOAL = 17400000
