@@ -24,9 +24,7 @@ export default function Login() {
       const role = u.role || u.user_metadata?.role || 'patient'
       const name = u.name || u.full_name || u.user_metadata?.full_name || email
       showNotif('Welcome back', `Signed in as ${name}`, 'ok')
-      const dest = role === 'admin' || role === 'staff' ? '/admin' :
-                   role === 'family' ? '/family' : '/portal'
-      nav(dest)
+      nav('/d')
     } else {
       showNotif('Login failed', result.error)
     }

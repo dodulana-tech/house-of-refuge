@@ -14,7 +14,7 @@ import Contact from './pages/Contact'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 
-// Lazy load portal/admin/family pages
+// Lazy load portal/admin/family pages (legacy routes — redirect to /d)
 const Dashboard = lazy(() => import('./pages/portal/Dashboard'))
 const Checkin = lazy(() => import('./pages/portal/Checkin'))
 const Treatment = lazy(() => import('./pages/portal/Treatment'))
@@ -22,6 +22,12 @@ const Meals = lazy(() => import('./pages/portal/Meals'))
 const Payments = lazy(() => import('./pages/portal/Payments'))
 const FamilyDashboard = lazy(() => import('./pages/family/FamilyDashboard'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+
+// New unified dashboard
+const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'))
+const DOverview = lazy(() => import('./pages/dashboard/Overview'))
+const DPatients = lazy(() => import('./pages/dashboard/Patients'))
+const DAdmissions = lazy(() => import('./pages/dashboard/Admissions'))
 
 // ── Contexts ──────────────────────────────────────────────
 export const NotifContext = createContext(null)
@@ -68,8 +74,30 @@ function AppRoutes() {
       {/* Family Portal */}
       <Route path="/family" element={<Protected roles={['family']}><FamilyDashboard /></Protected>} />
 
-      {/* Admin / Staff */}
-      <Route path="/admin" element={<Protected roles={['staff', 'admin']}><AdminDashboard /></Protected>} />
+      {/* Admin / Staff (legacy) */}
+      <Route path="/admin" element={<Protected roles={['staff', 'admin']}><Navigate to="/d" replace /></Protected>} />
+
+      {/* ── Unified Dashboard (HMIS) ── */}
+      <Route path="/d" element={<Protected roles={['patient', 'family', 'staff', 'admin']}><DashboardLayout /></Protected>}>
+        <Route index element={<DOverview />} />
+        <Route path="admissions" element={<DAdmissions />} />
+        <Route path="patients" element={<DPatients />} />
+        <Route path="caseload" element={<DPatients />} />
+        <Route path="checkin" element={<Checkin />} />
+        <Route path="treatment" element={<Treatment />} />
+        <Route path="meals" element={<Meals />} />
+        <Route path="payments" element={<Payments />} />
+        <Route path="visits" element={<FamilyDashboard />} />
+        <Route path="schedule" element={<DOverview />} />
+        <Route path="mdt" element={<DOverview />} />
+        <Route path="incidents" element={<DOverview />} />
+        <Route path="notes" element={<DOverview />} />
+        <Route path="staff" element={<DOverview />} />
+        <Route path="finance" element={<DOverview />} />
+        <Route path="reports" element={<DOverview />} />
+        <Route path="resources" element={<DOverview />} />
+        <Route path="settings" element={<DOverview />} />
+      </Route>
 
       {/* Catch-all */}
       <Route path="*" element={<NotFound />} />

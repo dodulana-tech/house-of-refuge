@@ -23,10 +23,8 @@ export default function Nav() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  const portalLink = user?.role === 'admin' || user?.role === 'staff' ? '/admin' :
-                     user?.role === 'family' ? '/family' : '/portal'
-  const portalLabel = user?.role === 'admin' || user?.role === 'staff' ? 'Admin' :
-                      user?.role === 'family' ? 'Family Portal' : 'My Portal'
+  const portalLink = '/d'
+  const portalLabel = 'Dashboard'
 
   return (
     <>
