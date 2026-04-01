@@ -62,6 +62,8 @@ const DFamilyResources = lazy(() => import('./pages/dashboard/FamilyResources'))
 const DPatientSchedule = lazy(() => import('./pages/dashboard/PatientSchedule'))
 const DAlumniDetail = lazy(() => import('./pages/dashboard/AlumniDetail'))
 const DBehavioralDetail = lazy(() => import('./pages/dashboard/BehavioralDetail'))
+const DDonorDetail = lazy(() => import('./pages/dashboard/DonorDetail'))
+const DStaffDetail = lazy(() => import('./pages/dashboard/StaffDetail'))
 
 // ── Contexts ──────────────────────────────────────────────
 export const NotifContext = createContext(null)
@@ -143,6 +145,7 @@ function AppRoutes() {
         <Route path="beds" element={<DBeds />} />
         <Route path="schedule" element={<DDailySchedule />} />
         <Route path="behavioral" element={<DBehavioral />} />
+        <Route path="behavioral/:id" element={<DBehavioralDetail />} />
         <Route path="passes" element={<DPassManagement />} />
         <Route path="visitation" element={<DVisitationBooking />} />
 
@@ -152,6 +155,7 @@ function AppRoutes() {
 
         {/* Pillar 5: People & HR */}
         <Route path="staff" element={<DStaff />} />
+        <Route path="staff/:id" element={<DStaffDetail />} />
         <Route path="shifts" element={<DShiftScheduler />} />
         <Route path="training" element={<DTrainingTracker />} />
 
@@ -159,12 +163,14 @@ function AppRoutes() {
         <Route path="finance" element={<DFinance />} />
         <Route path="payments" element={<Payments />} />
         <Route path="donors" element={<DDonorCRM />} />
+        <Route path="donors/:id" element={<DDonorDetail />} />
         <Route path="inventory" element={<DInventory />} />
         <Route path="sponsorship" element={<DEquipmentSponsorship />} />
 
         {/* Pillar 7: M&E & Compliance */}
         <Route path="outcomes" element={<DOutcomeTracking />} />
         <Route path="alumni" element={<DAlumniCRM />} />
+        <Route path="alumni/:id" element={<DAlumniDetail />} />
         <Route path="safeguarding" element={<DSafeguarding />} />
         <Route path="reports" element={<DBoardReports />} />
 
