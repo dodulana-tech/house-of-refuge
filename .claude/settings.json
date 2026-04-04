@@ -24,8 +24,7 @@
       "Bash(__NEW_LINE_673f20bbfd9b91da__ echo:*)",
       "Bash(grep -rn '<textarea' /Users/debo/Downloads/hor-app/src/pages/dashboard/*.jsx)",
       "Bash(grep -rn \"Chidi\\\\|Adaeze\\\\|Kunle\\\\|Ibrahim\\\\|Tunde\\\\|Grace Obi\\\\|Ahmed Yusuf\" /Users/debo/Downloads/hor-app/src/pages/dashboard/*.jsx)",
-      "Bash(npx vite:*)",
-      "Bash(grep -E \"\\\\.jsx$\")"
+      "Bash(npx md-to-pdf:*)"
     ]
   }
 }
