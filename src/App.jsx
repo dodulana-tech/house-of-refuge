@@ -71,6 +71,20 @@ const DAlumniDetail = lazy(() => import('./pages/dashboard/AlumniDetail'))
 const DBehavioralDetail = lazy(() => import('./pages/dashboard/BehavioralDetail'))
 const DDonorDetail = lazy(() => import('./pages/dashboard/DonorDetail'))
 const DStaffDetail = lazy(() => import('./pages/dashboard/StaffDetail'))
+const DACEScreening = lazy(() => import('./pages/dashboard/ACEScreening'))
+const DURICAAssessment = lazy(() => import('./pages/dashboard/URICAAssessment'))
+const DPRPPBuilder = lazy(() => import('./pages/dashboard/PRPPBuilder'))
+const DMedicalTests = lazy(() => import('./pages/dashboard/MedicalTests'))
+const DFruitOfSpirit = lazy(() => import('./pages/dashboard/FruitOfSpirit'))
+const DChurchPlacement = lazy(() => import('./pages/dashboard/ChurchPlacement'))
+const DProgrammeKPIs = lazy(() => import('./pages/dashboard/ProgrammeKPIs'))
+const DOutpatientPathway = lazy(() => import('./pages/dashboard/OutpatientPathway'))
+const DDetoxTracker = lazy(() => import('./pages/dashboard/DetoxTracker'))
+const DTherapySessions = lazy(() => import('./pages/dashboard/TherapySessions'))
+const DUDSTracking = lazy(() => import('./pages/dashboard/UDSTracking'))
+const DAssessmentSchedule = lazy(() => import('./pages/dashboard/AssessmentSchedule'))
+const DLifeSkillsModules = lazy(() => import('./pages/dashboard/LifeSkillsModules'))
+const DSOPLibrary = lazy(() => import('./pages/dashboard/SOPLibrary'))
 
 // ── Contexts ──────────────────────────────────────────────
 export const NotifContext = createContext(null)
@@ -143,10 +157,19 @@ function AppRoutes() {
         <Route path="clinical-notes" element={<DClinicalNotes />} />
         <Route path="timeline" element={<DPatientTimeline />} />
         <Route path="risk-assessment" element={<DRiskAssessment />} />
+        <Route path="ace-screening" element={<DACEScreening />} />
+        <Route path="urica" element={<DURICAAssessment />} />
+        <Route path="prpp" element={<DPRPPBuilder />} />
+        <Route path="medical-tests" element={<DMedicalTests />} />
+        <Route path="detox-tracker" element={<DDetoxTracker />} />
+        <Route path="therapy-sessions" element={<DTherapySessions />} />
+        <Route path="uds-tracking" element={<DUDSTracking />} />
+        <Route path="assessment-schedule" element={<DAssessmentSchedule />} />
         <Route path="family-therapy" element={<DFamilyTherapy />} />
 
         {/* Pillar 2: Admissions & Discharge */}
         <Route path="admissions" element={<DAdmissions />} />
+        <Route path="outpatient-pathway" element={<DOutpatientPathway />} />
         <Route path="admissions/:id" element={<DAdmissionDetail />} />
         <Route path="consents" element={<DConsentManager />} />
         <Route path="discharge" element={<DDischargeTracker />} />
@@ -162,7 +185,10 @@ function AppRoutes() {
         {/* Pillar 4: Spiritual & Programme */}
         <Route path="spiritual" element={<DSpiritualFormation />} />
         <Route path="spiritual-milestones" element={<DSpiritualMilestones />} />
+        <Route path="fruit-of-spirit" element={<DFruitOfSpirit />} />
+        <Route path="church-placement" element={<DChurchPlacement />} />
         <Route path="life-skills" element={<DLifeSkillsTracker />} />
+        <Route path="life-skills-modules" element={<DLifeSkillsModules />} />
 
         {/* Pillar 5: People & HR */}
         <Route path="staff" element={<DStaff />} />
@@ -183,6 +209,8 @@ function AppRoutes() {
         <Route path="alumni" element={<DAlumniProtocol />} />
         <Route path="alumni/:id" element={<DAlumniDetail />} />
         <Route path="safeguarding" element={<DSafeguarding />} />
+        <Route path="kpis" element={<DProgrammeKPIs />} />
+        <Route path="sops" element={<DSOPLibrary />} />
         <Route path="reports" element={<DBoardReports />} />
 
         {/* Patient-specific routes */}
@@ -200,7 +228,6 @@ function AppRoutes() {
         <Route path="visits" element={<DFamilyVisitRequests />} />
         <Route path="milestones" element={<DOverview />} />
         <Route path="resources" element={<DFamilyResources />} />
-        <Route path="family-therapy" element={<DOverview />} />
         <Route path="family-payments" element={<Payments />} />
         <Route path="settings" element={<DOverview />} />
       </Route>

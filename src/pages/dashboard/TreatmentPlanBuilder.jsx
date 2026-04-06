@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { POPULATION_PATHWAY_LABELS } from '../../data/clinicalConstants'
 
 /*
   Treatment Plan Builder — Columbia Model + SMART Goals + Interventions
@@ -11,10 +12,10 @@ import { useAuth } from '../../context/AuthContext'
 */
 
 const PATIENTS = [
-  { initials: 'CO', day: 23, phase: 'foundation', substance: 'Alcohol', pathway: 'A', counselor: 'AI' },
-  { initials: 'AN', day: 45, phase: 'deepening', substance: 'Tramadol', pathway: 'A', counselor: 'FA' },
-  { initials: 'KA', day: 74, phase: 'reintegration', substance: 'Cannabis', pathway: 'B', counselor: 'AI' },
-  { initials: 'IM', day: 8, phase: 'stabilization', substance: 'Heroin', pathway: 'A', counselor: 'FA' },
+  { initials: 'CO', day: 23, phase: 'foundation', substance: 'Alcohol', substancePathway: 'AUD', populationPathway: 'standard', pathway: 'A', counselor: 'AI' },
+  { initials: 'AN', day: 45, phase: 'deepening', substance: 'Tramadol', substancePathway: 'OUD', populationPathway: 'womens', pathway: 'A', counselor: 'FA' },
+  { initials: 'KA', day: 74, phase: 'reintegration', substance: 'Cannabis', substancePathway: 'CUD', populationPathway: 'standard', pathway: 'B', counselor: 'AI' },
+  { initials: 'IM', day: 8, phase: 'stabilization', substance: 'Heroin', substancePathway: 'OUD', populationPathway: 'adolescent', pathway: 'A', counselor: 'FA' },
 ]
 
 const PHASE_META = [
@@ -112,6 +113,84 @@ const INTERVENTIONS = {
   spiritual: ['Daily Bible School (2 hrs, Mon–Fri)', 'Pastoral counseling', 'Sunday Chapel service', 'Discipleship programme', 'Church placement planning'],
   legal: ['Legal referral to Rights and Humanity', 'Court date planning', 'Social Worker legal liaison'],
   trauma: ['Trauma-focused CBT', 'EMDR (if available)', 'Grounding techniques training', 'Art/expressive therapy', 'Safe narrative processing'],
+}
+
+// Substance-Specific Goals (Section 20) — added to treatment plan based on clinical pathway
+const SUBSTANCE_SPECIFIC_GOALS = {
+  AUD: [
+    'Complete CIWA-Ar guided detox with score < 8 for 24 consecutive hours',
+    'Identify alcohol-specific cognitive distortions and practice restructuring',
+    'Develop drink refusal skills through behavioural rehearsal',
+    'Navigate social drinking situations using rehearsed strategies',
+    'Complete LFT monitoring at admission, Week 4, and discharge',
+  ],
+  OUD: [
+    'Complete COWS-guided detox with score < 5 for 24 consecutive hours',
+    'Develop non-opioid pain management plan',
+    'Manage post-acute withdrawal symptoms (PAWS) with learned coping skills',
+    'Complete overdose risk education and family training',
+    'Address pain catastrophising cognitions through CBT',
+  ],
+  CUD: [
+    'Challenge minimisation cognitions ("It\'s natural, not a real drug")',
+    'Restructure peer network to support cannabis-free socialising',
+    'Develop alternative stress management and relaxation strategies',
+    'Engage in cognitive rehabilitation activities (planning, goal-setting)',
+    'Redesign evening routine to eliminate cannabis-associated triggers',
+  ],
+  Stimulant: [
+    'Monitor and manage post-stimulant depression and anhedonia',
+    'Develop craving management techniques (cravings are intense but time-limited)',
+    'Create nightlife and social environment avoidance plans',
+    'Establish financial accountability structures for early recovery',
+    'Build behavioural activation plan to counteract anhedonia',
+  ],
+  Polysubstance: [
+    'Address substitution risk — awareness of switching one substance for another',
+    'Complete trigger mapping for ALL substances of use, not just primary',
+    'Develop refusal skills specific to each substance',
+    'Assess suitability for programme extension to 16-26 weeks',
+    'Create PRPP addressing all substance-specific triggers comprehensively',
+  ],
+}
+
+const SUBSTANCE_SPECIFIC_INTERVENTIONS = {
+  AUD: ['CIWA-Ar monitoring (scheduled rounds)', 'Alcohol-specific CBT module', 'LFT trend monitoring', 'Thiamine supplementation protocol', 'Drink refusal skills training'],
+  OUD: ['COWS monitoring (scheduled rounds)', 'Clonidine protocol management', 'Non-opioid pain management plan', 'PAWS psychoeducation', 'Overdose prevention education'],
+  CUD: ['Enhanced Motivational Interviewing (CUD clients most ambivalent)', 'Cannabis-specific CBT (strongest effect sizes)', 'Cognitive rehabilitation activities', 'Peer network restructuring plan', 'Evening routine redesign'],
+  Stimulant: ['Enhanced psychiatric monitoring (PHQ-9 weekly)', 'DIP monitoring (q4h first 72-96 hours)', 'Behavioural activation programming', 'Financial accountability planning', 'Enhanced C-SSRS (twice weekly)'],
+  Polysubstance: ['Sequential detox management per risk hierarchy', 'Cross-substance trigger mapping', 'Substitution risk psychoeducation', 'Extended programme assessment', 'Integrated relapse prevention across substances'],
+}
+
+// Population-Specific Goals (Section 22) — added based on population pathway
+const POPULATION_SPECIFIC_GOALS = {
+  womens: [
+    'Complete IPV safety assessment and safety plan if applicable',
+    'Engage in women-only trauma processing group',
+    'Develop self-worth and identity beyond caregiving roles',
+    'Complete parenting skills module (if applicable)',
+    'Establish financial independence plan and vocational pathway',
+  ],
+  adolescent: [
+    'Maintain educational continuity during treatment (tutoring plan)',
+    'Complete minimum 4 family therapy sessions (mandatory)',
+    'Develop peer refusal skills and alternative peer group connections',
+    'Create school/university re-entry plan for post-discharge',
+    'Engage with youth-specific church programme and mentorship',
+  ],
+  'dual-diagnosis': [
+    'Complete structured psychiatric diagnostic assessment',
+    'Achieve medication compliance at 100% (psychiatric medication)',
+    'Engage in integrated dual-focus CBT (SUD + mental health concurrent)',
+    'Understand interaction between mental health and substance use',
+    'Confirm psychiatric follow-up appointment before discharge',
+  ],
+}
+
+const POPULATION_SPECIFIC_INTERVENTIONS = {
+  womens: ['Women-only group therapy', 'IPV screening (HITS/WAST)', 'Parenting skills programme', 'Reproductive health counselling', 'Women\'s recovery circle (daily)'],
+  adolescent: ['Educational tutoring (9:00-11:00 AM)', 'MDFT family therapy (mandatory 4+ sessions)', 'Youth-oriented spiritual formation', 'Age-appropriate recreational therapy', 'Social media safety planning'],
+  'dual-diagnosis': ['Weekly psychiatric review', 'Dual-focus CBT (2x weekly individual)', 'Dual-diagnosis psychoeducation group', 'Enhanced risk monitoring (C-SSRS twice weekly)', 'Psychiatric medication management'],
 }
 
 const GOAL_STATUS = ['Not Started', 'In Progress', 'Completed', 'Deferred', 'Modified']
@@ -361,6 +440,70 @@ export default function TreatmentPlanBuilder() {
               </div>
             )
           })}
+
+          {/* Substance-Specific Pathway Goals (Section 20) */}
+          {pt.substancePathway && SUBSTANCE_SPECIFIC_GOALS[pt.substancePathway] && (
+            <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid #805AD5' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <h4 style={{ fontFamily: 'var(--fd)', fontSize: '.95rem' }}>
+                  {pt.substancePathway} Pathway Goals
+                  <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 10, fontSize: '.65rem', fontWeight: 700, background: '#805AD515', color: '#805AD5' }}>Section 20</span>
+                </h4>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {SUBSTANCE_SPECIFIC_GOALS[pt.substancePathway].map((goal, gi) => {
+                  const key = `sp-${pt.substancePathway}-${gi}`
+                  const status = pd.goalStatuses[key] || 'Not Started'
+                  return (
+                    <div key={gi} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: gi < SUBSTANCE_SPECIFIC_GOALS[pt.substancePathway].length - 1 ? '1px solid var(--g100)' : 'none', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: goalStatusColors[status], flexShrink: 0 }} />
+                        <span style={{ fontSize: '.82rem', color: status === 'Completed' ? 'var(--g400)' : 'var(--g700)', textDecoration: status === 'Completed' ? 'line-through' : 'none' }}>{goal}</span>
+                      </div>
+                      <select value={status} onChange={e => setGoalStatus(key, e.target.value)} style={{
+                        padding: '3px 6px', borderRadius: 6, border: '1px solid var(--g200)',
+                        fontSize: '.74rem', color: goalStatusColors[status], fontWeight: 600, minWidth: 100, flexShrink: 0,
+                      }}>
+                        {GOAL_STATUS.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Population-Specific Pathway Goals (Section 22) */}
+          {pt.populationPathway && pt.populationPathway !== 'standard' && POPULATION_SPECIFIC_GOALS[pt.populationPathway] && (
+            <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid #D69E2E' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <h4 style={{ fontFamily: 'var(--fd)', fontSize: '.95rem' }}>
+                  {POPULATION_PATHWAY_LABELS[pt.populationPathway] || pt.populationPathway} Goals
+                  <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 10, fontSize: '.65rem', fontWeight: 700, background: '#D69E2E15', color: '#D69E2E' }}>Section 22</span>
+                </h4>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {POPULATION_SPECIFIC_GOALS[pt.populationPathway].map((goal, gi) => {
+                  const key = `pp-${pt.populationPathway}-${gi}`
+                  const status = pd.goalStatuses[key] || 'Not Started'
+                  return (
+                    <div key={gi} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: gi < POPULATION_SPECIFIC_GOALS[pt.populationPathway].length - 1 ? '1px solid var(--g100)' : 'none', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: goalStatusColors[status], flexShrink: 0 }} />
+                        <span style={{ fontSize: '.82rem', color: status === 'Completed' ? 'var(--g400)' : 'var(--g700)', textDecoration: status === 'Completed' ? 'line-through' : 'none' }}>{goal}</span>
+                      </div>
+                      <select value={status} onChange={e => setGoalStatus(key, e.target.value)} style={{
+                        padding: '3px 6px', borderRadius: 6, border: '1px solid var(--g200)',
+                        fontSize: '.74rem', color: goalStatusColors[status], fontWeight: 600, minWidth: 100, flexShrink: 0,
+                      }}>
+                        {GOAL_STATUS.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -393,6 +536,60 @@ export default function TreatmentPlanBuilder() {
               </div>
             )
           })}
+
+          {/* Substance-Specific Interventions (Section 20) */}
+          {pt.substancePathway && SUBSTANCE_SPECIFIC_INTERVENTIONS[pt.substancePathway] && (
+            <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid #805AD5' }}>
+              <h4 style={{ fontFamily: 'var(--fd)', fontSize: '.95rem', marginBottom: 10 }}>
+                {pt.substancePathway} Pathway Interventions
+                <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 10, fontSize: '.65rem', fontWeight: 700, background: '#805AD515', color: '#805AD5' }}>Section 20</span>
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {SUBSTANCE_SPECIFIC_INTERVENTIONS[pt.substancePathway].map(intervention => {
+                  const iKey = `sp-int-${pt.substancePathway}`
+                  const active = (pd.interventions[iKey] || []).includes(intervention)
+                  return (
+                    <label key={intervention} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8,
+                      background: active ? 'rgba(128,90,213,.05)' : 'transparent',
+                      border: `1px solid ${active ? 'rgba(128,90,213,.2)' : 'var(--g100)'}`,
+                      cursor: 'pointer', fontSize: '.82rem', color: active ? '#805AD5' : 'var(--g500)',
+                    }}>
+                      <input type="checkbox" checked={active} onChange={() => toggleIntervention(iKey, intervention)} />
+                      {intervention}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Population-Specific Interventions (Section 22) */}
+          {pt.populationPathway && pt.populationPathway !== 'standard' && POPULATION_SPECIFIC_INTERVENTIONS[pt.populationPathway] && (
+            <div className="card" style={{ marginBottom: 12, borderLeft: '3px solid #D69E2E' }}>
+              <h4 style={{ fontFamily: 'var(--fd)', fontSize: '.95rem', marginBottom: 10 }}>
+                {POPULATION_PATHWAY_LABELS[pt.populationPathway] || pt.populationPathway} Interventions
+                <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 10, fontSize: '.65rem', fontWeight: 700, background: '#D69E2E15', color: '#D69E2E' }}>Section 22</span>
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {POPULATION_SPECIFIC_INTERVENTIONS[pt.populationPathway].map(intervention => {
+                  const iKey = `pp-int-${pt.populationPathway}`
+                  const active = (pd.interventions[iKey] || []).includes(intervention)
+                  return (
+                    <label key={intervention} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8,
+                      background: active ? 'rgba(214,158,46,.05)' : 'transparent',
+                      border: `1px solid ${active ? 'rgba(214,158,46,.2)' : 'var(--g100)'}`,
+                      cursor: 'pointer', fontSize: '.82rem', color: active ? '#D69E2E' : 'var(--g500)',
+                    }}>
+                      <input type="checkbox" checked={active} onChange={() => toggleIntervention(iKey, intervention)} />
+                      {intervention}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

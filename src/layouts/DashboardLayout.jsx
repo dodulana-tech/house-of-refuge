@@ -5,7 +5,7 @@ import styles from './DashboardLayout.module.css'
 
 /*
   HOR Practice Management Platform — MECE Sidebar
-  7 Pillars mapped to John Akinola's SOPs + Org Chart
+  7 Pillars mapped to Treatment Protocol + Org Chart
 
   1. Clinical Operations
   2. Admissions & Discharge
@@ -29,10 +29,19 @@ const MENU = {
     { icon: '📝', to: '/dashboard/clinical-notes', label: 'Clinical Notes' },
     { icon: '🕐', to: '/dashboard/timeline', label: 'Patient Timeline' },
     { icon: '🚨', to: '/dashboard/risk-assessment', label: 'Risk Assessment' },
+    { icon: '🧠', to: '/dashboard/ace-screening', label: 'ACE Screening' },
+    { icon: '🔄', to: '/dashboard/urica', label: 'URICA (Readiness)' },
+    { icon: '🛡️', to: '/dashboard/prpp', label: 'Relapse Prevention (PRPP)' },
+    { icon: '🔬', to: '/dashboard/medical-tests', label: 'Medical Tests' },
+    { icon: '🧪', to: '/dashboard/detox-tracker', label: 'Detox Tracker' },
+    { icon: '📆', to: '/dashboard/therapy-sessions', label: 'Therapy Sessions' },
+    { icon: '🧫', to: '/dashboard/uds-tracking', label: 'UDS Tracking' },
+    { icon: '📋', to: '/dashboard/assessment-schedule', label: 'Assessment Schedule' },
     { icon: '👨‍👩‍👧', to: '/dashboard/family-therapy', label: 'Family Therapy' },
 
     { section: 'Admissions & Discharge' },
     { icon: '📥', to: '/dashboard/admissions', label: 'Admissions Pipeline' },
+    { icon: '🚶', to: '/dashboard/outpatient-pathway', label: 'Outpatient Pathway' },
     { icon: '📄', to: '/dashboard/consents', label: 'Consent Management' },
     { icon: '🎓', to: '/dashboard/discharge', label: 'Discharge & Graduation' },
 
@@ -46,7 +55,10 @@ const MENU = {
     { section: 'Spiritual & Programme' },
     { icon: '✝️', to: '/dashboard/spiritual', label: 'Spiritual Formation' },
     { icon: '🕊️', to: '/dashboard/spiritual-milestones', label: 'Spiritual Milestones' },
+    { icon: '🍇', to: '/dashboard/fruit-of-spirit', label: 'Fruit of the Spirit' },
+    { icon: '⛪', to: '/dashboard/church-placement', label: 'Church Placement' },
     { icon: '📚', to: '/dashboard/life-skills', label: 'Life Skills & Vocational' },
+    { icon: '📝', to: '/dashboard/life-skills-modules', label: 'Life Skills Modules (13)' },
 
     { section: 'People & HR' },
     { icon: '👥', to: '/dashboard/staff', label: 'Staff Directory' },
@@ -61,12 +73,13 @@ const MENU = {
     { icon: '💰', to: '/dashboard/finance', label: 'Financial Overview' },
     { icon: '💳', to: '/dashboard/payments', label: 'Payments & Deposits' },
     { icon: '❤️', to: '/dashboard/donors', label: 'Donors & CRM' },
-    { icon: '🎁', to: '/dashboard/sponsorship', label: 'Equipment Sponsorship' },
 
     { section: 'M&E & Compliance' },
     { icon: '📊', to: '/dashboard/outcomes', label: 'Outcome Tracking' },
     { icon: '🎓', to: '/dashboard/alumni', label: 'Alumni Programme' },
     { icon: '🔒', to: '/dashboard/safeguarding', label: 'Safeguarding' },
+    { icon: '🎯', to: '/dashboard/kpis', label: 'Programme KPIs' },
+    { icon: '📖', to: '/dashboard/sops', label: 'SOP Library (16)' },
     { icon: '📋', to: '/dashboard/reports', label: 'Board Reports' },
   ],
   staff: [
@@ -79,18 +92,32 @@ const MENU = {
     { icon: '🤝', to: '/dashboard/mdt', label: 'MDT Reviews' },
     { icon: '🕐', to: '/dashboard/timeline', label: 'Patient Timeline' },
     { icon: '🚨', to: '/dashboard/risk-assessment', label: 'Risk Assessment' },
+    { icon: '🧠', to: '/dashboard/ace-screening', label: 'ACE Screening' },
+    { icon: '🔄', to: '/dashboard/urica', label: 'URICA (Readiness)' },
+    { icon: '🛡️', to: '/dashboard/prpp', label: 'Relapse Prevention (PRPP)' },
+    { icon: '🔬', to: '/dashboard/medical-tests', label: 'Medical Tests' },
+    { icon: '🧪', to: '/dashboard/detox-tracker', label: 'Detox Tracker' },
+    { icon: '📆', to: '/dashboard/therapy-sessions', label: 'Therapy Sessions' },
+    { icon: '🧫', to: '/dashboard/uds-tracking', label: 'UDS Tracking' },
+    { icon: '📋', to: '/dashboard/assessment-schedule', label: 'Assessment Schedule' },
     { icon: '👨‍👩‍👧', to: '/dashboard/family-therapy', label: 'Family Therapy' },
 
     { section: 'Programme' },
     { icon: '📅', to: '/dashboard/schedule', label: 'Daily Schedule' },
     { icon: '✝️', to: '/dashboard/spiritual', label: 'Spiritual Formation' },
+    { icon: '🕊️', to: '/dashboard/spiritual-milestones', label: 'Spiritual Milestones' },
+    { icon: '🍇', to: '/dashboard/fruit-of-spirit', label: 'Fruit of the Spirit' },
+    { icon: '⛪', to: '/dashboard/church-placement', label: 'Church Placement' },
     { icon: '📚', to: '/dashboard/life-skills', label: 'Life Skills' },
+    { icon: '📝', to: '/dashboard/life-skills-modules', label: 'Life Skills Modules (13)' },
 
     { section: 'Operations' },
     { icon: '⚠️', to: '/dashboard/behavioral', label: 'Behavioral Management' },
+    { icon: '🚶', to: '/dashboard/outpatient-pathway', label: 'Outpatient Pathway' },
     { icon: '🎫', to: '/dashboard/passes', label: 'Passes & Leave' },
     { icon: '👨‍👩‍👧', to: '/dashboard/visitation', label: 'Visitation' },
     { icon: '🔒', to: '/dashboard/safeguarding', label: 'Safeguarding' },
+    { icon: '📖', to: '/dashboard/sops', label: 'SOP Library (16)' },
   ],
   patient: [
     { section: 'My Recovery' },

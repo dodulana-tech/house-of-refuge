@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getApplications as getLocalApps } from '../../utils/store'
 import { getApplications as getSupaApps, isSupabaseReady } from '../../utils/supabase'
 import { fmt } from '../../utils/paystack'
+import { SUBSTANCE_PATHWAYS, SUBSTANCE_PATHWAY_META, POPULATION_PATHWAY_LABELS, INSIGHT_COLORS } from '../../data/clinicalConstants'
 
 /*
   Admissions Pipeline — maps to the 8-step SOP admission process:
@@ -21,13 +22,17 @@ const PIPELINE_STAGES = [
   { key: 'referred', label: 'Referred', color: '#E53E3E' },
 ]
 
+const PATHWAY_COLORS = Object.fromEntries(
+  Object.entries(SUBSTANCE_PATHWAY_META).map(([k, v]) => [k, v.color])
+)
+
 const MOCK_APPS = [
-  { id: 'APP001', first_name: 'Tunde', last_name: 'Bakare', initials: 'TB', substance: 'Cocaine', insight_level: 'contemplation', family_support: 'strong', pathway: 'A', deposit_paid: true, created_at: '2026-03-28', status: 'pre-screening', email: 'tunde@example.com', phone: '08011111111' },
-  { id: 'APP002', first_name: 'Grace', last_name: 'Obi', initials: 'GO', substance: 'Alcohol', insight_level: 'preparation', family_support: 'moderate', pathway: 'A', deposit_paid: true, created_at: '2026-03-25', status: 'clinical-assessment', email: 'grace@example.com', phone: '08022222222' },
-  { id: 'APP003', first_name: 'Ahmed', last_name: 'Yusuf', initials: 'AY', substance: 'Multiple', insight_level: 'denial', family_support: 'weak', pathway: 'B', deposit_paid: false, created_at: '2026-03-20', status: 'outpatient-pathway', email: 'ahmed@example.com', phone: '08033333333' },
+  { id: 'APP001', first_name: 'Tunde', last_name: 'Bakare', initials: 'TB', substance: 'Cocaine', substancePathway: 'Stimulant', careLevel: 'residential', populationPathway: 'standard', insight_level: 'contemplation', family_support: 'strong', pathway: 'A', deposit_paid: true, created_at: '2026-03-28', status: 'pre-screening', email: 'tunde@example.com', phone: '08011111111', age: 35, gender: 'M' },
+  { id: 'APP002', first_name: 'Grace', last_name: 'Obi', initials: 'GO', substance: 'Alcohol', substancePathway: 'AUD', careLevel: 'residential', populationPathway: 'womens', insight_level: 'preparation', family_support: 'moderate', pathway: 'A', deposit_paid: true, created_at: '2026-03-25', status: 'clinical-assessment', email: 'grace@example.com', phone: '08022222222', age: 28, gender: 'F' },
+  { id: 'APP003', first_name: 'Ahmed', last_name: 'Yusuf', initials: 'AY', substance: 'Multiple', substancePathway: 'Polysubstance', careLevel: 'outpatient', populationPathway: 'standard', insight_level: 'denial', family_support: 'weak', pathway: 'B', deposit_paid: false, created_at: '2026-03-20', status: 'outpatient-pathway', email: 'ahmed@example.com', phone: '08033333333', age: 22, gender: 'M' },
 ]
 
-const insightColors = { denial: '#E53E3E', precontemplation: '#DD6B20', contemplation: '#D69E2E', preparation: '#38A169', action: '#2B6CB0' }
+const insightColors = INSIGHT_COLORS
 
 export default function Admissions() {
   const [apps, setApps] = useState(MOCK_APPS)
@@ -107,6 +112,23 @@ export default function Admissions() {
                 <span>Substance: <strong>{app.substance}</strong></span>
                 <span>Insight: <strong style={{ color: insightColors[app.insight_level] || 'var(--g500)' }}>{app.insight_level || 'N/A'}</strong></span>
                 <span>Family: <strong>{app.family_support || app.familyAwareness || 'N/A'}</strong></span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                {(app.substancePathway || SUBSTANCE_PATHWAYS[app.substance]) && (
+                  <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: '.68rem', fontWeight: 700, background: (PATHWAY_COLORS[app.substancePathway || SUBSTANCE_PATHWAYS[app.substance]] || '#2B6CB0') + '12', color: PATHWAY_COLORS[app.substancePathway || SUBSTANCE_PATHWAYS[app.substance]] || '#2B6CB0' }}>
+                    {app.substancePathway || SUBSTANCE_PATHWAYS[app.substance]} Pathway
+                  </span>
+                )}
+                {app.careLevel && app.careLevel !== 'residential' && (
+                  <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: '.68rem', fontWeight: 700, background: 'rgba(221,107,32,.1)', color: '#DD6B20' }}>
+                    {app.careLevel === 'iop' ? 'IOP (Level 2.1)' : 'Outpatient (Level 1)'}
+                  </span>
+                )}
+                {app.populationPathway && app.populationPathway !== 'standard' && (
+                  <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: '.68rem', fontWeight: 700, background: 'rgba(128,90,213,.1)', color: '#805AD5' }}>
+                    {POPULATION_PATHWAY_LABELS[app.populationPathway] || app.populationPathway}
+                  </span>
+                )}
               </div>
             </div>
           )

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { SUBSTANCE_PATHWAYS, SUBSTANCE_PATHWAY_META, CARE_LEVELS, POPULATION_PATHWAYS } from '../../data/clinicalConstants'
 
 /*
   Shared Patient Records — visible to admin, staff.
@@ -15,10 +16,10 @@ const PHASES = {
 }
 
 const PATIENTS = [
-  { id: 'P001', initials: 'CO', gender: 'M', age: 32, day: 23, phase: 'foundation', substance: 'Alcohol', pathway: 'A', insight: 'contemplation', mood: 4, cravings: 2, counselor: 'AI', bed: 'A1', status: 'admitted' },
-  { id: 'P002', initials: 'AN', gender: 'F', age: 28, day: 45, phase: 'deepening', substance: 'Tramadol', pathway: 'A', insight: 'preparation', mood: 3, cravings: 3, counselor: 'FA', bed: 'B3', status: 'admitted' },
-  { id: 'P003', initials: 'KA', gender: 'M', age: 41, day: 74, phase: 'reintegration', substance: 'Cannabis', pathway: 'B', insight: 'action', mood: 5, cravings: 1, counselor: 'AI', bed: 'A5', status: 'admitted' },
-  { id: 'P004', initials: 'IM', gender: 'M', age: 24, day: 8, phase: 'stabilization', substance: 'Heroin', pathway: 'A', insight: 'precontemplation', mood: 2, cravings: 4, counselor: 'FA', bed: 'C2', status: 'admitted' },
+  { id: 'P001', initials: 'CO', gender: 'M', age: 32, day: 23, phase: 'foundation', substance: 'Alcohol', substancePathway: 'AUD', careLevel: 'residential', populationPathway: 'standard', pathway: 'A', insight: 'contemplation', mood: 4, cravings: 2, counselor: 'AI', bed: 'A1', status: 'admitted' },
+  { id: 'P002', initials: 'AN', gender: 'F', age: 28, day: 45, phase: 'deepening', substance: 'Tramadol', substancePathway: 'OUD', careLevel: 'residential', populationPathway: 'womens', pathway: 'A', insight: 'preparation', mood: 3, cravings: 3, counselor: 'FA', bed: 'B3', status: 'admitted' },
+  { id: 'P003', initials: 'KA', gender: 'M', age: 41, day: 74, phase: 'reintegration', substance: 'Cannabis', substancePathway: 'CUD', careLevel: 'residential', populationPathway: 'standard', pathway: 'B', insight: 'action', mood: 5, cravings: 1, counselor: 'AI', bed: 'A5', status: 'admitted' },
+  { id: 'P004', initials: 'IM', gender: 'M', age: 24, day: 8, phase: 'stabilization', substance: 'Heroin', substancePathway: 'OUD', careLevel: 'residential', populationPathway: 'adolescent', pathway: 'A', insight: 'precontemplation', mood: 2, cravings: 4, counselor: 'FA', bed: 'C2', status: 'admitted' },
 ]
 
 const moodColors = ['', '#E53E3E', '#DD6B20', '#D69E2E', '#38A169', '#2B6CB0']
@@ -26,6 +27,14 @@ const moodColors = ['', '#E53E3E', '#DD6B20', '#D69E2E', '#38A169', '#2B6CB0']
 const SUBSTANCE_OPTIONS = ['Alcohol', 'Cannabis', 'Cocaine', 'Heroin', 'Tramadol', 'Codeine Syrup', 'Methamphetamine', 'Benzodiazepines', 'Multiple']
 const INSIGHT_OPTIONS = ['denial', 'precontemplation', 'contemplation', 'preparation', 'action']
 const COUNSELOR_OPTIONS = ['AI', 'FA', 'TA', 'MO']
+
+const SUBSTANCE_PATHWAY_LABELS = SUBSTANCE_PATHWAY_META
+
+const AGE_OPTIONS = Array.from({ length: 48 }, (_, i) => i + 18)
+
+const INITIAL_ADMIT_FORM = {
+  initials: '', gender: '', age: '', substance: '', substancePathway: '', careLevel: 'residential', populationPathway: 'standard', pathway: '', insight: '', bed: '', counselor: '',
+}
 const BED_OPTIONS = [
   'A1','A2','A3','A4','A5','A6',
   'B1','B2','B3','B4','B5','B6',
@@ -41,7 +50,7 @@ export default function Patients() {
   const [showAdmitForm, setShowAdmitForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [admitForm, setAdmitForm] = useState({
-    initials: '', gender: '', age: '', substance: '', pathway: '', insight: '', bed: '', counselor: '',
+    ...INITIAL_ADMIT_FORM,
   })
 
   const takenBeds = patients.filter(p => p.id !== editingId).map(p => p.bed)
@@ -49,6 +58,7 @@ export default function Patients() {
 
   const handleAdmitSubmit = () => {
     if (!admitForm.initials || admitForm.initials.length !== 2 || !admitForm.gender || !admitForm.age || !admitForm.substance || !admitForm.pathway || !admitForm.insight || !admitForm.bed || !admitForm.counselor) return
+    const substancePathway = admitForm.substancePathway || SUBSTANCE_PATHWAYS[admitForm.substance] || 'Polysubstance'
     if (editingId) {
       setPatients(prev => prev.map(p => p.id === editingId ? {
         ...p,
@@ -56,6 +66,9 @@ export default function Patients() {
         gender: admitForm.gender === 'Male' ? 'M' : admitForm.gender === 'Female' ? 'F' : admitForm.gender,
         age: parseInt(admitForm.age),
         substance: admitForm.substance,
+        substancePathway,
+        careLevel: admitForm.careLevel,
+        populationPathway: admitForm.populationPathway,
         pathway: admitForm.pathway,
         insight: admitForm.insight,
         counselor: admitForm.counselor,
@@ -71,6 +84,9 @@ export default function Patients() {
         day: 1,
         phase: 'stabilization',
         substance: admitForm.substance,
+        substancePathway,
+        careLevel: admitForm.careLevel,
+        populationPathway: admitForm.populationPathway,
         pathway: admitForm.pathway,
         insight: admitForm.insight,
         mood: 3,
@@ -81,7 +97,7 @@ export default function Patients() {
       }
       setPatients(prev => [...prev, newPatient])
     }
-    setAdmitForm({ initials: '', gender: '', age: '', substance: '', pathway: '', insight: '', bed: '', counselor: '' })
+    setAdmitForm({ initials: '', gender: '', age: '', substance: '', substancePathway: '', careLevel: 'residential', populationPathway: 'standard', pathway: '', insight: '', bed: '', counselor: '' })
     setShowAdmitForm(false)
   }
 
@@ -92,6 +108,9 @@ export default function Patients() {
       gender: p.gender === 'M' ? 'Male' : 'Female',
       age: String(p.age),
       substance: p.substance,
+      substancePathway: p.substancePathway || SUBSTANCE_PATHWAYS[p.substance] || '',
+      careLevel: p.careLevel || 'residential',
+      populationPathway: p.populationPathway || 'standard',
       pathway: p.pathway,
       insight: p.insight,
       bed: p.bed,
@@ -148,22 +167,44 @@ export default function Patients() {
               <label className="flabel">Age *</label>
               <select className="fi" value={admitForm.age} onChange={e => setAdmitForm(p => ({ ...p, age: e.target.value }))}>
                 <option value="">Select...</option>
-                {Array.from({ length: 48 }, (_, i) => i + 18).map(a => <option key={a} value={a}>{a}</option>)}
+                {AGE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
             <div className="fg">
               <label className="flabel">Substance *</label>
-              <select className="fi" value={admitForm.substance} onChange={e => setAdmitForm(p => ({ ...p, substance: e.target.value }))}>
+              <select className="fi" value={admitForm.substance} onChange={e => {
+                const sub = e.target.value
+                setAdmitForm(p => ({ ...p, substance: sub, substancePathway: SUBSTANCE_PATHWAYS[sub] || '' }))
+              }}>
                 <option value="">Select...</option>
                 {SUBSTANCE_OPTIONS.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="fg">
-              <label className="flabel">Pathway *</label>
+              <label className="flabel">Clinical Pathway</label>
+              <select className="fi" value={admitForm.substancePathway} onChange={e => setAdmitForm(p => ({ ...p, substancePathway: e.target.value }))}>
+                <option value="">Auto-assigned...</option>
+                {Object.entries(SUBSTANCE_PATHWAY_LABELS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+            <div className="fg">
+              <label className="flabel">Level of Care</label>
+              <select className="fi" value={admitForm.careLevel} onChange={e => setAdmitForm(p => ({ ...p, careLevel: e.target.value }))}>
+                {CARE_LEVELS.map(l => <option key={l.key} value={l.key}>{l.label}</option>)}
+              </select>
+            </div>
+            <div className="fg">
+              <label className="flabel">Population Pathway</label>
+              <select className="fi" value={admitForm.populationPathway} onChange={e => setAdmitForm(p => ({ ...p, populationPathway: e.target.value }))}>
+                {POPULATION_PATHWAYS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+              </select>
+            </div>
+            <div className="fg">
+              <label className="flabel">Admission Pathway *</label>
               <select className="fi" value={admitForm.pathway} onChange={e => setAdmitForm(p => ({ ...p, pathway: e.target.value }))}>
                 <option value="">Select...</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
+                <option value="A">A (Family-Supported)</option>
+                <option value="B">B (Community-Supported)</option>
               </select>
             </div>
             <div className="fg">
@@ -190,7 +231,7 @@ export default function Patients() {
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
             <button className="btn btn--primary btn--sm" onClick={handleAdmitSubmit}>{editingId ? 'Update Patient' : 'Admit Patient'}</button>
-            <button className="btn btn--secondary btn--sm" onClick={() => { setShowAdmitForm(false); setEditingId(null); setAdmitForm({ initials: '', gender: '', age: '', substance: '', pathway: '', insight: '', bed: '', counselor: '' }) }}>Cancel</button>
+            <button className="btn btn--secondary btn--sm" onClick={() => { setShowAdmitForm(false); setEditingId(null); setAdmitForm({ initials: '', gender: '', age: '', substance: '', substancePathway: '', careLevel: 'residential', populationPathway: 'standard', pathway: '', insight: '', bed: '', counselor: '' }) }}>Cancel</button>
           </div>
         </div>
       )}
@@ -230,6 +271,31 @@ export default function Patients() {
                     <div style={{ fontSize: '.76rem', color: 'var(--g500)' }}>
                       {p.gender}, {p.age}y · ID: {p.id} · Pathway {p.pathway} · {p.substance}
                     </div>
+                    {(() => {
+                      const spMeta = p.substancePathway && SUBSTANCE_PATHWAY_LABELS[p.substancePathway]
+                      const careMeta = p.careLevel && p.careLevel !== 'residential' && CARE_LEVELS.find(l => l.key === p.careLevel)
+                      const popMeta = p.populationPathway && p.populationPathway !== 'standard' && POPULATION_PATHWAYS.find(pp => pp.key === p.populationPathway)
+                      if (!spMeta && !careMeta && !popMeta) return null
+                      return (
+                        <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                          {spMeta && (
+                            <span style={{ padding: '2px 7px', borderRadius: 10, fontSize: '.65rem', fontWeight: 700, background: spMeta.color + '15', color: spMeta.color }}>
+                              {spMeta.label}
+                            </span>
+                          )}
+                          {careMeta && (
+                            <span style={{ padding: '2px 7px', borderRadius: 10, fontSize: '.65rem', fontWeight: 700, background: careMeta.color + '15', color: careMeta.color }}>
+                              {careMeta.label}
+                            </span>
+                          )}
+                          {popMeta && (
+                            <span style={{ padding: '2px 7px', borderRadius: 10, fontSize: '.65rem', fontWeight: 700, background: '#805AD515', color: '#805AD5' }}>
+                              {popMeta.label}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
 

@@ -563,7 +563,7 @@ export default function RiskAssessment() {
                 borderRadius: 8,
                 border: '1px solid #CBD5E0',
                 fontSize: 14,
-                width: 280,
+                width: '100%', maxWidth: 280,
                 background: '#fff',
               }}
             >

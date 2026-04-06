@@ -42,7 +42,11 @@
 17. Continuing Care & Alumni Protocol
 18. Outcome Measurement
 19. Quality Assurance & Governance
-20. References
+20. Substance-Specific Clinical Pathways
+21. Level-of-Care Pathways
+22. Population-Specific Pathways
+23. Standard Operating Procedures
+24. References
 
 ---
 
@@ -1388,7 +1392,842 @@ HOR's protocol is designed to meet or exceed both TREATNET and SAMHSA standards,
 
 ---
 
-## 20. REFERENCES
+## 20. SUBSTANCE-SPECIFIC CLINICAL PATHWAYS
+
+### 20.1 Rationale
+
+The base 4-phase / 12-week programme (Section 6) provides the universal treatment structure for all clients. However, research evidence demonstrates that substance-specific differences in pharmacology, withdrawal presentation, relapse patterns, cognitive impairment profiles, and social contexts require differentiated clinical approaches within the shared programme framework.
+
+This section establishes five substance-specific clinical pathways. Each pathway modifies the base protocol in targeted areas while maintaining the universal programme structure, daily schedule, spiritual formation, and community elements.
+
+**Pathway activation:** The treating physician assigns the primary substance pathway at admission based on the ASI, ASSIST, UDS results, and clinical interview. Polysubstance clients are assigned based on the substance presenting the greatest clinical severity, with secondary pathway elements integrated into the treatment plan.
+
+### 20.2 Alcohol Use Disorder (AUD) Pathway
+
+**Prevalence context:** Alcohol is the most commonly reported substance of use among Nigerian treatment populations. AUD clients typically present with longer use histories, more severe medical comorbidities, and greater family system disruption than other substance groups.
+
+#### Phase 1 Modifications (Weeks 1-2): Detoxification
+
+| Element | AUD-Specific Protocol | Evidence Basis |
+|---------|----------------------|----------------|
+| Primary instrument | CIWA-Ar scored at admission, then q4h (q2h if >15, q1h if >20) | Cochrane: CIWA-Ar validated thresholds |
+| Pharmacological management | Symptom-triggered benzodiazepine protocol (Chlordiazepoxide or Diazepam); initiated when CIWA-Ar > 8 | Cochrane: symptom-triggered superior to fixed-schedule |
+| Nutritional priority | Thiamine 100mg IM/IV x 3-5 days then oral; B-complex; folate; hydration monitoring | ASAM CPG: Wernicke's encephalopathy prevention |
+| Seizure risk | Seizure precautions for all clients with CIWA-Ar > 15 or history of withdrawal seizures; padded side rails, suction equipment accessible | ASAM: 3-5% of untreated alcohol withdrawal progresses to seizures |
+| Hepatic monitoring | LFTs at admission, repeat at Week 4 and discharge; adjust all hepatically metabolised medications | ASAM Dimension 2 |
+| Completion criteria | CIWA-Ar < 8 for 24 consecutive hours; vital signs stable; no seizure risk indicators | ASAM completion criteria |
+| Typical duration | 5-7 days; extended monitoring as clinically indicated | Cochrane: symptom-triggered mean 47.8 hours |
+
+#### Phase 2 Modifications (Weeks 3-6): Therapeutic Foundation
+
+| Element | AUD-Specific Focus |
+|---------|-------------------|
+| CBT emphasis | Alcohol-specific cognitive distortions: "I can control my drinking," "One drink won't hurt," "I need alcohol to socialise." Drink refusal skills training with behavioural rehearsal |
+| Trigger mapping | AUD-specific triggers: social drinking culture, family celebrations, business entertaining, payday patterns, evening routines, specific brands/venues |
+| Psychoeducation | Alcohol and the brain: neuroadaptation, kindling effect (each withdrawal episode more severe), liver disease progression, alcohol-related cognitive impairment, foetal alcohol spectrum |
+| Medical monitoring | Weekly LFT trend review; nutritional status; GI symptom management; sleep disturbance (common in early AUD recovery -- typically resolves by Week 6-8) |
+| Family education | Enabling behaviours specific to alcohol: covering for drunkenness, removing consequences, social normalisation of drinking |
+
+#### Phase 3-4 Modifications (Weeks 7-12): Deepening & Reintegration
+
+| Element | AUD-Specific Focus |
+|---------|-------------------|
+| PRPP development | Alcohol-specific relapse prevention: navigating social drinking environments, managing family/cultural pressure to drink, alternative socialising strategies, wedding/celebration plans |
+| Vocational | Assess whether employment involves alcohol exposure (hospitality, entertainment); develop workplace sobriety plan if applicable |
+| Aftercare | AA/recovery fellowship placement; identify alcohol-free social networks; family ongoing psychoeducation |
+| Outcome measures | AUDIT (admission vs discharge); LFT trend; GGT as biological marker of abstinence |
+
+### 20.3 Opioid Use Disorder (OUD) Pathway
+
+**Prevalence context:** Opioid use in Nigeria includes tramadol, codeine-containing cough syrups, and increasingly heroin. Tramadol misuse is particularly prevalent among young males. OUD clients often present with significant pain complaints, higher rates of injection-related complications (heroin users), and strong physical dependence.
+
+#### Phase 1 Modifications (Weeks 1-2): Detoxification
+
+| Element | OUD-Specific Protocol | Evidence Basis |
+|---------|----------------------|----------------|
+| Primary instrument | COWS scored at admission, then per clinical schedule | NIDA/ASAM: COWS standard for opioid withdrawal |
+| Pharmacological management | Clonidine (alpha-2 agonist) for autonomic symptoms; loperamide for GI symptoms; NSAIDs for musculoskeletal pain; promethazine for nausea | Cochrane: clonidine > placebo for opioid withdrawal |
+| Pain assessment | Differentiate withdrawal-related pain from chronic pain conditions; establish non-opioid pain management plan | No opioid-containing medications permitted in facility |
+| Infection screening | Enhanced screening for injection drug users: HIV, Hepatitis B/C, injection site infections, endocarditis risk | NIDA Principle 13; IDU-specific medical risks |
+| Sleep management | Expect significant insomnia (7-14 days); sleep hygiene education; short-term non-benzodiazepine sedation if indicated | OUD withdrawal sleep disruption evidence |
+| Completion criteria | COWS < 5 for 24 consecutive hours; vital signs stable; adequate oral intake | ASAM completion criteria |
+| Typical duration | 7-14 days depending on opioid type, dose, and duration of use | ASAM withdrawal timeline; tramadol withdrawal can be prolonged |
+
+#### Phase 2 Modifications (Weeks 3-6): Therapeutic Foundation
+
+| Element | OUD-Specific Focus |
+|---------|-------------------|
+| CBT emphasis | Pain catastrophising and pain-related drug seeking; "I can't cope without it" cognitions; managing post-acute withdrawal syndrome (PAWS): mood instability, anhedonia, fatigue lasting weeks to months |
+| Trigger mapping | OUD-specific triggers: physical pain, pharmacies, former dealers, codeine-containing OTC products, peer networks, emotional numbness |
+| Psychoeducation | Opioid receptors and tolerance; overdose risk after abstinence (dramatically reduced tolerance); naloxone education; tramadol-specific seizure risk; codeine metabolism |
+| Medical monitoring | PAWS symptom tracking; chronic pain management plan; mood monitoring (anhedonia common in early opioid recovery) |
+| Spiritual formation | Identity beyond substance: many OUD clients have used opioids for emotional regulation since adolescence; identity reconstruction work critical |
+
+#### Phase 3-4 Modifications (Weeks 7-12): Deepening & Reintegration
+
+| Element | OUD-Specific Focus |
+|---------|-------------------|
+| PRPP development | Opioid-specific relapse prevention: pain management plan (non-opioid), pharmacy avoidance strategies, overdose risk education for family, naloxone access plan (where available) |
+| Trauma processing | OUD populations show highest trauma comorbidity rates; prioritise trauma-focused CBT in Phase 3 |
+| Aftercare | NA fellowship placement; pain management follow-up; if tramadol -- OTC medication vigilance plan; overdose prevention education for family |
+| Outcome measures | DAST-10 (admission vs discharge); COWS resolution timeline; pain severity tracking |
+
+### 20.4 Cannabis Use Disorder (CUD) Pathway
+
+**Prevalence context:** Cannabis is the most widely used illicit substance in Nigeria. CUD clients often present younger, with less insight into cannabis as a problem substance, and frequently report cannabis as "natural" or "harmless." Cognitive impairment (memory, motivation, executive function) is often more pronounced than physical withdrawal.
+
+#### Phase 1 Modifications (Weeks 1-2): Stabilisation
+
+| Element | CUD-Specific Protocol |
+|---------|----------------------|
+| Withdrawal profile | No validated pharmacological protocol; withdrawal is real but not medically dangerous. Expect: irritability, insomnia, decreased appetite, anxiety, restlessness, vivid dreams |
+| Management | Supportive care: sleep hygiene, anxiolytics if indicated, nutritional support, graduated physical activity, psychoeducation that cannabis withdrawal is clinically recognised (DSM-5) |
+| Monitoring | Daily clinical review; PHQ-9 if depressive symptoms emerge; appetite and weight tracking |
+| Duration | Acute symptoms typically 3-7 days; sleep disturbance and irritability may persist 2-4 weeks |
+| Engagement challenge | CUD clients are most likely to minimise their condition; begin MI engagement immediately |
+
+#### Phase 2 Modifications (Weeks 3-6): Therapeutic Foundation
+
+| Element | CUD-Specific Focus |
+|---------|-------------------|
+| CBT emphasis | Cannabis-specific cognitions: "It's natural, not a real drug," "I can't sleep/eat/relax without it," "Everyone smokes." Strongest CBT effect sizes are for cannabis (PMC10572095) |
+| Motivational work | Enhanced MI focus: many CUD clients are in Contemplation or early Preparation; address ambivalence directly; decisional balance exercises |
+| Trigger mapping | CUD-specific triggers: peer groups (cannabis use is highly social), music/entertainment contexts, boredom, evening routines, stress relief expectations |
+| Psychoeducation | Cannabis and the adolescent brain; amotivational syndrome; impact on memory, learning, and executive function; cannabis and psychosis risk (dose-response relationship) |
+| Cognitive rehabilitation | Structured activities targeting executive function recovery: planning exercises, goal-setting, problem-solving tasks |
+
+#### Phase 3-4 Modifications (Weeks 7-12): Deepening & Reintegration
+
+| Element | CUD-Specific Focus |
+|---------|-------------------|
+| PRPP development | Peer network restructuring (most critical for CUD); alternative stress management and relaxation strategies; evening routine redesign; social skills for cannabis-free socialising |
+| Vocational emphasis | Employment/education engagement critical: CUD-related amotivation is the primary barrier to reintegration. Vocational pathway must be activated by Week 7 |
+| Aftercare | Peer accountability partnerships; structured evening and weekend activities; ongoing cognitive recovery monitoring (executive function typically improves over 3-6 months of abstinence) |
+| Outcome measures | DAST-10 (admission vs discharge); cognitive function assessment; motivational stage (URICA) progression |
+
+### 20.5 Stimulant Use Disorder Pathway
+
+**Prevalence context:** Stimulant use in Nigeria includes cocaine, methamphetamine, and high-dose pharmaceutical stimulants. Stimulant clients often present with acute psychiatric symptoms (paranoia, agitation, psychosis), significant cardiovascular risk, and crash/rebound depression following cessation.
+
+#### Phase 1 Modifications (Weeks 1-2): Stabilisation
+
+| Element | Stimulant-Specific Protocol |
+|---------|---------------------------|
+| Withdrawal profile | No medically dangerous withdrawal; primary presentation is "crash": hypersomnia, hyperphagia, psychomotor retardation, dysphoria, intense cravings |
+| Psychiatric monitoring | Heightened DIP (drug-induced psychosis) risk, especially in first 72-96 hours; assess q4h for paranoid ideation, auditory/visual hallucinations, agitation |
+| Management | Rest, nutrition, hydration; antipsychotic if DIP symptoms emerge (per physician); mood monitoring (PHQ-9); suicide risk screening (C-SSRS) -- depression common post-stimulant cessation |
+| Cardiovascular | ECG if indicated; blood pressure monitoring; cardiac symptom vigilance |
+| Duration | Crash phase: 1-3 days. Withdrawal symptoms (dysphoria, fatigue, anhedonia): 1-4 weeks |
+
+#### Phase 2 Modifications (Weeks 3-6): Therapeutic Foundation
+
+| Element | Stimulant-Specific Focus |
+|---------|-------------------------|
+| CBT emphasis | Stimulant-specific cognitions: grandiosity, risk-taking justification, "I perform better on it," sexual behaviour under influence. Craving management techniques (cravings are intense but time-limited) |
+| Trigger mapping | Stimulant-specific triggers: nightlife, sexual activity, high-pressure work, financial access (binge pattern on payday), specific peer groups |
+| Psychoeducation | Dopamine depletion and recovery timeline; anhedonia as a neurobiological symptom (not a character flaw) -- typically improves over 3-6 months; cardiovascular risks; stimulant psychosis risk |
+| Mood monitoring | Enhanced PHQ-9 frequency (weekly minimum) during Weeks 3-6; anhedonia is the primary relapse driver for stimulant clients |
+| Risk assessment | Enhanced C-SSRS during Weeks 2-6: post-stimulant depression carries suicide risk |
+
+#### Phase 3-4 Modifications (Weeks 7-12): Deepening & Reintegration
+
+| Element | Stimulant-Specific Focus |
+|---------|-------------------------|
+| PRPP development | Nightlife and social environment avoidance plans; financial accountability structures (consider trusted person managing finances early in recovery); sexual behaviour plan; high-risk situation rehearsal |
+| Behavioural activation | Critical for stimulant recovery: structured activities to counteract anhedonia; exercise programme (evidence for exercise improving dopamine recovery); creative pursuits; service activities |
+| Aftercare | Extended mood monitoring (anhedonia/depression); NA/CA fellowship placement; structured evening/weekend activities; financial accountability partner |
+| Outcome measures | DAST-10 (admission vs discharge); PHQ-9 trend; anhedonia resolution tracking |
+
+### 20.6 Polysubstance Use Pathway
+
+**Prevalence context:** Many HOR clients use multiple substances. The polysubstance pathway applies when a client meets DSM-5 criteria for moderate-to-severe SUD for two or more substances, or when the clinical picture is dominated by combined substance effects rather than a single primary substance.
+
+#### Clinical Approach
+
+| Element | Polysubstance Protocol |
+|---------|----------------------|
+| Pathway assignment | Primary pathway assigned based on highest clinical severity substance; secondary pathway elements integrated into treatment plan |
+| Detoxification | Sequential or concurrent detox management based on withdrawal risk hierarchy: alcohol withdrawal (seizure/DT risk) takes priority, then opioid withdrawal, then other substances |
+| Assessment complexity | Full ASI across all substance domains; CIWA-Ar AND COWS if alcohol + opioid co-use; enhanced medical monitoring |
+| CBT approach | Address common underlying cognitions across substances (emotional dysregulation, low distress tolerance, impulsivity); substance-specific refusal skills for each substance |
+| Trigger mapping | Identify shared triggers (e.g., stress triggers both alcohol and cannabis use) and substance-specific triggers; note "substitution risk" -- switching one substance for another |
+| PRPP | Must address ALL substances of use, not just the primary; include substitution risk awareness; comprehensive social network restructuring |
+| Pharmacological | Medication interactions must be considered across all withdrawal protocols; physician must coordinate all medication decisions centrally |
+| Extended programme | Polysubstance clients are strong candidates for programme extension to 16-26 weeks per NIDA Principle 5 |
+
+---
+
+## 21. LEVEL-OF-CARE PATHWAYS
+
+### 21.1 Rationale and ASAM Alignment
+
+The ASAM Criteria (Fourth Edition, 2024) define a continuum of care across five major levels. HOR's current programme operates at ASAM Level 3.5 (Clinically Managed High-Intensity Residential). Establishing formal level-of-care pathways creates a connected system where clients can step up or step down based on clinical need, rather than a single programme with a binary admit/discharge decision.
+
+Each level of care below represents a distinct service pathway with its own admission criteria, programme structure, staffing requirements, and transition protocols.
+
+### 21.2 Outpatient Services (ASAM Level 1)
+
+**Purpose:** Provide structured outpatient support for clients who do not require residential placement, clients stepping down from residential care, and clients in the Outpatient Engagement Pathway (Section 4.5) who are building readiness for higher-intensity treatment.
+
+#### Admission Criteria
+
+| Criterion | Standard | Assessment |
+|-----------|----------|------------|
+| SUD severity | Mild-to-moderate SUD (DSM-5), OR post-residential step-down | ASI, ASSIST |
+| Medical stability | No withdrawal risk requiring medical supervision | Physician evaluation |
+| Psychiatric stability | Stable; no active suicidal ideation, no psychosis | C-SSRS, clinical interview |
+| Living environment | Safe, supportive living situation confirmed | ASAM Dimension 6 assessment |
+| Readiness | Contemplation stage or higher on URICA | URICA, MI assessment |
+| Support system | At least one identified support person | Clinical interview |
+
+#### Programme Structure
+
+| Component | Specification |
+|-----------|--------------|
+| Duration | 12-24 weeks (flexible based on clinical progress) |
+| Contact frequency | 1-2 sessions per week (individual or group) |
+| Session length | 60 minutes (individual), 90 minutes (group) |
+| Core interventions | Individual CBT, MI, psychoeducation, relapse prevention |
+| Spiritual component | Voluntary: chapel attendance, pastoral counselling available |
+| UDS | Monthly, or more frequently if clinically indicated |
+| Assessment schedule | URICA, PHQ-9, GAD-7 at intake, monthly, and discharge |
+| Operating hours | Weekday daytime and select evenings |
+
+#### Staffing
+
+| Role | Requirement |
+|------|-------------|
+| Clinical Lead | Oversees outpatient programme; caseload max 30 active clients |
+| Counsellor(s) | Trained in CBT and MI; minimum 1 FTE per 15 active clients |
+| Physician | Available for consultation; conducts initial medical screening |
+| Administrative | Scheduling, records, UDS coordination |
+
+#### Step-Up Criteria (Level 1 to Level 2.1 or 3.5)
+
+A client in outpatient services should be assessed for step-up to a higher level of care when:
+- UDS indicates substance use on two or more consecutive tests
+- PHQ-9 or GAD-7 scores deteriorate to moderate or above
+- Client reports inability to maintain abstinence in current environment
+- URICA stage regresses (Action to Contemplation or Precontemplation)
+- Safety risk emerges (C-SSRS elevation)
+- Living environment becomes unsafe or unsupportive
+
+### 21.3 Intensive Outpatient Programme -- IOP (ASAM Level 2.1)
+
+**Purpose:** Provide a structured, higher-intensity outpatient programme for clients who need more support than weekly outpatient but do not require 24-hour residential supervision. Serves as both a step-up from Level 1 and a step-down from Level 3.5.
+
+#### Admission Criteria
+
+| Criterion | Standard | Assessment |
+|-----------|----------|------------|
+| SUD severity | Moderate SUD, OR step-down from residential with ongoing treatment needs | ASI, ASSIST |
+| Medical stability | No active withdrawal; medically stable | Physician evaluation |
+| Psychiatric stability | Stable or manageable in outpatient setting; no active psychosis | C-SSRS, PHQ-9, GAD-7 |
+| Living environment | Safe living situation; able to return home daily | ASAM Dimension 6 |
+| Readiness | Preparation or Action stage on URICA | URICA |
+| Functional capacity | Able to attend 9+ hours per week of structured programming | Clinical assessment |
+| Transport | Reliable transport to and from facility | Practical assessment |
+
+#### Programme Structure
+
+| Component | Specification |
+|-----------|--------------|
+| Duration | 8-16 weeks |
+| Contact frequency | Minimum 9 hours per week (3 days x 3 hours, or 4 days x 2.5 hours) |
+| Core interventions | Group CBT (3x weekly, 90 min), individual counselling (weekly, 60 min), psychoeducation (2x weekly, 60 min) |
+| Relapse prevention | PRPP development concurrent with programme |
+| Spiritual component | Bible study and spiritual formation group (2x weekly, voluntary for non-residential clients) |
+| Family engagement | Family psychoeducation session (monthly minimum); family therapy as indicated |
+| UDS | Bi-weekly minimum |
+| Assessment schedule | URICA, PHQ-9, GAD-7 at intake, bi-weekly, and discharge |
+| Life skills | Weekly life skills group integrated into programme schedule |
+| Peer support | Recovery support group (weekly) |
+
+#### Staffing
+
+| Role | Requirement |
+|------|-------------|
+| Programme Coordinator | Manages IOP operations; clinical supervision of IOP counsellors |
+| Counsellor(s) | CBT/MI trained; minimum 1 FTE per 10 active clients |
+| Physician | Weekly clinic; available for urgent consultation |
+| Nurse | Present during programme hours for medication management and health monitoring |
+| Social Worker | Case management; housing and vocational support |
+
+#### Step-Up Criteria (Level 2.1 to Level 3.5)
+
+| Indicator | Action |
+|-----------|--------|
+| Continued substance use despite IOP engagement | Assess for residential admission |
+| Psychiatric deterioration (C-SSRS elevation, psychosis symptoms) | Immediate physician review; residential or psychiatric referral |
+| Unsafe living environment | Residential admission or emergency housing referral |
+| Non-attendance (missed >3 sessions in 2 weeks without valid reason) | Clinical review; assess barriers; consider residential if environment is the barrier |
+| Client request | Assess appropriateness; facilitate residential admission if criteria met |
+
+#### Step-Down Criteria (Level 2.1 to Level 1)
+
+| Indicator | Action |
+|-----------|--------|
+| Sustained abstinence (UDS negative for 4+ consecutive weeks) | Assess for step-down |
+| PHQ-9 and GAD-7 stable at mild or minimal | Supports step-down |
+| PRPP completed and actively used | Supports step-down |
+| Stable living environment and support network confirmed | Required for step-down |
+| Client demonstrates coping skills in daily life | Clinical team agreement |
+
+### 21.4 Residential Programme (ASAM Level 3.5) -- Current Programme
+
+The residential programme as described in Sections 4-19 of this protocol. No modifications. This section confirms its position within the level-of-care continuum.
+
+**Step-down pathway:** Residential clients who meet graduation criteria (Section 16.3) transition to either Level 2.1 (IOP) or Level 1 (Outpatient) based on clinical assessment, or directly to the Alumni Programme (Section 17) with aftercare monitoring.
+
+**Recommended step-down sequence for high-severity clients:**
+1. Residential (12 weeks) → IOP (8-12 weeks) → Outpatient (12-24 weeks) → Alumni
+2. Total structured treatment contact: 8-14 months
+3. This sequence aligns with McKay's evidence that 12+ months of structured aftercare produces significantly better outcomes
+
+### 21.5 Level-of-Care Transition Protocol
+
+All transitions between levels of care follow a standardised process:
+
+**Step-Up Transitions (Lower → Higher Intensity):**
+
+| Step | Action | Responsible |
+|------|--------|-------------|
+| 1 | Clinical concern identified and documented | Treating counsellor |
+| 2 | Clinical Lead reviews case; confirms step-up indication | Clinical Lead |
+| 3 | Physician assessment (medical clearance for residential if applicable) | Program Director / Physician |
+| 4 | Client informed; consent obtained; family notified (with consent) | Counsellor + Clinical Lead |
+| 5 | Treatment plan updated for new level of care | MDT |
+| 6 | Warm handover: outgoing counsellor briefs incoming team; client introduced to new programme | Both teams |
+| 7 | First session at new level within 48 hours of transition decision | Receiving programme |
+
+**Step-Down Transitions (Higher → Lower Intensity):**
+
+| Step | Action | Responsible |
+|------|--------|-------------|
+| 1 | Step-down criteria met; documented in progress notes | Treating counsellor |
+| 2 | MDT review and agreement | MDT |
+| 3 | Transition plan developed with client (co-authored) | Counsellor + client |
+| 4 | Outgoing programme provides clinical summary to receiving programme | Clinical Lead |
+| 5 | Client meets receiving counsellor before transition (warm handover) | Both teams |
+| 6 | First session at new level within 7 days of residential discharge | Receiving programme |
+| 7 | Outgoing counsellor checks in at Day 7 and Day 14 post-transition | Outgoing counsellor |
+
+**Critical principle:** No client should experience a gap in care during transitions. The "warm handover" is non-negotiable -- the client must meet their new treatment team before leaving the current level of care.
+
+---
+
+## 22. POPULATION-SPECIFIC PATHWAYS
+
+### 22.1 Rationale
+
+The base protocol (Sections 4-19) and substance-specific pathways (Section 20) establish universal and substance-differentiated standards. However, research evidence demonstrates that certain populations require additional modifications to the treatment environment, therapeutic approach, and support services to achieve equitable outcomes.
+
+Population-specific pathways do not replace the base protocol. They modify it in targeted areas while maintaining the universal programme structure, evidence-based interventions, and spiritual formation framework.
+
+### 22.2 Women's Pathway
+
+#### Evidence Base
+
+- Women with SUD show higher rates of co-occurring trauma, depression, and anxiety than men (Greenfield et al., 2007)
+- Women are more likely to have experienced intimate partner violence (IPV), sexual assault, and childhood sexual abuse
+- Women face unique barriers to treatment entry: childcare responsibilities, stigma (greater for women in most cultures including Nigerian culture), financial dependence on partner
+- Women progress from first substance use to dependence faster than men ("telescoping effect")
+- Gender-responsive treatment produces better outcomes for women than mixed-gender programmes (SAMHSA, 2009)
+- Pregnancy and lactation require specific medical and nutritional protocols
+
+#### Pathway Modifications
+
+**Admission Modifications:**
+
+| Element | Women's Pathway Modification |
+|---------|------------------------------|
+| Screening | Enhanced trauma screening: IPV screening (HITS or WAST instrument), sexual trauma history, reproductive health assessment |
+| Pregnancy testing | Mandatory at admission; positive result does NOT exclude -- triggers obstetric liaison and modified detox protocol |
+| Childcare assessment | Document children's ages, current care arrangements, child protection concerns; liaise with child welfare if needed |
+| Safety assessment | IPV risk assessment: is partner a barrier to treatment? Safety planning if partner is abusive |
+| Facility | Dedicated women's wing with separate bathroom facilities, common areas, and group therapy spaces |
+
+**Treatment Modifications:**
+
+| Element | Women's Pathway Modification |
+|---------|------------------------------|
+| Group therapy | Women-only group sessions for trauma processing, body image, relationships, parenting, self-worth. Mixed groups retained for psychoeducation and life skills |
+| Trauma focus | Prioritised: 90%+ of women in SUD treatment report significant trauma. Trauma-focused CBT available from Phase 2 (not delayed to Phase 3) |
+| Individual therapy | Emphasis on self-worth, identity beyond caregiving roles, financial independence, healthy relationship patterns |
+| Family therapy | IPV-informed: never conduct couples therapy where IPV is present without specialist IPV training. Focus on children's wellbeing, parenting skills, independent functioning |
+| Parenting programme | Added module: parenting skills, child development, impact of SUD on children, rebuilding trust with children |
+| Reproductive health | Contraception counselling; STI screening and treatment; referral for obstetric/gynaecological care as needed |
+| Spiritual formation | Address religious trauma (submission theology used to justify abuse); identity in Christ beyond marital/maternal roles; women of the Bible curriculum |
+| Peer support | Women's recovery circle (daily); female sponsor/mentor assigned |
+
+**Discharge Modifications:**
+
+| Element | Women's Pathway Modification |
+|---------|------------------------------|
+| Safety planning | IPV safety plan if applicable: safe housing, emergency contacts, legal resources (Rights and Humanity referral) |
+| Housing | Assess whether returning home is safe; transitional housing referral if home environment is abusive or unsupportive |
+| Childcare | Child reunification plan (if children in alternative care); parenting support in aftercare |
+| Vocational | Financial independence emphasis: vocational training, micro-enterprise support, financial literacy |
+| Aftercare | Women's recovery fellowship; ongoing parenting support; domestic violence resources |
+
+### 22.3 Adolescent and Young Adult Pathway (Ages 16-24)
+
+#### Evidence Base
+
+- Adolescent brains are still developing (prefrontal cortex maturation continues to age 25); executive function, impulse control, and risk assessment are neurobiologically immature
+- Adolescents show different patterns of substance use: higher rates of cannabis, inhalants, and pharmaceutical misuse; lower rates of alcohol dependence
+- Family involvement is more critical for adolescent outcomes than for adults (Liddle, 2004)
+- Educational continuity during treatment significantly improves post-treatment outcomes
+- Peer influence is the strongest predictor of adolescent substance use (more than family, personality, or availability)
+- Adolescents in adult treatment programmes show lower retention rates; age-appropriate programming improves engagement (SAMHSA, 2012)
+
+#### Admission Modifications
+
+| Element | Adolescent Pathway Modification |
+|---------|--------------------------------|
+| Age range | 16-24 years (parental/guardian consent required for clients under 18) |
+| Assessment | Developmentally appropriate instruments; add CRAFFT screening (validated for adolescents); educational assessment |
+| Family | Family involvement MANDATORY (not optional Pathway A/B distinction); at least one parent/guardian must participate in treatment |
+| Legal | For clients under 18: child protection considerations; Lagos State child welfare compliance |
+| Housing | Adolescent clients housed in dedicated wing, separated from adult clients (35+) |
+
+#### Treatment Modifications
+
+| Element | Adolescent Pathway Modification |
+|---------|--------------------------------|
+| Programme duration | 16 weeks recommended minimum (extended from 12) -- adolescent evidence suggests longer engagement needed for neurodevelopmental reasons |
+| Daily schedule | Modified: educational tutoring block (9:00-11:00 AM, replacing adult vocational in Phases 2-3); age-appropriate recreational activities |
+| Group therapy | Adolescent-only groups; age-appropriate language and examples; emphasis on peer refusal skills, identity development, emotional regulation |
+| Individual therapy | Developmentally appropriate CBT; address identity formation, peer relationships, family conflict, academic stress, social media and digital triggers |
+| Family therapy | MANDATORY minimum 4 sessions (vs 2 for adults); Multidimensional Family Therapy (MDFT) approach -- family system is primary intervention target |
+| Psychoeducation | Adolescent brain development; social media and substance use; peer pressure dynamics; academic recovery; legal consequences |
+| Spiritual formation | Age-appropriate: youth-oriented worship, discipleship groups, youth Bible curriculum; mentorship by young adult recovery role models |
+| Vocational/educational | Educational continuity: liaison with school/university for academic materials; tutoring support; educational re-entry plan for discharge |
+| Peer component | Enhanced: adolescent peer recovery circles; structured social activities; supervised recreation with therapeutic purpose |
+| Technology | Age-appropriate digital literacy; social media safety planning; online trigger management |
+
+#### Discharge Modifications
+
+| Element | Adolescent Pathway Modification |
+|---------|--------------------------------|
+| Education | School/university re-entry plan confirmed before discharge; academic support continuation plan |
+| Family | Family aftercare contract: ongoing family sessions for minimum 6 months post-discharge |
+| Peer network | Structured alternative peer group identified and connected pre-discharge |
+| Church | Youth-specific church programme placement (not just adult congregation) |
+| Aftercare | Enhanced contact frequency: weekly for first 6 months (vs 3 months for adults) |
+| Monitoring | Extended monitoring: 36 months (vs 24 for adults) |
+
+### 22.4 Dual-Diagnosis Pathway
+
+#### Evidence Base
+
+- NIDA Principle 9: "Many drug-addicted individuals also have other mental disorders." Co-occurring SUD and mental health disorders are the rule, not the exception -- estimates range from 40-65% of SUD treatment populations
+- WHO mhGAP (2023) recommends integrated treatment for co-occurring mental health and substance use conditions, particularly in LMIC settings
+- Clients with untreated co-occurring disorders show higher rates of treatment dropout, relapse, hospitalisation, and suicide
+- Integrated treatment (addressing both conditions simultaneously in one programme) produces superior outcomes to sequential treatment (treating one condition, then the other) or parallel treatment (treating both simultaneously but in separate programmes) -- Drake et al., 2004
+- HOR's current exclusion criteria redirect clients with active psychosis or severe psychiatric conditions. The dual-diagnosis pathway enables treatment of clients with stable but ongoing psychiatric conditions alongside SUD
+
+#### Eligibility Criteria
+
+The dual-diagnosis pathway is activated when a client presents with:
+- DSM-5 SUD diagnosis (moderate-to-severe) AND
+- One or more co-occurring mental health conditions: Major Depressive Disorder, Generalised Anxiety Disorder, Post-Traumatic Stress Disorder, Bipolar Disorder (stable, medicated), Personality Disorder traits (not requiring specialist personality disorder services), Attention-Deficit/Hyperactivity Disorder
+
+**Exclusion from dual-diagnosis pathway (referral required):**
+- Active psychosis (unchanged from base protocol)
+- Acute suicidal intent with plan (unchanged)
+- Severe eating disorder requiring medical stabilisation
+- Conditions requiring inpatient psychiatric care (ASAM Level 4)
+
+#### Treatment Modifications
+
+| Element | Dual-Diagnosis Pathway Modification |
+|---------|--------------------------------------|
+| Assessment | Enhanced psychiatric assessment at admission: structured clinical interview for DSM-5 diagnoses; medication history review; previous psychiatric treatment history |
+| Physician involvement | Weekly psychiatric review (vs monthly in base protocol); medication titration and monitoring |
+| Medication management | Psychiatric medication management integrated with SUD treatment: antidepressants, mood stabilisers, anxiolytics (non-benzodiazepine preferred), ADHD medication (non-stimulant preferred) |
+| CBT | Integrated dual-focus CBT: sessions address both SUD cognitions and mental health condition-specific cognitions concurrently |
+| Individual therapy | Increased frequency: 2x weekly individual sessions (vs 1x in base protocol) |
+| Risk monitoring | Enhanced C-SSRS frequency: twice weekly for depressive/PTSD/bipolar clients; PHQ-9 and GAD-7 weekly (vs monthly) |
+| Group therapy | Dual-diagnosis psychoeducation group (weekly): understanding the interaction between mental health and substance use; medication adherence; managing symptoms without substances |
+| Psychiatric liaison | Established relationship with consulting psychiatrist (Yaba Psychiatric Hospital or private provider); psychiatric consultation available within 48 hours |
+| Discharge criteria | Additional criterion: psychiatric stability confirmed by physician; medication plan established for post-discharge; psychiatric follow-up appointment confirmed before discharge |
+| Aftercare | Psychiatric follow-up integrated into aftercare plan; medication adherence monitoring; mental health relapse indicators included in PRPP |
+
+#### Staffing Enhancement
+
+| Additional Requirement | Specification |
+|------------------------|---------------|
+| Consulting psychiatrist | Formal agreement with psychiatrist for weekly clinic and emergency consultation |
+| Clinical staff training | All clinical staff trained in dual-diagnosis recognition and basic psychiatric medication knowledge |
+| Nursing | Enhanced medication monitoring skills; psychiatric medication side-effect recognition |
+
+---
+
+## 23. STANDARD OPERATING PROCEDURES
+
+### 23.1 Purpose and Scope
+
+Standard Operating Procedures (SOPs) translate the clinical protocols in Sections 1-22 into step-by-step operational procedures that staff follow in daily practice. Each SOP specifies WHO does WHAT, WHEN, in WHAT ORDER, with WHAT documentation.
+
+SOPs are mandatory. Deviation from an SOP requires documented clinical justification and supervisor approval.
+
+### 23.2 SOP-001: Admission
+
+**Applies to:** All new client admissions (Pathway A and Pathway B)
+**Responsible:** Program Officer, Program Director, Nursing Staff, House Master
+**Reference:** Section 4 (Admission Protocol)
+
+| Step | Action | Responsible | Documentation | Timeframe |
+|------|--------|-------------|---------------|-----------|
+| 1 | Receive enquiry (phone, walk-in, referral). Record: name, age, substance(s), referral source, contact number. Provide programme overview and fee structure | Program Officer | Enquiry Log | Day 0 |
+| 2 | Schedule pre-screening appointment within 3 working days. Inform client/family what to bring: ID, medical records, medication list | Program Officer | Enquiry Log | Within 3 days |
+| 3 | Pre-screening interview: administer ASI, ASSIST, URICA. Conduct MI-based dialogue to assess willingness. Determine pathway (A or B) | Program Director | Pre-Screening Form; ASI, ASSIST, URICA scored | Pre-screening day |
+| 4 | If URICA indicates Precontemplation: enrol in Outpatient Engagement Pathway (SOP-013). Do NOT turn away. Document and schedule first OEP session within 7 days | Program Director / Counsellor | OEP Referral Form | Same day |
+| 5 | If admission indicated: issue medical test list. Client/family arranges tests within 48 hours. Pathway B: Social Worker conducts VNA | Program Director | Medical Test Order Form; VNA (Pathway B) | Within 48 hours |
+| 6 | Review medical results. Program Director confirms medical eligibility (ASAM Dimensions 1-3). If exclusion criteria present: issue written referral, provide safety information, schedule 72-hour follow-up call | Program Director | Medical Review Note | On receipt of results |
+| 7 | Admission approved: schedule admission date. Confirm with client and family. Prepare bed assignment | Program Officer | Admission Confirmation | Within 24 hours of approval |
+| 8 | Admission day: complete all consent forms (Appendix A checklist -- all 8 forms signed). Client and witness signatures on each | Program Officer + Client | Consent Forms File | Admission day |
+| 9 | Property inspection: inspect all belongings in client's presence. Confiscate contraband (substances, weapons, unauthorised medication, lighters). Complete Belongings Inventory. Secure valuables in safe | House Master | Belongings Inventory Form; Contraband Register | Admission day |
+| 10 | Medication surrender: all medications handed to nursing staff. Nurse documents each item in Medication Register. Physician reviews medication list and issues continuation/modification orders | Nurse + Physician | Medication Register; Physician Orders | Admission day |
+| 11 | Orientation: facility tour, introduce staff, explain daily schedule, explain rules and behavioural expectations (Section 15), explain rights and complaints process. Provide printed Orientation Pack | House Master | Orientation Checklist (signed by client) | Admission day |
+| 12 | Nursing baseline: vital signs (BP, pulse, temp, respiratory rate), weight, height, BMI, general physical assessment, withdrawal risk assessment (CIWA-Ar or COWS as indicated) | Nurse | Nursing Assessment Form; Vital Signs Record | Admission day |
+| 13 | Clinical assessment: C-SSRS, PHQ-9, GAD-7, ACE questionnaire, trauma screening | Clinical Lead / Counsellor | Assessment Forms (scored and filed) | Within 24 hours |
+| 14 | Treatment plan initiated: Columbia Model plan started within 72 hours. Client co-authors goals. Primary counsellor assigned | Clinical Lead + Counsellor | Treatment Plan (Columbia Model) | Within 72 hours |
+| 15 | Detox protocol activated if indicated (SOP-002) | Physician + Nurse | Detox Protocol Orders | Admission day |
+| 16 | MDT notified: new admission summary distributed to all MDT members | Program Director | MDT Notification | Within 24 hours |
+
+### 23.3 SOP-002: Detoxification Monitoring
+
+**Applies to:** All clients undergoing medically supervised withdrawal (Weeks 1-2)
+**Responsible:** Physician, Nursing Staff
+**Reference:** Section 7 (Detoxification Protocol), Section 20 (Substance-Specific Pathways)
+
+**Alcohol Detoxification:**
+
+| Step | Action | Responsible | Documentation | Frequency |
+|------|--------|-------------|---------------|-----------|
+| 1 | Administer CIWA-Ar; record score | Nurse | CIWA-Ar Scoring Sheet | Admission, then q4h |
+| 2 | If CIWA-Ar < 8: continue monitoring; no medication. Supportive care: hydration, nutrition, reassurance | Nurse | Progress Notes | q4h |
+| 3 | If CIWA-Ar 8-15: administer benzodiazepine per physician standing order. Increase monitoring to q2h. Document dose, time, response | Nurse | MAR; CIWA-Ar Sheet | q2h |
+| 4 | If CIWA-Ar 15-20: intensify protocol. Monitor q1h. Notify physician. Implement seizure precautions (padded side rails, suction, airway management equipment at bedside) | Nurse + Physician | MAR; Progress Notes; Seizure Precaution Checklist | q1h |
+| 5 | If CIWA-Ar > 20: IMMEDIATE physician review. Assess for delirium tremens. Consider transfer to higher level of care if not stabilising within 24 hours | Physician | Physician Review Note; Transfer Assessment | Continuous |
+| 6 | Thiamine 100mg IM/IV daily for 3-5 days, then oral. Multivitamin. B-complex | Nurse (physician order) | MAR | Daily |
+| 7 | Vital signs: BP, pulse, temperature, respiratory rate | Nurse | Vital Signs Record | q4h minimum; q1-2h if CIWA-Ar > 15 |
+| 8 | Fluid intake and output monitoring | Nurse | I/O Chart | Continuous |
+| 9 | Completion assessment: CIWA-Ar < 8 for 24 consecutive hours AND vital signs stable AND no seizure indicators | Physician | Detox Completion Note | Daily review |
+| 10 | Detox completion documented; transition to Phase 2 therapeutic programme | Physician | Physician Orders; Progress Notes | On completion |
+
+**Opioid Detoxification:**
+
+| Step | Action | Responsible | Documentation | Frequency |
+|------|--------|-------------|---------------|-----------|
+| 1 | Administer COWS; record score | Nurse | COWS Scoring Sheet | Admission, then per schedule |
+| 2 | If COWS 0-4: supportive care; hydration; reassurance | Nurse | Progress Notes | Per schedule |
+| 3 | If COWS 5-12: comfort medications (loperamide, NSAIDs, promethazine as prescribed) | Nurse | MAR | As needed |
+| 4 | If COWS 13-24: initiate clonidine per physician protocol. Monitor BP before each dose (hold if systolic < 90). Document dose, time, BP response | Nurse | MAR; Vital Signs Record | Per clonidine schedule |
+| 5 | If COWS 25-36: full adjunctive protocol. Increase monitoring. Physician review | Nurse + Physician | MAR; Progress Notes | q4h minimum |
+| 6 | If COWS > 36: IMMEDIATE physician review. Assess for transfer if not stabilising | Physician | Physician Review Note | Continuous |
+| 7 | Sleep assessment: document sleep quality; initiate sleep hygiene measures; non-benzodiazepine sedation if indicated | Nurse | Sleep Assessment Record | Daily |
+| 8 | Completion assessment: COWS < 5 for 24 consecutive hours AND vital signs stable AND adequate oral intake | Physician | Detox Completion Note | Daily review |
+
+### 23.4 SOP-003: Medication Administration
+
+**Applies to:** All medication administration across all programme phases
+**Responsible:** Nursing Staff, Physician
+**Reference:** Section 12 (Medication Management Protocol)
+
+| Step | Action | Responsible | Documentation | Frequency |
+|------|--------|-------------|---------------|-----------|
+| 1 | Retrieve medication from locked cabinet. Verify against MAR: correct client, correct medication, correct dose, correct route, correct time (5 Rights) | Nurse | MAR | Each round |
+| 2 | Identify client by name and bed number. Client must be physically present | Nurse | -- | Each round |
+| 3 | Administer medication. Observe client swallowing oral medications (no cheek storage, no hoarding) | Nurse | MAR (signed, timed) | Each round |
+| 4 | Document administration immediately: medication name, dose, route, time, nurse signature | Nurse | MAR | Each round |
+| 5 | If medication refused: document refusal, inform physician within 2 hours, counsel client on importance of adherence | Nurse | MAR (refusal noted); Progress Notes | As occurs |
+| 6 | If adverse reaction observed: stop medication, notify physician immediately, document reaction, provide supportive care | Nurse + Physician | Adverse Drug Reaction Form; Progress Notes | Immediately |
+| 7 | Controlled medication count: two nurses verify count at each shift change | 2 Nurses | Controlled Medication Register | Each shift change |
+| 8 | Weekly stock reconciliation: verify all medication stock against dispensing records | Senior Nurse | Stock Reconciliation Record | Weekly (Monday) |
+| 9 | Expiry date check: flag all medications expiring within 90 days; remove expired medications | Nurse | Expiry Monitoring Log | Monthly |
+| 10 | New medication orders: physician writes order; nurse transcribes to MAR; second nurse verifies transcription | Physician + 2 Nurses | Physician Order Sheet; MAR | As ordered |
+
+**Medication Rounds Schedule:** 6:00 AM, 12:00 PM, 6:00 PM, 10:30 PM daily.
+
+### 23.5 SOP-004: Shift Handover
+
+**Applies to:** All staff shift changes (nursing, house masters, security)
+**Responsible:** Outgoing and incoming shift staff
+**Reference:** Sections 6, 12, 13
+
+| Step | Action | Responsible | Documentation | Timeframe |
+|------|--------|-------------|---------------|-----------|
+| 1 | Outgoing shift staff prepares handover summary: all clients by name with current status, any incidents, any medical concerns, any behavioural issues, any new admissions, any passes in progress | Outgoing staff | Handover Book | 15 min before shift end |
+| 2 | Face-to-face verbal handover at designated handover location. Walk through each client. Highlight any client requiring special attention | Outgoing + Incoming | -- | Shift change time |
+| 3 | Controlled medication count conducted jointly (nursing handover) | Outgoing + Incoming Nurse | Controlled Medication Register | At handover |
+| 4 | Outstanding tasks communicated: pending physician orders, pending family calls, pending documentation | Outgoing staff | Handover Book | At handover |
+| 5 | Incoming staff signs Handover Book confirming receipt of information | Incoming staff | Handover Book (signed, timed) | At handover |
+| 6 | Incoming staff conducts headcount and visual check of all residents within 30 minutes of taking over shift | Incoming staff | Headcount Register | Within 30 min |
+
+**Shift Schedule:**
+- Day shift: 7:00 AM - 3:00 PM
+- Afternoon shift: 3:00 PM - 11:00 PM
+- Night shift: 11:00 PM - 7:00 AM
+
+### 23.6 SOP-005: Emergency Response -- Medical Emergency
+
+**Applies to:** Any medical emergency (collapse, seizure, chest pain, severe allergic reaction, uncontrolled bleeding, loss of consciousness)
+**Responsible:** All staff (first responder), Nursing Staff, Physician
+**Reference:** Section 13 (Risk Assessment & Safety Protocol)
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | STAY WITH CLIENT. Call for help. Do not leave client unattended | First responder (any staff) | Immediate |
+| 2 | Assess: Airway, Breathing, Circulation (ABC). If CPR needed: initiate immediately | First responder / Nurse | Immediate |
+| 3 | Nurse on duty attends with emergency kit (first aid box, BP monitor, pulse oximeter, blood glucose monitor) | Nurse | Within 2 minutes |
+| 4 | Notify Physician / Program Director | Nurse / any staff | Within 5 minutes |
+| 5 | Stabilise: manage airway, control bleeding, position safely (recovery position if unconscious), seizure management (protect head, clear surroundings, do NOT restrain, time seizure) | Nurse | Ongoing |
+| 6 | If hospital transfer needed: call emergency transport. Prepare client for transfer. Assign staff member to accompany | Nurse + Program Director | As determined |
+| 7 | Notify family / PFSP | Program Director / Program Officer | Within 30 minutes |
+| 8 | Document: complete Incident Report Form. Include: time of event, symptoms, actions taken, response, outcome, staff involved | Nurse + attending staff | Within 2 hours of event |
+| 9 | Post-incident debrief: Program Director reviews incident with involved staff within 24 hours | Program Director | Within 24 hours |
+| 10 | Root cause review at next MDT meeting | MDT | Next scheduled MDT |
+
+### 23.7 SOP-006: Emergency Response -- Suicide Risk
+
+**Applies to:** Any client presenting with suicidal ideation, self-harm, or suicide attempt
+**Responsible:** All staff (identification), Clinical Staff, Physician
+**Reference:** Section 5.4 (C-SSRS Protocol), Section 13
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | If ACTIVE ATTEMPT: treat as medical emergency (SOP-005). Secure means (remove sharps, medications, ligature points). Call for help | First responder | Immediate |
+| 2 | If ideation/self-harm (no active attempt): stay with client. Speak calmly. Do not leave unattended. Call for clinical staff | First responder | Immediate |
+| 3 | Administer C-SSRS. Determine risk level (Low / Moderate / High / Critical per Section 5.4) | Clinical staff | Within 15 minutes |
+| 4 | **Low risk** (Q1-2 only): document; continue weekly C-SSRS; inform Clinical Lead | Counsellor | Same day |
+| 5 | **Moderate risk** (Q3-4): increase observation frequency (q1h checks); notify Clinical Lead; document in Risk Register; review triggers and safety plan with client | Clinical Lead | Within 1 hour |
+| 6 | **High risk** (Q5, or Q3-4 with self-harm history): initiate 1-to-1 continuous supervision. Notify Program Director. Contact family/PFSP. Remove all potential means from client's environment. Physician assessment within 2 hours | Program Director + Nurse | Immediate |
+| 7 | **Critical risk** (Q6 recent, active psychosis, homicidal ideation): emergency referral to Yaba Psychiatric Hospital or nearest A&E. Staff accompanies client. Family notified immediately | Program Director | Immediate |
+| 8 | Document: Incident Report, C-SSRS score, risk level, actions taken, supervision plan | Clinical staff | Within 2 hours |
+| 9 | Update treatment plan: add suicide risk management goals and interventions | Counsellor + Clinical Lead | Within 24 hours |
+| 10 | Daily C-SSRS until risk level returns to Low for 7 consecutive days | Clinical staff | Daily |
+
+### 23.8 SOP-007: Emergency Response -- Drug-Induced Psychosis (DIP)
+
+**Applies to:** Any client displaying acute psychotic symptoms (hallucinations, delusions, severe agitation, paranoia, disorganised behaviour)
+**Responsible:** All staff (identification), Nursing Staff, Physician
+**Reference:** Section 13.3
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | STAY CALM. Do not argue with delusions. Do not attempt to reason with psychotic content. Speak in short, simple, reassuring sentences | First responder | Immediate |
+| 2 | ENSURE SAFETY: clear the immediate area of other residents. Remove potential weapons/harmful objects. Maintain safe distance if client is agitated | First responder + House Master | Immediate |
+| 3 | Notify Nurse on duty and Program Director IMMEDIATELY | Any staff | Within 2 minutes |
+| 4 | Provide continuous 1-to-1 supervision in low-stimulus environment (dim lighting, quiet room, minimal people) | Assigned staff member | Continuous until medical handover |
+| 5 | Do NOT leave client unattended until medical assessment is complete | Assigned staff | Continuous |
+| 6 | Physician assessment: evaluate for DIP vs other causes (medical, psychiatric). Consider PRN antipsychotic if indicated | Physician | Within 30 minutes |
+| 7 | Program Director initiates IMMEDIATE REFERRAL to Yaba Psychiatric Hospital or nearest A&E if symptoms do not resolve with initial management | Program Director | As determined |
+| 8 | Contact family / PFSP / next of kin | Program Director / Program Officer | Within 1 hour |
+| 9 | If client transported: staff member accompanies. Provide clinical summary to receiving facility | Nurse + accompanying staff | At transport |
+| 10 | Document: Incident Report, clinical observations, actions taken, referral details | Nurse + attending staff | Within 2 hours |
+| 11 | Post-incident: debrief with staff involved; debrief with other residents (without identifying details); review at MDT | Program Director | Within 24 hours |
+
+### 23.9 SOP-008: Emergency Response -- Abscondment
+
+**Applies to:** Any client who leaves the facility without authorisation
+**Responsible:** House Master, Program Director, all staff
+**Reference:** Section 15 (Behavioural Management)
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | Confirm abscondment: headcount, room check, facility search, check with other residents (without alarm) | House Master | Within 15 minutes of discovery |
+| 2 | Notify Program Director | House Master | Immediately upon confirmation |
+| 3 | Contact client by phone (if phone is with them or known number) | Program Officer / Counsellor | Within 30 minutes |
+| 4 | Notify family / PFSP | Program Director | Within 1 hour |
+| 5 | Document: time last seen, circumstances, any precipitating events, current risk level (was client on detox? suicidal? medically unstable?) | House Master | Within 1 hour |
+| 6 | If client is on active detox or has elevated risk factors: advise family to seek immediate medical attention; provide nearest hospital information | Program Director | Immediately |
+| 7 | Secure client's belongings. Do not dispose for minimum 14 days | House Master | Same day |
+| 8 | If client returns voluntarily: medical assessment (any substance use during absence?), clinical review, re-engagement conversation using MI. Program Director determines whether re-admission or discharge is appropriate | Program Director + Clinical Lead | On return |
+| 9 | If client does not return within 48 hours: classify as Self-Discharge (AMA). Attempt 72-hour follow-up call. Provide harm reduction information and HOR contact details to family | Counsellor | Day 3 |
+| 10 | Document in client file: discharge type, follow-up attempts, safety information provided | Counsellor | Within 72 hours |
+
+### 23.10 SOP-009: Multi-Disciplinary Team (MDT) Meeting
+
+**Applies to:** All weekly MDT meetings and emergency MDT reviews
+**Responsible:** Program Director (Chair), all MDT members
+**Reference:** Section 3.5
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | Agenda prepared: list of all clients for review, new admissions, critical incidents, discharges pending, any clinical concerns raised during week | Clinical Lead | 24 hours before meeting |
+| 2 | Each discipline prepares brief update per client on their caseload | All MDT members | Before meeting |
+| 3 | Meeting convenes (weekly, fixed day and time). Quorum: minimum Program Director + Clinical Lead + 1 other discipline | MDT | Weekly |
+| 4 | New admissions reviewed: confirm treatment plan, pathway assignment, substance pathway, any population pathway activation, risk level | MDT | During meeting |
+| 5 | Active client reviews: progress against treatment plan goals, assessment scores, behavioural observations, spiritual formation progress, any concerns | MDT | During meeting |
+| 6 | Week 4 / Week 8 treatment plan reviews: formal review of all goals; modify, add, or close goals as indicated (NIDA Principle 4) | MDT | As scheduled |
+| 7 | Pre-discharge reviews: assess against 6 graduation criteria (Section 16.3); confirm or defer graduation date | MDT | Weeks 10-12 |
+| 8 | Risk register review: all clients on enhanced monitoring discussed; risk levels confirmed or adjusted | MDT | During meeting |
+| 9 | Actions documented: each decision, action item, responsible person, and deadline recorded | Clinical Lead / designated note-taker | During meeting |
+| 10 | Minutes distributed to all MDT members within 24 hours. Filed in MDT Minutes Register | Clinical Lead | Within 24 hours |
+
+### 23.11 SOP-010: Discharge and Graduation
+
+**Applies to:** All discharges (Types 1-4 as per Section 16)
+**Responsible:** Program Director, Clinical Lead, Counsellor, Social Worker, House Master
+**Reference:** Section 16 (Discharge & Graduation Protocol)
+
+**Type 1: Planned Discharge (Graduation)**
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | MDT confirms all 6 graduation criteria met (Section 16.3) | MDT | Week 10-11 |
+| 2 | Pre-discharge family/community meeting conducted | Counsellor + Social Worker | Week 11 |
+| 3 | PRPP finalised, printed, client retains copy, copy in file | Counsellor | Week 11 |
+| 4 | Aftercare plan completed: counsellor assigned for aftercare contact; first follow-up appointment scheduled within 7 days; church placement confirmed; support group identified | Counsellor + Social Worker | Week 11-12 |
+| 5 | Discharge assessments completed: AUDIT, DAST-10, PHQ-9, GAD-7, URICA, C-SSRS (discharge) | Clinical Lead / Counsellor | Week 12 |
+| 6 | Discharge summary written: admission presentation, treatment received, progress, discharge status, aftercare plan, medications (if any), recommendations | Clinical Lead | Before discharge day |
+| 7 | Medication: any continuing medications prescribed with sufficient supply for 14 days; referral to continuing prescriber | Physician | Discharge day |
+| 8 | Property return: all belongings returned per Belongings Inventory; client signs receipt | House Master | Discharge day |
+| 9 | Alumni Programme enrolment: explained and registered | Counsellor | Discharge day |
+| 10 | Graduation ceremony: testimony, certificate, prayer, commissioning | Chaplain + Program Director | Graduation day |
+| 11 | Transport: confirmed safe transport to confirmed safe destination | Social Worker / Family | Discharge day |
+| 12 | File closed for residential episode; aftercare file opened | Administrative | Discharge day |
+
+**Type 4: Self-Discharge (Against Medical Advice)**
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | Client expresses desire to leave. Counsellor engages using MI: explore reasons, express concern, provide information about risks of early departure | Counsellor | Immediately |
+| 2 | If client maintains decision: notify Program Director | Counsellor | Same session |
+| 3 | Program Director meets with client: compassionate conversation, explain risks, offer alternatives (e.g., modified programme, brief break with return date) | Program Director | Within 2 hours |
+| 4 | If client insists: AMA form explained and signed. Document that client was informed of risks | Program Director + Client | Before departure |
+| 5 | Harm reduction counselling: overdose risk (especially post-opioid abstinence), safer use information, crisis helpline (09011277600) | Counsellor / Nurse | Before departure |
+| 6 | Safety plan provided: emergency contacts, crisis line, nearest health facility, HOR contact number | Counsellor | Before departure |
+| 7 | Family / PFSP notified (with client's consent, or without consent if safety risk) | Program Director | Before departure |
+| 8 | Prayer offered; compassionate farewell; door remains open for re-admission | Chaplain / any staff | Before departure |
+| 9 | Property returned per inventory | House Master | Before departure |
+| 10 | 72-hour follow-up call attempted | Counsellor | Day 3 |
+| 11 | Document: AMA form, safety plan provided, follow-up attempts | Counsellor | Within 24 hours |
+
+### 23.12 SOP-011: Family Visitation
+
+**Applies to:** All family visits (Sunday 12:00-6:00 PM)
+**Responsible:** House Master, Program Officer, Security
+**Reference:** Section 14.4
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | Visitors register at reception: name, relationship to client, ID checked, time of arrival recorded | Security / Program Officer | On arrival |
+| 2 | Visitor briefing: remind visitors of rules (no substances, no contraband, designated areas only, no dormitory access, children must be supervised) | Program Officer | On arrival |
+| 3 | Bag/parcel inspection: all items brought for client inspected in visitor's presence. Confiscate contraband. Food items checked | House Master / Security | On arrival |
+| 4 | Client notified and escorted to visitor area | House Master | On arrival |
+| 5 | Visit proceeds in designated visitor area. Staff maintain general supervision (not intrusive but present) | House Master / staff on duty | During visit |
+| 6 | Children: parent/guardian must supervise at all times. No child left alone with any resident (including their parent if the parent is a client) | Staff on duty | During visit |
+| 7 | If visitor displays signs of intoxication or disruptive behaviour: politely end visit, escort visitor out, document | House Master | As needed |
+| 8 | Visit ends by 6:00 PM. Visitors sign out at reception | Security / Program Officer | 6:00 PM |
+| 9 | Post-visit check: observe client for emotional changes, substance use indicators. Brief check-in conversation | House Master / Counsellor | After visit |
+| 10 | Log: visitor register completed with arrival/departure times, any incidents | Program Officer | End of day |
+
+### 23.13 SOP-012: Urine Drug Screening (UDS)
+
+**Applies to:** All scheduled and ad-hoc UDS
+**Responsible:** Nursing Staff
+**Reference:** Section 5.5 (Clinical Assessment Schedule)
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | Identify client for testing (scheduled monthly for all residents; ad-hoc if clinical suspicion or post-pass) | Nurse / Clinical Lead | Per schedule or as indicated |
+| 2 | Inform client of test. UDS is mandatory per admission agreement -- refusal is treated as a positive result | Nurse | At time of test |
+| 3 | Specimen collection: client provides sample under indirect observation (staff nearby but not directly watching). Sample labelled with client name, date, time | Nurse | At time of test |
+| 4 | Test administered using approved rapid immunoassay kit. Results read at specified time window per kit instructions | Nurse | Per kit instructions |
+| 5 | Results documented: substance(s) tested, result (positive/negative) for each, date, time, nurse signature | Nurse | Immediately after reading |
+| 6 | Negative result: file in client record. No further action | Nurse | Same day |
+| 7 | Positive result: notify Clinical Lead and Program Director within 1 hour. Do not inform other residents | Nurse | Within 1 hour |
+| 8 | Positive result follow-up: Clinical Lead conducts compassionate interview with client. Assess circumstances, triggers, honesty. Update treatment plan. Apply behavioural management response per Section 15 | Clinical Lead | Within 24 hours |
+| 9 | Document outcome and any treatment plan modifications in client file | Clinical Lead | Within 24 hours |
+| 10 | If positive result occurs on return from pass: review pass privileges per behavioural management protocol | Clinical Lead + Program Director | Within 24 hours |
+
+### 23.14 SOP-013: Outpatient Engagement Pathway
+
+**Applies to:** Clients assessed as Precontemplation or early Contemplation on URICA who are not yet ready for residential admission
+**Responsible:** Counsellor, Program Director
+**Reference:** Section 4.5
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | Client enrolled following pre-screening (SOP-001, Step 4). Explain OEP purpose: building readiness, not a lesser service | Counsellor | Enrolment day |
+| 2 | Schedule first MI session within 7 days of enrolment | Counsellor | Within 7 days |
+| 3 | Weekly individual MI sessions (45-60 min): use OARS techniques, explore ambivalence, develop discrepancy, support self-efficacy | Counsellor | Weekly |
+| 4 | Psychoeducation: addiction as a brain disorder, recovery is possible, what treatment involves | Counsellor | Integrated into sessions |
+| 5 | Family counselling offered (with client consent): psychoeducation on enabling vs supporting; family's role in recovery | Counsellor / Social Worker | As agreed |
+| 6 | Harm reduction guidance: practical safety information to reduce immediate risk while client builds readiness | Counsellor / Nurse | Ongoing |
+| 7 | Spiritual engagement: voluntary invitation to prayer, pastoral conversation, chapel attendance | Chaplain | Ongoing |
+| 8 | URICA re-assessment every 2-4 weeks: track stage-of-change movement | Counsellor | Bi-weekly to monthly |
+| 9 | When URICA indicates Preparation or Action stage: offer residential admission. Fast-track admission process (SOP-001 from Step 3) | Program Director | When readiness achieved |
+| 10 | If client disengages: 3 follow-up attempts over 2 weeks. Door remains open. Document in OEP file | Counsellor | Over 2 weeks |
+| 11 | OEP maximum duration: 6 months. If no movement towards readiness after 6 months: compassionate review, consider alternative referral, maintain contact | Program Director | 6-month review |
+
+### 23.15 SOP-014: Incident Reporting
+
+**Applies to:** All incidents: medical emergencies, behavioural incidents, falls, injuries, near-misses, safeguarding concerns, property damage, complaints, deaths
+**Responsible:** All staff (reporting), Program Director (review)
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | Manage the immediate incident (safety first, follow relevant emergency SOP) | First responder | Immediate |
+| 2 | Complete Incident Report Form: date, time, location, persons involved, factual description of what happened (not interpretation), actions taken, injuries sustained, witnesses | Reporting staff member | Within 2 hours of incident |
+| 3 | Notify Program Director (all incidents) and Clinical Lead (clinical incidents) | Reporting staff | Within 2 hours |
+| 4 | Notify family / PFSP if client was injured or involved in serious incident | Program Director | Within 4 hours |
+| 5 | Program Director reviews Incident Report: categorises severity (Minor / Moderate / Serious / Critical), determines if further investigation needed | Program Director | Within 24 hours |
+| 6 | Serious/Critical incidents: formal investigation initiated. Statements taken from all involved. Root cause analysis conducted | Program Director | Within 48 hours |
+| 7 | Serious/Critical incidents: Board notification | Program Director | Within 24 hours |
+| 8 | Investigation findings documented. Corrective actions identified. Responsible person and deadline assigned for each action | Program Director | Within 7 days |
+| 9 | Incident reviewed at next MDT meeting. Lessons learned shared with all staff | MDT | Next MDT |
+| 10 | Incident Register updated (central log of all incidents, searchable by type, date, client) | Administrative | Within 24 hours |
+| 11 | Quarterly incident trend analysis reported to Board | Program Director | Quarterly |
+
+### 23.16 SOP-015: Aftercare Contact
+
+**Applies to:** All graduated clients during the 24-month post-discharge monitoring period
+**Responsible:** Assigned Aftercare Counsellor
+**Reference:** Section 17 (Continuing Care & Alumni Protocol)
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | First contact within 7 days of discharge: phone call. Check: safety, sobriety, medication adherence, church attendance, employment status, mood, any concerns | Aftercare Counsellor | Day 7 |
+| 2 | Months 1-3: weekly phone contact. Use structured check-in template: sobriety, triggers encountered, coping strategies used, support network engagement, spiritual life, employment/education | Aftercare Counsellor | Weekly |
+| 3 | Month 3: Outcome Snapshot completed (Section 17.3). Home/workplace visit conducted. Administer PHQ-9, GAD-7 | Aftercare Counsellor | Month 3 |
+| 4 | Months 4-6: bi-weekly phone contact using same template | Aftercare Counsellor | Bi-weekly |
+| 5 | Month 6: Outcome Snapshot completed. Home visit. Administer AUDIT/DAST-10, PHQ-9, GAD-7 | Aftercare Counsellor | Month 6 |
+| 6 | Months 7-12: monthly phone contact | Aftercare Counsellor | Monthly |
+| 7 | Month 12: Outcome Snapshot completed. Home visit. Full assessment battery | Aftercare Counsellor | Month 12 |
+| 8 | Year 2: monthly phone contact, bi-monthly visits | Aftercare Counsellor | Monthly / bi-monthly |
+| 9 | Month 24: Final Outcome Snapshot. Case closure assessment. If stable: discharge from aftercare with alumni programme continuation. If concerns: extend monitoring 6 months | Aftercare Counsellor + Program Director | Month 24 |
+| 10 | If relapse detected at any contact: activate Relapse Response Protocol (Section 17.4). Compassionate outreach within 48 hours. Offer re-admission | Aftercare Counsellor | Within 48 hours |
+| 11 | If lost to follow-up (3 consecutive missed contacts): attempt contact via family/PFSP, church, alternative numbers. Document all attempts. If no contact after 6 attempts over 4 weeks: classify as "Lost to Follow-up" in outcome data | Aftercare Counsellor | Over 4 weeks |
+| 12 | All contacts documented in Aftercare Contact Log with date, mode, content summary, and any concerns identified | Aftercare Counsellor | After each contact |
+
+### 23.17 SOP-016: Pass Management
+
+**Applies to:** All client passes (3-hour, 24-hour, 48-hour, emergency)
+**Responsible:** Program Director, Counsellor, House Master
+**Reference:** Sections 15, 16
+
+| Step | Action | Responsible | Timeframe |
+|------|--------|-------------|-----------|
+| 1 | Client requests pass through counsellor. Counsellor assesses eligibility: minimum stay met, behavioural compliance, clinical stability, no current risk flags | Counsellor | On request |
+| 2 | Counsellor recommends approval/denial to Program Director with rationale | Counsellor | Within 24 hours of request |
+| 3 | Program Director approves or denies. If denied: counsellor communicates reason to client compassionately | Program Director | Within 24 hours |
+| 4 | If approved: Pass Form completed -- destination, contact person at destination, expected departure and return times, client mobile number (if applicable), emergency contact | Counsellor + Client | Before pass |
+| 5 | Pre-pass briefing with client: remind of expectations (no substance use, return on time, stay at declared destination, contact HOR if any problems) | Counsellor / House Master | Before departure |
+| 6 | Client departs: sign-out in Pass Register (time, destination) | House Master | At departure |
+| 7 | During pass: client reachable by phone. If 24-hour or 48-hour pass, check-in call at halfway point | Counsellor / House Master | During pass |
+| 8 | Client returns: sign-in at Pass Register (time). Visual and behavioural assessment for signs of substance use | House Master | On return |
+| 9 | If suspicion of substance use on return: UDS administered (SOP-012). Clinical assessment. Behavioural management response per Section 15 | Nurse + Clinical Lead | On return |
+| 10 | If client does not return by expected time: attempt phone contact. If no contact within 2 hours of expected return: escalate to Program Director. If no return within 6 hours: follow SOP-008 (Abscondment) | House Master → Program Director | As timeline progresses |
+| 11 | Pass outcome documented in client file: any incidents, behavioural observations, UDS result if tested | Counsellor / House Master | Within 24 hours of return |
+
+---
+
+## 24. REFERENCES
 
 ### International Frameworks and Guidelines
 
@@ -1512,11 +2351,11 @@ HOR's protocol is designed to meet or exceed both TREATNET and SAMHSA standards,
 
 | ASAM Level | Description | HOR Mapping |
 |------------|-------------|-------------|
-| Level 0.5 | Early Intervention | HOR Outpatient Engagement Pathway |
-| Level 1 | Outpatient Services | Not provided at HOR |
-| Level 2.1 | Intensive Outpatient | Not provided at HOR |
+| Level 0.5 | Early Intervention | HOR Outpatient Engagement Pathway (Section 21.2 / SOP-013) |
+| Level 1 | Outpatient Services | HOR Outpatient Programme (Section 21.2) |
+| Level 2.1 | Intensive Outpatient | HOR Intensive Outpatient Programme (Section 21.3) |
 | Level 3.1 | Clinically Managed Low-Intensity Residential | Not applicable |
-| **Level 3.5** | **Clinically Managed High-Intensity Residential** | **HOR Primary Programme** |
+| **Level 3.5** | **Clinically Managed High-Intensity Residential** | **HOR Residential Programme (Sections 4-19, 21.4)** |
 | Level 3.7 | Medically Monitored Intensive Inpatient | Exceeds HOR scope; referral |
 | Level 4 | Medically Managed Intensive Inpatient | Exceeds HOR scope; referral |
 
@@ -1524,18 +2363,18 @@ HOR's protocol is designed to meet or exceed both TREATNET and SAMHSA standards,
 
 | # | Principle | HOR Protocol Section |
 |---|-----------|---------------------|
-| 1 | No single treatment appropriate for everyone | 4, 8.1 |
-| 2 | Treatment needs to be readily available | 4.2, 4.5 |
-| 3 | Effective treatment attends to multiple needs | 6, 8, 10, 11 |
-| 4 | Treatment plan must be continually assessed and modified | 8.1 |
-| 5 | Remaining in treatment adequate time is critical | 6.1 |
-| 6 | Behavioral therapies are most commonly used | 8.2, 8.3 |
-| 7 | Medications important for many patients | 7, 12 |
-| 8 | Treatment and services must be assessed continually | 8.1, 19 |
-| 9 | Many drug-addicted individuals have co-occurring mental disorders | 5.1, 9 |
-| 10 | Medically assisted detoxification is first stage only | 7.1 |
-| 11 | Treatment does not need to be voluntary to be effective | 4.2, 4.5 |
-| 12 | Drug use during treatment must be monitored continuously | 5.5 |
+| 1 | No single treatment appropriate for everyone | 4, 8.1, 20, 22 |
+| 2 | Treatment needs to be readily available | 4.2, 4.5, 21 |
+| 3 | Effective treatment attends to multiple needs | 6, 8, 10, 11, 22 |
+| 4 | Treatment plan must be continually assessed and modified | 8.1, 21.5 |
+| 5 | Remaining in treatment adequate time is critical | 6.1, 21.4 |
+| 6 | Behavioral therapies are most commonly used | 8.2, 8.3, 20 |
+| 7 | Medications important for many patients | 7, 12, 20 |
+| 8 | Treatment and services must be assessed continually | 8.1, 19, 23.9 |
+| 9 | Many drug-addicted individuals have co-occurring mental disorders | 5.1, 9, 22.4 |
+| 10 | Medically assisted detoxification is first stage only | 7.1, 20 |
+| 11 | Treatment does not need to be voluntary to be effective | 4.2, 4.5, 23.14 |
+| 12 | Drug use during treatment must be monitored continuously | 5.5, 23.12 |
 | 13 | Test for HIV/AIDS, hepatitis, TB, and other infectious diseases | 4.8 |
 
 ---
