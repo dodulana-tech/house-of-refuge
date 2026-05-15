@@ -74,6 +74,15 @@ export default function Outpatient() {
 
           {loading ? (
             <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--g500)' }}>Loading services…</div>
+          ) : services.length === 0 ? (
+            <div className="card" style={{ padding: '40px 32px', textAlign: 'center', background: '#FFF8EC', border: '1px solid rgba(192,138,48,.25)' }}>
+              <div style={{ fontSize: '.72rem', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--gold)', fontWeight: 700, marginBottom: 10 }}>Launching soon</div>
+              <h3 style={{ fontSize: '1.2rem', margin: '0 0 8px', color: 'var(--charcoal)' }}>Our outpatient catalog goes live shortly.</h3>
+              <p style={{ fontSize: '.95rem', color: 'var(--g700)', maxWidth: 540, margin: '0 auto 18px', lineHeight: 1.6 }}>
+                Psychiatric consultations, clinical psychology, family therapy, diagnostics, and the pre-admission clinical assessment will be bookable from this page once the catalog is published.
+              </p>
+              <a className="btn btn--primary" href="tel:+2349112777600">Call 0911 277 7600 for current availability</a>
+            </div>
           ) : (
             SERVICE_CATEGORIES.map(cat => {
               const list = grouped[cat.key] || []
