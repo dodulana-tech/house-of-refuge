@@ -906,23 +906,24 @@ export default function Waitlist() {
                 <div className={styles.paynote}>
                   <div className={styles.payTitle}>What happens next — no payment required now</div>
                   <p className={styles.payText}>
-                    Submitting this form does <strong>not</strong> require any payment. Our admissions team will review your application and respond within 48 hours with the next step.
+                    Submitting this form does <strong>not</strong> require any payment. Our admissions team will review your application and respond within one working day with the next step.
                   </p>
                   <div className={styles.payBreakdown}>
-                    <div><span>1. Application reviewed</span><span>Within 48 hours</span></div>
-                    <div><span>2. Refundable deposit requested by email</span><span>Required before assessment</span></div>
-                    <div><span>3. Clinical assessment begins</span><span>Only after deposit received</span></div>
-                    <div><span>4. Admission decision</span><span>Conditional on results</span></div>
+                    <div><span>1. Application reviewed</span><span>Within 1 working day</span></div>
+                    <div><span>2. Deposit invited by email — NGN 1,000,000</span><span>400k assessment + 600k held toward Month 1</span></div>
+                    <div><span>3. Clinical assessment + 9 lab tests</span><span>Within 7–14 days of deposit</span></div>
+                    <div><span>4. Pastoral interview — Pastor Tony Rapu</span><span>Patient + family, booked by admissions</span></div>
+                    <div><span>5. Admission</span><span>600k applied to Month 1; balance settled</span></div>
                   </div>
                   <p style={{ fontSize: '.78rem', color: 'var(--g700)', marginTop: 12, lineHeight: 1.6 }}>
-                    The deposit (when later requested) is <strong>fully refundable</strong>. Admission is conditional on the completion and results of clinical assessments and diagnostic investigations, which are billed against the deposit <strong>only with your written consent</strong> after you have been selected and chosen to proceed.
+                    The NGN 1,000,000 deposit is split: <strong>₦400,000 is the clinical assessment fee</strong> — consumed once the psychiatrist begins your file (covers consultation, the 9 pre-admission lab tests, MDT review, and a written decision/referral). <strong>₦600,000 is held toward Month 1 fees</strong> — refundable in full if we decline admission, if you withdraw before psychiatrist work begins, if no bed opens within your active waitlist hold, or if you voluntarily leave the waitlist. Full refund policy is published in the prospectus.
                   </p>
                 </div>
 
                 <div className={styles.medTestNote}>
-                  <div className={styles.medTestTitle}>Pre-Admission Medical Tests (after deposit & consent)</div>
+                  <div className={styles.medTestTitle}>Pre-Admission Lab Panel (covered by the 400k assessment fee)</div>
                   <p style={{ fontSize: '.8rem', color: 'var(--g700)' }}>
-                    Once shortlisted and you have chosen to proceed, the following may be arranged: HIV Screening, Hepatitis B & C, Urine Drug Screen, Full Blood Count, Liver Function Tests, Malaria Parasite, Widal Test, Chest X-Ray, Blood Glucose. A full cost breakdown is shared in writing before any charge is made.
+                    The following nine tests are conducted under our clinical supervision as part of the 400k assessment fee — no additional charge: HIV, Hepatitis A &amp; B, Urine Drug Screen, Full Blood Count, Liver Function Tests, Malaria, Widal, Chest X-Ray, Blood Glucose.
                   </p>
                 </div>
 
@@ -954,12 +955,12 @@ export default function Waitlist() {
                 <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 16 }}>Admission Process</h4>
                 <div className={styles.psteps}>
                   {[
-                    ['1', 'Submit Application (Free)', 'No payment is required. Our admissions team reviews every application within 48 hours.'],
-                    ['2', 'Refundable Deposit (required before assessment)', 'If shortlisted, you receive an email requesting the fully refundable ₦1,000,000 booking deposit. The clinical assessment cannot begin until the deposit is received.'],
-                    ['3', 'Clinical Assessment', 'Begins only after the deposit is received. Medical, psychiatric and psychosocial evaluations. Costs are billed against the deposit only with your written consent.'],
-                    ['4', 'Admission Decision', 'Admit / Refer / Defer based on assessment results. Unused deposit refunded if not admitted or you decline to proceed.'],
-                    ['5', 'Documentation & Intake', 'Consent forms signed. Bed and counselor assigned. Full orientation.'],
-                    ['6', 'Treatment & Detoxification', 'Doctor-supervised detox (Weeks 1–2). Columbia Model treatment plan developed within 72 hours.'],
+                    ['1', 'Self-assessment (Free)', 'Complete the intake form. Our admissions team reviews every application within one working day.'],
+                    ['2', 'Deposit — NGN 1,000,000', 'Invited by email once the file passes initial review. Split: ₦400,000 clinical assessment fee (consumed when psychiatrist begins your file — covers consult, 9 lab tests, MDT review, written decision/referral) + ₦600,000 held toward Month 1.'],
+                    ['3', 'Clinical Assessment', 'Within 7–14 days of deposit. Consultant psychiatrist + the 9 pre-admission lab tests. Written decision (accept / decline / refer) within 5 working days.'],
+                    ['4', 'Pastoral Interview — Pastor Tony Rapu', 'Mandatory discernment conversation with Pastor Tony Rapu (founder, Freedom Foundation). Patient and family attend together. Booked by admissions after psychiatrist clearance. Required for every admission.'],
+                    ['5', 'Active Waitlist (if needed)', 'Up to 6 months, renewable. Monthly check-in by admissions. ₦600k held to reserve your place; refundable in full if you withdraw or no bed opens.'],
+                    ['6', 'Admission', '₦600k applied to Month 1 fees; balance settled before admission day. Phase One — Medical Stabilization — begins.'],
                   ].map(([n, t, d]) => (
                     <div key={n} className={styles.ps}>
                       <div className={styles.psN}>{n}</div>
