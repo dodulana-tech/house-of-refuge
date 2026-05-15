@@ -173,10 +173,8 @@ export default function DashboardLayout() {
       <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobOpen ? styles.mobOpen : ''}`}>
         <div className={styles.sidebarHeader}>
           <button className={styles.brand} onClick={() => nav('/')}>
-            <svg width="28" height="18" viewBox="0 0 44 28" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
-              <path d="M4 26L4 14L22 2L40 14L40 26" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-              <path d="M0 15L22 1L44 15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
+            <img src="/logo-mark.svg" alt="" width="34" height="18" aria-hidden="true" style={{ flexShrink: 0, filter: 'brightness(0) invert(1)' }} />
+
             {!collapsed && (
               <div>
                 <div className={styles.brandText}>HOUSE OF REFUGE</div>
