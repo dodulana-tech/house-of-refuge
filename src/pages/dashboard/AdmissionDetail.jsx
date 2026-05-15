@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
+import { buildDepositEmail, DEPOSIT_AMOUNT_NAIRA } from '../../data/depositEmailTemplate'
+import { sendDepositRequestEmail, isSupabaseReady } from '../../utils/supabase'
 
 /*
   Admission Detail — full view of a single application (APP001)
@@ -22,6 +24,8 @@ const PIPELINE_STEPS = [
 const MOCK_APP = {
   id: 'APP001',
   initials: 'TB',
+  applicantName: 'Tunde B.',
+  applicantEmail: 'applicant@example.com',
   pathway: 'A',
   substance: 'Cocaine',
   substanceDuration: '4 years',
@@ -29,7 +33,8 @@ const MOCK_APP = {
   route: 'Intranasal',
   insight: 'contemplation',
   status: 'pre-screening',
-  depositPaid: true,
+  depositPaid: false,
+  depositRequestSentAt: null,
   depositAmount: 1000000,
   dateApplied: '2026-03-28',
   mentalHealth: 'Moderate anxiety, mild depression',
@@ -93,8 +98,69 @@ export default function AdmissionDetail() {
   const [app, setApp] = useState(MOCK_APP)
   const [confirm, setConfirm] = useState(null)
   const [actionReason, setActionReason] = useState('')
+  const [depositModal, setDepositModal] = useState(false)
+  const [depositForm, setDepositForm] = useState({
+    toEmail: '',
+    toName: '',
+    paymentLink: '',
+    reviewerName: '',
+    reviewerTitle: 'Admissions Coordinator',
+    sending: false,
+  })
 
   const currentStepIdx = PIPELINE_STEPS.findIndex(s => s.key === app.status)
+
+  function openDepositEmail() {
+    setDepositForm({
+      toEmail: app.applicantEmail || '',
+      toName: app.applicantName || app.initials || '',
+      paymentLink: '',
+      reviewerName: user?.full_name || user?.email || 'House of Refuge Admissions',
+      reviewerTitle: 'Admissions Coordinator',
+      sending: false,
+    })
+    setDepositModal(true)
+  }
+
+  const depositPreview = buildDepositEmail({
+    patientName: depositForm.toName,
+    applicationId: app.id,
+    pathway: app.pathway,
+    reviewerName: depositForm.reviewerName,
+    reviewerTitle: depositForm.reviewerTitle,
+    paymentLink: depositForm.paymentLink,
+    amount: DEPOSIT_AMOUNT_NAIRA,
+  })
+
+  async function sendDepositEmail() {
+    if (!depositForm.toEmail.includes('@')) return
+    setDepositForm(p => ({ ...p, sending: true, error: '' }))
+    try {
+      if (isSupabaseReady()) {
+        const { data, error } = await sendDepositRequestEmail({
+          applicationId: app.id,
+          recipientEmail: depositForm.toEmail,
+          recipientName: depositForm.toName,
+          pathway: app.pathway,
+          paymentLink: depositForm.paymentLink,
+          reviewerName: depositForm.reviewerName,
+          reviewerTitle: depositForm.reviewerTitle,
+          amountNaira: DEPOSIT_AMOUNT_NAIRA,
+        })
+        if (error) throw new Error(error.message || 'Failed to send email')
+        const sentAt = data?.sentAt || new Date().toISOString()
+        setApp(prev => ({ ...prev, depositRequestSentAt: sentAt }))
+      } else {
+        // Local-only fallback for dev without Supabase configured.
+        await new Promise(r => setTimeout(r, 400))
+        setApp(prev => ({ ...prev, depositRequestSentAt: new Date().toISOString() }))
+      }
+      setDepositForm(p => ({ ...p, sending: false }))
+      setDepositModal(false)
+    } catch (err) {
+      setDepositForm(p => ({ ...p, sending: false, error: err.message || 'Failed to send' }))
+    }
+  }
 
   const handleAction = (action) => {
     setConfirm(action)
@@ -148,9 +214,17 @@ export default function AdmissionDetail() {
           <span style={{ padding: '4px 12px', borderRadius: 14, fontSize: '.74rem', fontWeight: 700, background: 'rgba(26,95,173,.08)', color: 'var(--blue)' }}>
             Pathway {app.pathway}
           </span>
-          {app.depositPaid && (
+          {app.depositPaid ? (
             <span style={{ padding: '4px 12px', borderRadius: 14, fontSize: '.74rem', fontWeight: 700, background: 'rgba(26,122,74,.1)', color: '#1A7A4A' }}>
               Deposit: {fmt(app.depositAmount)} Paid
+            </span>
+          ) : app.depositRequestSentAt ? (
+            <span style={{ padding: '4px 12px', borderRadius: 14, fontSize: '.74rem', fontWeight: 700, background: 'rgba(26,95,173,.1)', color: 'var(--blue)' }}>
+              Deposit request sent {new Date(app.depositRequestSentAt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}
+            </span>
+          ) : (
+            <span style={{ padding: '4px 12px', borderRadius: 14, fontSize: '.74rem', fontWeight: 700, background: 'rgba(160,160,160,.12)', color: 'var(--g500)' }}>
+              Deposit: Not yet requested
             </span>
           )}
         </div>
@@ -302,6 +376,15 @@ export default function AdmissionDetail() {
             >
               Advance to Next Stage
             </button>
+            <button
+              className="btn btn--sm"
+              style={{ background: app.depositPaid ? 'rgba(160,160,160,.1)' : 'rgba(26,95,173,.08)', color: app.depositPaid ? 'var(--g500)' : 'var(--blue)', border: '1px solid rgba(26,95,173,.25)', fontWeight: 600 }}
+              onClick={openDepositEmail}
+              disabled={app.depositPaid}
+              title={app.depositPaid ? 'Deposit already paid' : 'Send the refundable-deposit request email to the applicant'}
+            >
+              {app.depositRequestSentAt ? 'Resend Deposit Request Email' : 'Send Deposit Request Email'}
+            </button>
             <button className="btn btn--secondary btn--sm" onClick={() => handleAction('Refer to Outpatient Pathway')}>
               Refer to Outpatient Pathway
             </button>
@@ -322,6 +405,128 @@ export default function AdmissionDetail() {
           </div>
         )}
       </div>
+
+      {/* Deposit Email Modal */}
+      {depositModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(20,28,40,.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20, zIndex: 1000,
+          }}
+          onClick={() => !depositForm.sending && setDepositModal(false)}
+        >
+          <div
+            className="card"
+            style={{ width: '100%', maxWidth: 880, maxHeight: '92vh', overflow: 'auto', padding: 0, background: 'white' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--g100, #eee)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.15rem', color: 'var(--charcoal)', margin: 0 }}>
+                  Send Refundable Deposit Request
+                </h2>
+                <p style={{ fontSize: '.8rem', color: 'var(--g500)', margin: '4px 0 0 0' }}>
+                  Application {app.id} &middot; Pathway {app.pathway} &middot; Deposit {fmt(DEPOSIT_AMOUNT_NAIRA)}
+                </p>
+              </div>
+              <button
+                className="btn btn--secondary btn--sm"
+                onClick={() => setDepositModal(false)}
+                disabled={depositForm.sending}
+              >
+                Close
+              </button>
+            </div>
+
+            <div style={{ padding: '18px 24px', display: 'grid', gridTemplateColumns: 'minmax(240px, 1fr) minmax(0, 1.6fr)', gap: 18 }}>
+              {/* Edit panel */}
+              <div>
+                <div className="fg">
+                  <label className="flabel">Recipient name</label>
+                  <input className="fi" value={depositForm.toName}
+                    onChange={e => setDepositForm(p => ({ ...p, toName: e.target.value }))}
+                    placeholder="Applicant name" />
+                </div>
+                <div className="fg">
+                  <label className="flabel">Recipient email *</label>
+                  <input className="fi" type="email" value={depositForm.toEmail}
+                    onChange={e => setDepositForm(p => ({ ...p, toEmail: e.target.value }))}
+                    placeholder="applicant@example.com" />
+                </div>
+                <div className="fg">
+                  <label className="flabel">Payment link (optional)</label>
+                  <input className="fi" value={depositForm.paymentLink}
+                    onChange={e => setDepositForm(p => ({ ...p, paymentLink: e.target.value }))}
+                    placeholder="https://paystack.com/pay/…" />
+                  <span style={{ fontSize: '.7rem', color: 'var(--g500)', display: 'block', marginTop: 4 }}>
+                    Leave blank if you prefer to follow up by phone with bank-transfer details.
+                  </span>
+                </div>
+                <div className="fg">
+                  <label className="flabel">Sender name</label>
+                  <input className="fi" value={depositForm.reviewerName}
+                    onChange={e => setDepositForm(p => ({ ...p, reviewerName: e.target.value }))} />
+                </div>
+                <div className="fg">
+                  <label className="flabel">Sender title</label>
+                  <input className="fi" value={depositForm.reviewerTitle}
+                    onChange={e => setDepositForm(p => ({ ...p, reviewerTitle: e.target.value }))} />
+                </div>
+
+                <div style={{
+                  background: '#FEF7E6', border: '1px solid #F0D77A', borderRadius: 8,
+                  padding: '10px 14px', fontSize: '.78rem', color: '#7A5A15', lineHeight: 1.6,
+                }}>
+                  This template states clearly that the deposit is refundable, that admission is conditional on assessment results, and that assessment costs are billed only with written client consent after selection.
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div>
+                <div style={{ fontSize: '.74rem', textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--g500)', marginBottom: 6, fontWeight: 700 }}>
+                  Subject
+                </div>
+                <div style={{ background: 'var(--off, #f7f7f5)', border: '1px solid var(--g100, #eee)', borderRadius: 6, padding: '8px 12px', fontSize: '.85rem', marginBottom: 12 }}>
+                  {depositPreview.subject}
+                </div>
+                <div style={{ fontSize: '.74rem', textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--g500)', marginBottom: 6, fontWeight: 700 }}>
+                  Preview
+                </div>
+                <div style={{ border: '1px solid var(--g100, #eee)', borderRadius: 6, overflow: 'hidden', maxHeight: 480 }}>
+                  <iframe
+                    title="Deposit email preview"
+                    srcDoc={depositPreview.html}
+                    style={{ width: '100%', height: 480, border: 'none', display: 'block' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '14px 24px', borderTop: '1px solid var(--g100, #eee)', display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+              {depositForm.error && (
+                <span style={{ color: '#E53E3E', fontSize: '.8rem', marginRight: 'auto' }}>
+                  {depositForm.error}
+                </span>
+              )}
+              <button
+                className="btn btn--secondary btn--sm"
+                onClick={() => setDepositModal(false)}
+                disabled={depositForm.sending}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn--primary btn--sm"
+                onClick={sendDepositEmail}
+                disabled={depositForm.sending || !depositForm.toEmail.includes('@')}
+              >
+                {depositForm.sending ? 'Sending…' : `Send to ${depositForm.toEmail || 'applicant'}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

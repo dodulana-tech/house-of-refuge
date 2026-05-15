@@ -73,6 +73,12 @@ const MENU = {
     { icon: '💰', to: '/dashboard/finance', label: 'Financial Overview' },
     { icon: '💳', to: '/dashboard/payments', label: 'Payments & Deposits' },
     { icon: '❤️', to: '/dashboard/donors', label: 'Donors & CRM' },
+    { icon: '🤝', to: '/dashboard/financial-assistance', label: 'Financial Assistance' },
+
+    { section: 'Outpatient' },
+    { icon: '📅', to: '/dashboard/outpatient/bookings',       label: 'Bookings' },
+    { icon: '🩺', to: '/dashboard/outpatient/services',       label: 'Services Catalog' },
+    { icon: '👨‍⚕️', to: '/dashboard/outpatient/practitioners', label: 'Clinical Roster' },
 
     { section: 'M&E & Compliance' },
     { icon: '📊', to: '/dashboard/outcomes', label: 'Outcome Tracking' },

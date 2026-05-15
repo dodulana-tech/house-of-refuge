@@ -6,7 +6,6 @@
 .grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 36px; margin-bottom: 36px; }
 .brand p { font-size: .84rem; line-height: 1.7; margin-top: 10px; max-width: 240px; }
 .logoText { font-family: var(--fd); color: white; font-size: 1.15rem; font-weight: 700; }
-.logoTag  { font-size: .62rem; opacity: .4; font-style: italic; margin-top: 2px; }
 .orgs { font-size: .78rem; margin-top: 14px; display: flex; gap: 6px; flex-wrap: wrap; }
 .orgs a { color: rgba(255,255,255,.7); transition: color .2s; }
 .orgs a:hover { color: white; }

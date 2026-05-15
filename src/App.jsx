@@ -11,9 +11,19 @@ import Donate from './pages/Donate'
 import Sponsor from './pages/Sponsor'
 import SponsorItem from './pages/SponsorItem'
 import Waitlist from './pages/Waitlist'
+import DepositPay from './pages/DepositPay'
 import Contact from './pages/Contact'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import Prospectus from './pages/Prospectus'
+import FinancialAssistance from './pages/FinancialAssistance'
+import FinancialAssistanceApply from './pages/FinancialAssistanceApply'
+import FinancialAssistanceSubmitted from './pages/FinancialAssistanceSubmitted'
+import Outpatient from './pages/Outpatient'
+import OutpatientService from './pages/OutpatientService'
+import OutpatientBook from './pages/OutpatientBook'
+import OutpatientBooked from './pages/OutpatientBooked'
+import OutpatientPay from './pages/OutpatientPay'
 
 // Lazy load portal/admin/family pages (legacy routes — redirect to /dashboard)
 const Dashboard = lazy(() => import('./pages/portal/Dashboard'))
@@ -85,6 +95,12 @@ const DUDSTracking = lazy(() => import('./pages/dashboard/UDSTracking'))
 const DAssessmentSchedule = lazy(() => import('./pages/dashboard/AssessmentSchedule'))
 const DLifeSkillsModules = lazy(() => import('./pages/dashboard/LifeSkillsModules'))
 const DSOPLibrary = lazy(() => import('./pages/dashboard/SOPLibrary'))
+const DFinancialAssistanceList = lazy(() => import('./pages/dashboard/FinancialAssistanceList'))
+const DFinancialAssistanceDetail = lazy(() => import('./pages/dashboard/FinancialAssistanceDetail'))
+const DOutpatientBookings = lazy(() => import('./pages/dashboard/OutpatientBookings'))
+const DOutpatientBookingDetail = lazy(() => import('./pages/dashboard/OutpatientBookingDetail'))
+const DOutpatientServices = lazy(() => import('./pages/dashboard/OutpatientServices'))
+const DOutpatientPractitioners = lazy(() => import('./pages/dashboard/OutpatientPractitioners'))
 
 // ── Contexts ──────────────────────────────────────────────
 export const NotifContext = createContext(null)
@@ -131,10 +147,20 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
+      <Route path="/prospectus" element={<Prospectus />} />
+      <Route path="/assistance" element={<FinancialAssistance />} />
+      <Route path="/assistance/apply" element={<FinancialAssistanceApply />} />
+      <Route path="/assistance/submitted/:ref" element={<FinancialAssistanceSubmitted />} />
+      <Route path="/outpatient" element={<Outpatient />} />
+      <Route path="/outpatient/:slug" element={<OutpatientService />} />
+      <Route path="/outpatient/:slug/book" element={<OutpatientBook />} />
+      <Route path="/outpatient/booked/:ref" element={<OutpatientBooked />} />
+      <Route path="/outpatient/pay/:ref" element={<OutpatientPay />} />
       <Route path="/donate" element={<Donate />} />
       <Route path="/sponsor" element={<Sponsor />} />
       <Route path="/sponsor/:id" element={<SponsorItem />} />
       <Route path="/apply" element={<Waitlist />} />
+      <Route path="/deposit/:appId" element={<DepositPay />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<Login />} />
 
@@ -203,6 +229,12 @@ function AppRoutes() {
         <Route path="donors/:id" element={<DDonorDetail />} />
         <Route path="inventory" element={<DInventory />} />
         <Route path="sponsorship" element={<DEquipmentSponsorship />} />
+        <Route path="financial-assistance" element={<DFinancialAssistanceList />} />
+        <Route path="financial-assistance/:id" element={<DFinancialAssistanceDetail />} />
+        <Route path="outpatient/bookings" element={<DOutpatientBookings />} />
+        <Route path="outpatient/bookings/:id" element={<DOutpatientBookingDetail />} />
+        <Route path="outpatient/services" element={<DOutpatientServices />} />
+        <Route path="outpatient/practitioners" element={<DOutpatientPractitioners />} />
 
         {/* Pillar 7: M&E & Compliance */}
         <Route path="outcomes" element={<DClinicalOutcomes />} />

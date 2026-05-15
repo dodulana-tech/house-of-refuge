@@ -28,7 +28,7 @@ export default function About() {
             <div className="dv" />
             <p style={{ marginBottom:14 }}>House of Refuge is an initiative of <strong>Freedom Foundation Nigeria</strong>, an NGO founded and supported by our present house church. What began as a pastoral response to drug-affected families in our congregation has grown into a fully planned, clinically governed 24-bed residential rehabilitation facility.</p>
             <p style={{ marginBottom:14 }}>Situated in <strong>Lekki, Lagos</strong>, the centre offers a faith-integrated, medically supervised residential programme for individuals struggling with substance use disorders. The care provided is holistic, dignified, and genuinely transformative.</p>
-            <p>The project is professionally managed by <strong>ConsultForAfrica</strong>, a specialist management consultancy contracted to oversee all pre-launch and ongoing operational workstreams, targeting a go-live of <strong>April 15, 2026</strong>.</p>
+            <p>The project is professionally managed by <strong>ConsultForAfrica</strong>, a specialist management consultancy contracted to oversee all pre-launch and ongoing operational workstreams, targeting a go-live of <strong>May 2026</strong>.</p>
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
             <div className="card" style={{ background:'var(--blue-lt)', border:'none' }}>

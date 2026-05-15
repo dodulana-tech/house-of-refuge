@@ -215,7 +215,7 @@ const TRIGGER_CATEGORIES = {
 const COPING_STRATEGIES = [
   'Deep breathing exercises', 'Call sponsor/accountability partner', 'Attend NA/AA meeting',
   'Physical exercise', 'Prayer and meditation on Scripture', 'Journaling',
-  'Contact crisis helpline (09011277600)', 'Remove self from triggering environment',
+  'Contact crisis helpline (09112777600)', 'Remove self from triggering environment',
   'Grounding techniques (5-4-3-2-1)', 'Engage in hobby or creative activity',
   'Talk to trusted family member', 'Read Bible / devotional material',
 ]

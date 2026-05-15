@@ -800,7 +800,7 @@ Every client must develop a written PRPP as a graduation requirement:
 - Physical exercise (evidence for exercise in mood regulation and craving reduction)
 - Prayer and meditation on Scripture (neuroimaging evidence for attention regulation and impulse control)
 - Journaling (cognitive processing evidence)
-- Contact crisis helpline (09011277600)
+- Contact crisis helpline (09112777600)
 - Remove self from triggering environment (stimulus control)
 - Grounding techniques (5-4-3-2-1) (trauma-informed coping)
 - Engage in hobby or creative activity (behavioural activation)
@@ -2099,7 +2099,7 @@ SOPs are mandatory. Deviation from an SOP requires documented clinical justifica
 | 2 | If client maintains decision: notify Program Director | Counsellor | Same session |
 | 3 | Program Director meets with client: compassionate conversation, explain risks, offer alternatives (e.g., modified programme, brief break with return date) | Program Director | Within 2 hours |
 | 4 | If client insists: AMA form explained and signed. Document that client was informed of risks | Program Director + Client | Before departure |
-| 5 | Harm reduction counselling: overdose risk (especially post-opioid abstinence), safer use information, crisis helpline (09011277600) | Counsellor / Nurse | Before departure |
+| 5 | Harm reduction counselling: overdose risk (especially post-opioid abstinence), safer use information, crisis helpline (09112777600) | Counsellor / Nurse | Before departure |
 | 6 | Safety plan provided: emergency contacts, crisis line, nearest health facility, HOR contact number | Counsellor | Before departure |
 | 7 | Family / PFSP notified (with client's consent, or without consent if safety risk) | Program Director | Before departure |
 | 8 | Prayer offered; compassionate farewell; door remains open for re-admission | Chaplain / any staff | Before departure |

@@ -21,7 +21,6 @@
   background: none; padding: 0;
 }
 .logoText { font-family: var(--fd); font-size: 1.05rem; font-weight: 700; color: var(--charcoal); letter-spacing: .03em; line-height: 1.2; }
-.logoTag  { font-size: .6rem; color: var(--g500); font-weight: 300; font-style: italic; }
 
 .links { display: flex; align-items: center; gap: 4px; }
 .link {

@@ -4,11 +4,13 @@ import { useAuth } from '../context/AuthContext'
 import styles from './Nav.module.css'
 
 const PUBLIC_LINKS = [
-  { to: '/',        label: 'Home'    },
-  { to: '/about',   label: 'About'   },
-  { to: '/sponsor', label: 'Sponsor' },
-  { to: '/apply',   label: 'Apply'   },
-  { to: '/contact', label: 'Contact' },
+  { to: '/',           label: 'Home'       },
+  { to: '/about',      label: 'About'      },
+  { to: '/prospectus', label: 'Prospectus' },
+  { to: '/outpatient', label: 'Outpatient' },
+  { to: '/sponsor',    label: 'Sponsor'    },
+  { to: '/apply',      label: 'Apply'      },
+  { to: '/contact',    label: 'Contact'    },
 ]
 
 export default function Nav() {
@@ -30,15 +32,8 @@ export default function Nav() {
     <>
       <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}>
         <div className={styles.inner}>
-          <button className={styles.logo} onClick={() => { nav('/'); setMob(false) }}>
-            <svg width="44" height="28" viewBox="0 0 44 28" fill="none" aria-hidden="true">
-              <path d="M4 26L4 14L22 2L40 14L40 26" stroke="#1A5FAD" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-              <path d="M0 15L22 1L44 15" stroke="#1A5FAD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
-            <div>
-              <div className={styles.logoText}>HOUSE OF REFUGE</div>
-              <div className={styles.logoTag}>...setting the captives free</div>
-            </div>
+          <button className={styles.logo} onClick={() => { nav('/'); setMob(false) }} aria-label="House of Refuge home">
+            <img src="/logo.svg" alt="House of Refuge" style={{ height: 36, width: 'auto', display: 'block' }} />
           </button>
 
           <div className={styles.links}>

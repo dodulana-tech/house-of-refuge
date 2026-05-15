@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom'
 */
 
 const STAFF = [
-  { name: 'Emmanuel Abutu', role: 'Program Director', department: 'Leadership', email: 'admin@hor.ng', phone: '09011277600', reports: 'Board / Executive Director', level: 0 },
+  { name: 'Emmanuel Abutu', role: 'Program Director', department: 'Leadership', email: 'admin@hor.ng', phone: '09112777600', reports: 'Board / Executive Director', level: 0 },
   { name: 'Folake Adebayo', role: 'Program Manager', department: 'Operations', email: 'manager@hor.ng', phone: '08011223344', reports: 'Program Director', level: 1 },
   { name: 'Pastor Emeka Nwachukwu', role: 'Chaplain', department: 'Spiritual Care', email: 'chaplain@hor.ng', phone: '08033445566', reports: 'Program Director', level: 1 },
   { name: 'Dr. Amina Ibrahim', role: 'Head of Clinical Services', department: 'Clinical', email: 'clinical@hor.ng', phone: '08055667788', reports: 'Program Director', level: 1 },

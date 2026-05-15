@@ -1,0 +1,192 @@
+.hero {
+  position: relative;
+  background: linear-gradient(135deg, #0F2A4A 0%, #1A5FAD 100%);
+  padding: 110px 0 90px;
+  overflow: hidden;
+  color: #fff;
+}
+.heroInner {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.eyebrow {
+  display: inline-block;
+  font-size: .72rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #C08A30;
+  border: 1px solid rgba(192,138,48,.45);
+  padding: 7px 14px;
+  border-radius: 999px;
+  margin-bottom: 22px;
+}
+.title {
+  font-size: clamp(2.1rem, 4.6vw, 3.4rem);
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  max-width: 760px;
+  margin: 0 0 22px;
+}
+.title em { font-style: italic; color: #E0B670; font-weight: 500; }
+.sub {
+  font-size: 1.08rem;
+  line-height: 1.7;
+  color: rgba(255,255,255,.82);
+  max-width: 660px;
+  margin: 0 0 32px;
+}
+.sub strong { color: white; }
+.acts { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.lead {
+  font-size: 1.04rem;
+  line-height: 1.75;
+  color: var(--charcoal);
+  max-width: 720px;
+  margin: 0 0 30px;
+}
+.note {
+  font-size: .92rem;
+  color: var(--g700);
+  line-height: 1.7;
+  font-style: italic;
+  margin-top: 18px;
+  max-width: 720px;
+}
+
+.eligGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.eligCard {
+  background: #fff;
+  border: 1px solid #E5E9EE;
+  border-left: 3px solid #1A7A4A;
+  padding: 20px 22px;
+  border-radius: 6px;
+}
+.eligNum {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  text-align: center;
+  background: rgba(26,122,74,.12);
+  color: #1A7A4A;
+  font-weight: 700;
+  font-size: .82rem;
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+.eligTitle {
+  display: inline;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--charcoal);
+}
+.eligDesc {
+  font-size: .9rem;
+  color: var(--g700);
+  line-height: 1.6;
+  margin-top: 10px;
+}
+
+.coverGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  background: #fff;
+  padding: 28px 32px;
+  border-radius: 8px;
+  border-left: 3px solid var(--blue);
+}
+.coverList { list-style: none; padding: 0; margin: 0; }
+.coverList li {
+  position: relative;
+  padding-left: 22px;
+  font-size: .95rem;
+  line-height: 1.65;
+  color: var(--charcoal);
+  margin: 6px 0;
+}
+.coverList li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #1A7A4A;
+  font-weight: 700;
+}
+
+.flowList { display: flex; flex-direction: column; gap: 16px; }
+.flowStep {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 18px;
+  align-items: start;
+  background: #fff;
+  border: 1px solid #E5E9EE;
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+.flowN {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1A5FAD;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.flowTitle {
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  margin-bottom: 2px;
+}
+.flowMeta {
+  font-size: .78rem;
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.flowDesc {
+  font-size: .9rem;
+  line-height: 1.65;
+  color: var(--g700);
+  margin: 0;
+}
+
+.confidBox {
+  background: #FFF8EC;
+  border: 1px solid rgba(192,138,48,.25);
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin-top: 32px;
+}
+.confidLbl {
+  font-size: .72rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.confidBox p {
+  font-size: .95rem;
+  line-height: 1.7;
+  color: var(--charcoal);
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .coverGrid { grid-template-columns: 1fr; gap: 16px; padding: 22px; }
+}

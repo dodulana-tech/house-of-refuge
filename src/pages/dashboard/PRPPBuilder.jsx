@@ -106,7 +106,7 @@ const COPING_STRATEGIES = [
   'Physical exercise',
   'Prayer and meditation on Scripture',
   'Journaling',
-  'Contact crisis helpline (09011277600)',
+  'Contact crisis helpline (09112777600)',
   'Remove self from triggering environment',
   'Grounding techniques (5-4-3-2-1)',
   'Engage in hobby or creative activity',
@@ -869,7 +869,7 @@ export default function PRPPBuilder() {
                     letterSpacing: 1,
                   }}
                 >
-                  09011277600
+                  09112777600
                 </div>
                 <p style={{ fontSize: 11, color: '#718096', margin: '6px 0 0' }}>
                   Pre-configured — available 24/7

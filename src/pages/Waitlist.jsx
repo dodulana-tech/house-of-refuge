@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useNotif } from '../App'
-import { pay, ref, fmt } from '../utils/paystack'
+import { fmt } from '../utils/paystack'
 import { saveApplication } from '../utils/store'
 import { submitApplication, isSupabaseReady } from '../utils/supabase'
 import styles from './Waitlist.module.css'
@@ -30,7 +30,7 @@ const STEPS = [
   { key: 4, label: 'Insight & Readiness' },
   { key: 5, label: 'Support & Family' },
   { key: 6, label: 'Next of Kin' },
-  { key: 7, label: 'Review & Pay' },
+  { key: 7, label: 'Review & Submit' },
 ]
 
 const INITIAL = {
@@ -175,7 +175,7 @@ export default function Waitlist() {
         if (!form.pathway) { showNotif('Required', 'Please select an admission pathway.'); return false }
         if (!form.willingnessConfirm) { showNotif('Required', 'Please confirm willingness status.'); return false }
         if (form.willingnessConfirm === 'no') {
-          showNotif('Outpatient Pathway', 'Clients who are not yet willing are enrolled in our Outpatient Engagement Pathway. Please call 09011277600 for a confidential assessment.')
+          showNotif('Outpatient Pathway', 'Clients who are not yet willing are enrolled in our Outpatient Engagement Pathway. Please call 09112777600 for a confidential assessment.')
           return false
         }
         return true
@@ -190,7 +190,7 @@ export default function Waitlist() {
         if (!form.substance) { showNotif('Substance required', 'Please select primary substance.'); return false }
         if (!form.duration) { showNotif('Duration required', 'Please select duration of use.'); return false }
         if (hasExclusion) {
-          showNotif('Referral Required', 'Based on the screening, a referral to an appropriate service is recommended. Our team will contact you with referral details. Please call 09011277600.')
+          showNotif('Referral Required', 'Based on the screening, a referral to an appropriate service is recommended. Our team will contact you with referral details. Please call 09112777600.')
           return false
         }
         return true
@@ -212,7 +212,7 @@ export default function Waitlist() {
   function next() { if (validateStep()) setStep(s => Math.min(s + 1, 7)) }
   function prev() { setStep(s => Math.max(s - 1, 1)) }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!form.consentAdmission || !form.consentDetox || !form.consentConfidentiality || !form.consentRights || !form.consentFinancial) {
       showNotif('Consent required', 'Please acknowledge all consent forms before proceeding.')
       return
@@ -222,82 +222,49 @@ export default function Waitlist() {
       id: `APP_${Date.now()}`,
       ...form,
       status: 'submitted',
+      depositPaid: false,
       submittedAt: new Date().toISOString(),
       insightScore: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
     }
+    saveApplication(app)
 
-    pay({
-      email: form.email,
-      amount: 100000000,
-      ref: ref('HOR_WL'),
-      fields: [
-        { display_name: 'Patient', variable_name: 'patient', value: `${form.fn} ${form.ln}` },
-        { display_name: 'Type', variable_name: 'type', value: 'Admission Booking Deposit' },
-        { display_name: 'Pathway', variable_name: 'pathway', value: `Pathway ${form.pathway}` },
-        { display_name: 'Insight Level', variable_name: 'insight', value: form.insightLevel },
-      ],
-      onSuccess: async (r) => {
-        app.paymentRef = r.reference
-        app.depositPaid = true
-        saveApplication(app)
-        // Persist to Supabase
-        if (isSupabaseReady()) {
-          await submitApplication({
-            pathway: form.pathway, willingness_confirm: form.willingnessConfirm,
-            first_name: form.fn, last_name: form.ln, date_of_birth: form.dob || null,
-            gender: form.gender, phone: form.phone, email: form.email,
-            address: form.address, state: form.state, occupation: form.occupation,
-            marital_status: form.maritalStatus, substance: form.substance,
-            substance_other: form.substanceOther, co_substances: form.coSubstances,
-            duration: form.duration, frequency: form.frequency, route_of_use: form.routeOfUse,
-            prev_treatment: form.prevTx, medical_conditions: form.medConditions,
-            medications: form.medications, mental_health: form.mentalHealth,
-            suicide_history: form.suicideHistory, insight_level: form.insightLevel,
-            insight_score: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
-            motivation_source: form.motivationSource, treatment_goals: form.treatmentGoals,
-            change_readiness: form.changeReadiness, trigger_awareness: form.triggerAwareness,
-            family_awareness: form.familyAwareness, family_support: form.familySupport,
-            household_type: form.householdType, dependents: form.dependents,
-            enablers_present: form.enablersPresent, family_therapy_willing: form.familyTherapyWilling,
-            housing_aftercare: form.housingAftercare, pfsp_name: form.pfspName,
-            pfsp_phone: form.pfspPhone, sponsor_type: form.sponsorType,
-            nok_name: form.nokName, nok_relationship: form.nokRel, nok_phone: form.nokPhone,
-            nok_email: form.nokEmail, referral_source: form.referral,
-            consent_admission: form.consentAdmission, consent_detox: form.consentDetox,
-            consent_confidentiality: form.consentConfidentiality, consent_rights: form.consentRights,
-            consent_financial: form.consentFinancial,
-            deposit_paid: true, payment_ref: r.reference, status: 'submitted',
-          })
-        }
-        setLoading(false)
-        showNotif('Application received!', `Booking deposit paid for ${form.fn}. Ref: ${r.reference}. Our admissions team will contact you within 48 hours.`, 'ok')
-        clearDraft()
-        setForm(INITIAL)
-        setStep(1)
-      },
-      onClose: async () => {
-        app.depositPaid = false
-        saveApplication(app)
-        if (isSupabaseReady()) {
-          await submitApplication({
-            pathway: form.pathway, willingness_confirm: form.willingnessConfirm,
-            first_name: form.fn, last_name: form.ln, date_of_birth: form.dob || null,
-            gender: form.gender, phone: form.phone, email: form.email,
-            substance: form.substance, duration: form.duration,
-            insight_level: form.insightLevel,
-            insight_score: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
-            nok_name: form.nokName, nok_phone: form.nokPhone,
-            deposit_paid: false, status: 'submitted',
-          })
-        }
-        setLoading(false)
-        showNotif('Application saved', 'Your application was saved. You can complete payment later.', 'ok')
-      },
-      onError: (msg) => {
-        setLoading(false)
-        showNotif('Payment Error', msg)
-      },
-    })
+    if (isSupabaseReady()) {
+      await submitApplication({
+        pathway: form.pathway, willingness_confirm: form.willingnessConfirm,
+        first_name: form.fn, last_name: form.ln, date_of_birth: form.dob || null,
+        gender: form.gender, phone: form.phone, email: form.email,
+        address: form.address, state: form.state, occupation: form.occupation,
+        marital_status: form.maritalStatus, substance: form.substance,
+        substance_other: form.substanceOther, co_substances: form.coSubstances,
+        duration: form.duration, frequency: form.frequency, route_of_use: form.routeOfUse,
+        prev_treatment: form.prevTx, medical_conditions: form.medConditions,
+        medications: form.medications, mental_health: form.mentalHealth,
+        suicide_history: form.suicideHistory, insight_level: form.insightLevel,
+        insight_score: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
+        motivation_source: form.motivationSource, treatment_goals: form.treatmentGoals,
+        change_readiness: form.changeReadiness, trigger_awareness: form.triggerAwareness,
+        family_awareness: form.familyAwareness, family_support: form.familySupport,
+        household_type: form.householdType, dependents: form.dependents,
+        enablers_present: form.enablersPresent, family_therapy_willing: form.familyTherapyWilling,
+        housing_aftercare: form.housingAftercare, pfsp_name: form.pfspName,
+        pfsp_phone: form.pfspPhone, sponsor_type: form.sponsorType,
+        nok_name: form.nokName, nok_relationship: form.nokRel, nok_phone: form.nokPhone,
+        nok_email: form.nokEmail, referral_source: form.referral,
+        consent_admission: form.consentAdmission, consent_detox: form.consentDetox,
+        consent_confidentiality: form.consentConfidentiality, consent_rights: form.consentRights,
+        consent_financial: form.consentFinancial,
+        deposit_paid: false, status: 'submitted',
+      })
+    }
+    setLoading(false)
+    showNotif(
+      'Application received',
+      `Thank you, ${form.fn}. Your application has been submitted for review. Our admissions team will contact you within 48 hours. No payment is required at this stage.`,
+      'ok'
+    )
+    clearDraft()
+    setForm(INITIAL)
+    setStep(1)
   }
 
   return (
@@ -364,7 +331,7 @@ export default function Waitlist() {
                       <li>Reassessment every 2–4 weeks for residential readiness</li>
                     </ul>
                     <p style={{ fontSize: '.84rem', fontWeight: 600, color: 'var(--blue)', marginTop: 10 }}>
-                      Call 09011277600 to schedule an outpatient assessment.
+                      Call 09112777600 to schedule an outpatient assessment.
                     </p>
                   </div>
                 )}
@@ -617,7 +584,7 @@ export default function Waitlist() {
                 </div>
                 {(form.suicideHistory === 'recent' || form.suicideHistory === 'current') && (
                   <div className={styles.alertBox}>
-                    <strong>Immediate attention needed:</strong> If the patient is currently at risk, please contact emergency services or call our crisis line at <a href="tel:09011277600" style={{ color: 'var(--blue)', fontWeight: 700 }}>09011277600</a> immediately. HOR cannot admit clients with active suicidal/homicidal risk but will provide an immediate referral.
+                    <strong>Immediate attention needed:</strong> If the patient is currently at risk, please contact emergency services or call our crisis line at <a href="tel:09112777600" style={{ color: 'var(--blue)', fontWeight: 700 }}>09112777600</a> immediately. HOR cannot admit clients with active suicidal/homicidal risk but will provide an immediate referral.
                   </div>
                 )}
 
@@ -640,7 +607,7 @@ export default function Waitlist() {
                     <ul style={{ marginTop: 8, paddingLeft: 18 }}>
                       {activeExclusions.map(ex => <li key={ex.key} style={{ fontSize: '.82rem', marginBottom: 4 }}>{ex.referral}</li>)}
                     </ul>
-                    <p style={{ marginTop: 8, fontWeight: 600 }}>Every client leaves with a written referral, a compassionate conversation, and HOR's contact number for when they are ready. Call 09011277600.</p>
+                    <p style={{ marginTop: 8, fontWeight: 600 }}>Every client leaves with a written referral, a compassionate conversation, and HOR's contact number for when they are ready. Call 09112777600.</p>
                   </div>
                 )}
               </>}
@@ -917,7 +884,7 @@ export default function Waitlist() {
                 </div>
 
                 {/* Consent Forms */}
-                <div className={styles.sectionHead}>Consent & Agreements</div>
+                <div className={styles.sectionHead}>Consent & Acknowledgements</div>
                 <p style={{ fontSize: '.84rem', color: 'var(--g700)', marginBottom: 14 }}>
                   By proceeding, the client (or authorised representative) acknowledges the following. Full forms will be signed at admission.
                 </p>
@@ -927,7 +894,7 @@ export default function Waitlist() {
                     ['consentDetox', 'Detoxification Consent: I understand the detoxification process, possible withdrawal symptoms, and that medical support will be provided.'],
                     ['consentConfidentiality', 'Confidentiality Agreement: I commit to protecting the privacy of fellow residents and understand HOR protects mine.'],
                     ['consentRights', 'Rights & Responsibilities Charter: I have been informed of my rights as an HOR resident including the right to leave at any time.'],
-                    ['consentFinancial', 'Financial Agreement: I understand the fee structure, deposit terms, and payment obligations.'],
+                    ['consentFinancial', 'Financial Agreement: I understand that any deposit later requested is refundable, and that assessment costs are only billed against the deposit with my written consent — and only after I have been selected for admission and chosen to proceed.'],
                   ].map(([key, text]) => (
                     <label key={key} className={styles.consentItem}>
                       <input type="checkbox" {...fc(key)} />
@@ -937,29 +904,33 @@ export default function Waitlist() {
                 </div>
 
                 <div className={styles.paynote}>
-                  <div className={styles.payTitle}>Booking Deposit: {fmt(1000000)}</div>
+                  <div className={styles.payTitle}>What happens next — no payment required now</div>
                   <p className={styles.payText}>
-                    A refundable {fmt(1000000)} booking deposit secures your position. It is fully applied to treatment fees on admission. If your application is unsuccessful or no bed is available, you will be fully refunded.
+                    Submitting this form does <strong>not</strong> require any payment. Our admissions team will review your application and respond within 48 hours with the next step.
                   </p>
                   <div className={styles.payBreakdown}>
-                    <div><span>Booking deposit</span><span>{fmt(1000000)}</span></div>
-                    <div><span>12-week residential programme</span><span>Applied 100%</span></div>
-                    <div><span>Refundable if not admitted</span><span>Yes</span></div>
+                    <div><span>1. Application reviewed</span><span>Within 48 hours</span></div>
+                    <div><span>2. Refundable deposit requested by email</span><span>Required before assessment</span></div>
+                    <div><span>3. Clinical assessment begins</span><span>Only after deposit received</span></div>
+                    <div><span>4. Admission decision</span><span>Conditional on results</span></div>
                   </div>
+                  <p style={{ fontSize: '.78rem', color: 'var(--g700)', marginTop: 12, lineHeight: 1.6 }}>
+                    The deposit (when later requested) is <strong>fully refundable</strong>. Admission is conditional on the completion and results of clinical assessments and diagnostic investigations, which are billed against the deposit <strong>only with your written consent</strong> after you have been selected and chosen to proceed.
+                  </p>
                 </div>
 
                 <div className={styles.medTestNote}>
-                  <div className={styles.medTestTitle}>Pre-Admission Medical Tests (within 48 hours)</div>
+                  <div className={styles.medTestTitle}>Pre-Admission Medical Tests (after deposit & consent)</div>
                   <p style={{ fontSize: '.8rem', color: 'var(--g700)' }}>
-                    The following tests are mandatory and will be arranged upon admission: HIV Screening, Hepatitis A & B, Urine Drug Screen, Full Blood Count, Liver Function Tests, Malaria Parasite, Widal Test, Chest X-Ray, Blood Glucose.
+                    Once shortlisted and you have chosen to proceed, the following may be arranged: HIV Screening, Hepatitis B & C, Urine Drug Screen, Full Blood Count, Liver Function Tests, Malaria Parasite, Widal Test, Chest X-Ray, Blood Glucose. A full cost breakdown is shared in writing before any charge is made.
                   </p>
                 </div>
 
                 <button className="btn btn--primary btn--full" style={{ marginTop: 18 }} onClick={handleSubmit} disabled={loading}>
-                  {loading ? <span className="spin" /> : `Submit Application & Pay ${fmt(1000000)} Deposit`}
+                  {loading ? <span className="spin" /> : 'Submit Application'}
                 </button>
                 <p style={{ fontSize: '.72rem', color: 'var(--g500)', textAlign: 'center', marginTop: 9 }}>
-                  Your information is fully confidential · Secured by Paystack
+                  Your information is fully confidential · No payment required at this stage
                 </p>
               </>}
 
@@ -983,12 +954,12 @@ export default function Waitlist() {
                 <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 16 }}>Admission Process</h4>
                 <div className={styles.psteps}>
                   {[
-                    ['1', 'Initial Contact & Pre-Screening', 'ASI and ASSIST tools administered. Willingness assessed via URICA.'],
-                    ['2', 'Clinical Assessment', 'Full medical evaluation, psychiatric screening, psychosocial assessment. Medical tests ordered.'],
-                    ['3', 'Admission Decision', 'Admit / Refer / Defer. Family engaged (Pathway A) or Social Worker activated (Pathway B).'],
-                    ['4', 'Documentation & Intake', 'Consent forms signed. Property inspection. Bed and counselor assigned. Full orientation.'],
-                    ['5', 'Treatment Planning', 'Columbia Model treatment plan developed within 72 hours. Client participates in goal-setting.'],
-                    ['6', 'Medical Detoxification', 'Doctor-supervised detox with 24/7 nursing monitoring (Weeks 1–2).'],
+                    ['1', 'Submit Application (Free)', 'No payment is required. Our admissions team reviews every application within 48 hours.'],
+                    ['2', 'Refundable Deposit (required before assessment)', 'If shortlisted, you receive an email requesting the fully refundable ₦1,000,000 booking deposit. The clinical assessment cannot begin until the deposit is received.'],
+                    ['3', 'Clinical Assessment', 'Begins only after the deposit is received. Medical, psychiatric and psychosocial evaluations. Costs are billed against the deposit only with your written consent.'],
+                    ['4', 'Admission Decision', 'Admit / Refer / Defer based on assessment results. Unused deposit refunded if not admitted or you decline to proceed.'],
+                    ['5', 'Documentation & Intake', 'Consent forms signed. Bed and counselor assigned. Full orientation.'],
+                    ['6', 'Treatment & Detoxification', 'Doctor-supervised detox (Weeks 1–2). Columbia Model treatment plan developed within 72 hours.'],
                   ].map(([n, t, d]) => (
                     <div key={n} className={styles.ps}>
                       <div className={styles.psN}>{n}</div>
@@ -1044,7 +1015,7 @@ export default function Waitlist() {
                 <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 10 }}>Questions?</h4>
                 <p style={{ fontSize: '.83rem', color: 'var(--g700)', marginBottom: 12 }}>Our admissions team is available Monday–Saturday, 8am–6pm.</p>
                 <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                  <a href="tel:09011277600" style={{ color: 'var(--blue)' }}>09011277600</a>
+                  <a href="tel:09112777600" style={{ color: 'var(--blue)' }}>09112777600</a>
                 </div>
                 <div style={{ fontSize: '.82rem' }}>
                   <a href="mailto:e.abutu@freedomfoundationng.org" style={{ color: 'var(--blue)' }}>e.abutu@freedomfoundationng.org</a>

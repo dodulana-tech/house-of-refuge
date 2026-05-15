@@ -20,11 +20,22 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
+-- Helper: SECURITY DEFINER function to read role from profiles, bypassing RLS.
+-- Never reference auth.users.raw_user_meta_data (user-editable) in policies.
+CREATE OR REPLACE FUNCTION public.is_staff()
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('staff', 'admin')
+  )
+$$;
+REVOKE ALL ON FUNCTION public.is_staff() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_staff() TO authenticated, anon;
+
 CREATE POLICY "Users can read own profile" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Staff can read all profiles" ON profiles FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('staff', 'admin'))
-);
+CREATE POLICY "Staff can read all profiles" ON profiles FOR SELECT USING (public.is_staff());
 
 -- ═══════════════════════════════════════════════
 -- APPLICATIONS
@@ -114,6 +125,11 @@ CREATE TABLE IF NOT EXISTS applications (
   deposit_paid BOOLEAN DEFAULT FALSE,
   payment_ref TEXT,
   deposit_amount INT DEFAULT 100000000,  -- kobo
+  -- Deposit-request email (admin-triggered, post-submission)
+  deposit_request_sent_at TIMESTAMPTZ,
+  deposit_request_sent_by UUID REFERENCES profiles(id),
+  deposit_request_recipient_email TEXT,
+  deposit_request_count INT DEFAULT 0,
   -- Status & Pipeline
   status TEXT DEFAULT 'submitted' CHECK (status IN (
     'submitted', 'pre-screening', 'clinical-assessment', 'admission-decision',
@@ -129,10 +145,10 @@ CREATE TABLE IF NOT EXISTS applications (
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Staff can read all applications" ON applications FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('staff', 'admin'))
+  public.is_staff()
 );
 CREATE POLICY "Staff can update applications" ON applications FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('staff', 'admin'))
+  public.is_staff()
 );
 CREATE POLICY "Anyone can submit application" ON applications FOR INSERT WITH CHECK (true);
 CREATE POLICY "Applicants can read own application" ON applications FOR SELECT USING (
@@ -177,7 +193,7 @@ CREATE TABLE IF NOT EXISTS patients (
 ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Staff can manage patients" ON patients FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('staff', 'admin'))
+  public.is_staff()
 );
 CREATE POLICY "Patients can read own record" ON patients FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "Family can read linked patient" ON patients FOR SELECT USING (
@@ -206,7 +222,7 @@ CREATE TABLE IF NOT EXISTS checkins (
 ALTER TABLE checkins ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Staff can read all checkins" ON checkins FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('staff', 'admin'))
+  public.is_staff()
 );
 CREATE POLICY "Patients can manage own checkins" ON checkins FOR ALL USING (
   patient_id IN (SELECT id FROM patients WHERE user_id = auth.uid())
@@ -234,7 +250,7 @@ CREATE TABLE IF NOT EXISTS payments (
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Staff can manage payments" ON payments FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('staff', 'admin'))
+  public.is_staff()
 );
 CREATE POLICY "Users can read own payments" ON payments FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "Anyone can create payment" ON payments FOR INSERT WITH CHECK (true);
@@ -259,7 +275,7 @@ CREATE TABLE IF NOT EXISTS visitations (
 ALTER TABLE visitations ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Staff can manage visitations" ON visitations FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('staff', 'admin'))
+  public.is_staff()
 );
 CREATE POLICY "Family can manage own visitations" ON visitations FOR ALL USING (
   requested_by = auth.uid()
@@ -284,7 +300,7 @@ CREATE TABLE IF NOT EXISTS meal_orders (
 ALTER TABLE meal_orders ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Staff can manage meal orders" ON meal_orders FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('staff', 'admin'))
+  public.is_staff()
 );
 CREATE POLICY "Patients can manage own meals" ON meal_orders FOR ALL USING (
   patient_id IN (SELECT id FROM patients WHERE user_id = auth.uid())
@@ -308,7 +324,7 @@ CREATE TABLE IF NOT EXISTS incidents (
 ALTER TABLE incidents ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Staff can manage incidents" ON incidents FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('staff', 'admin'))
+  public.is_staff()
 );
 
 -- ═══════════════════════════════════════════════

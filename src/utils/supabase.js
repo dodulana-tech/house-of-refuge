@@ -77,6 +77,42 @@ export async function updateApplication(id, updates) {
   return { data, error }
 }
 
+// ── Admin: trigger deposit-request email ──────────────────
+// Calls the `send-deposit-request` Edge Function. Requires the caller to be
+// signed in as staff/admin — the function verifies role server-side.
+export async function sendDepositRequestEmail({
+  applicationId,
+  recipientEmail,
+  recipientName = '',
+  pathway = '',
+  paymentLink = '',
+  reviewerName = '',
+  reviewerTitle = 'Admissions Coordinator',
+  amountNaira = 1_000_000,
+}) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase.functions.invoke('send-deposit-request', {
+    body: {
+      applicationId, recipientEmail, recipientName, pathway,
+      paymentLink, reviewerName, reviewerTitle, amountNaira,
+    },
+  })
+  return { data, error }
+}
+
+// ── Public deposit-page lookup ────────────────────────────
+// Calls the public `get-deposit-application` Edge Function which uses the
+// service-role key server-side and returns ONLY the whitelisted fields the
+// deposit page needs to render. No login required. We don't want anon to
+// have direct SELECT on `applications`, so this is the only public read path.
+export async function getDepositApplication(applicationId) {
+  if (!supabase) return { data: null, error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase.functions.invoke('get-deposit-application', {
+    body: { applicationId },
+  })
+  return { data, error }
+}
+
 // ── Patient records ───────────────────────────────────────
 export async function getPatients() {
   if (!supabase) return { data: [], error: null }

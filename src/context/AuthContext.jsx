@@ -16,7 +16,7 @@ const DEMO_ACCOUNTS = import.meta.env.DEV ? [
   { id: 'P001', email: 'patient@hor.ng', password: 'patient123', role: ROLES.PATIENT, name: 'Chidi Okonkwo', phone: '08012345678', admissionDate: '2026-04-15', status: 'admitted' },
   { id: 'F001', email: 'family@hor.ng', password: 'family123', role: ROLES.FAMILY, name: 'Ngozi Okonkwo', phone: '08098765432', patientId: 'P001', relationship: 'Mother' },
   { id: 'S001', email: 'staff@hor.ng', password: 'staff123', role: ROLES.STAFF, name: 'Dr. Amina Ibrahim', phone: '08055667788', department: 'Clinical', title: 'Head of Clinical Services' },
-  { id: 'A001', email: 'admin@hor.ng', password: 'admin123', role: ROLES.ADMIN, name: 'Emmanuel Abutu', phone: '09011277600', department: 'Administration', title: 'Program Director' },
+  { id: 'A001', email: 'admin@hor.ng', password: 'admin123', role: ROLES.ADMIN, name: 'Emmanuel Abutu', phone: '09112777600', department: 'Administration', title: 'Program Director' },
 ] : []
 
 export function AuthProvider({ children }) {

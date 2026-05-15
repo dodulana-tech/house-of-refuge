@@ -2,7 +2,7 @@ import React from 'react'
 import { useParams, Link } from 'react-router-dom'
 
 const STAFF = [
-  { id: 1, name: 'Emmanuel Abutu', role: 'Program Director', department: 'Leadership', qualification: 'MSc Public Health, NAFDAC Cert.', email: 'admin@hor.ng', phone: '09011277600', reports: 'Board / Executive Director', hireDate: '2023-01-15' },
+  { id: 1, name: 'Emmanuel Abutu', role: 'Program Director', department: 'Leadership', qualification: 'MSc Public Health, NAFDAC Cert.', email: 'admin@hor.ng', phone: '09112777600', reports: 'Board / Executive Director', hireDate: '2023-01-15' },
   { id: 2, name: 'Folake Adebayo', role: 'Program Manager', department: 'Operations', qualification: 'BSc Business Admin, PMP', email: 'manager@hor.ng', phone: '08011223344', reports: 'Program Director', hireDate: '2023-03-01' },
   { id: 3, name: 'Pastor Emeka Nwachukwu', role: 'Chaplain', department: 'Spiritual Care', qualification: 'MDiv Theology, CPE Level II', email: 'chaplain@hor.ng', phone: '08033445566', reports: 'Program Director', hireDate: '2023-06-10' },
   { id: 4, name: 'Dr. Amina Ibrahim', role: 'Head of Clinical Services', department: 'Clinical', qualification: 'MBBS, FMCPsych', email: 'clinical@hor.ng', phone: '08055667788', reports: 'Program Director', hireDate: '2023-02-20' },

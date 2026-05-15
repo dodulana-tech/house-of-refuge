@@ -147,7 +147,7 @@ export default function FamilyDashboard() {
                 <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 10 }}>Need to speak to someone?</h4>
                 <p style={{ fontSize: '.84rem', color: 'var(--g700)', marginBottom: 10 }}>The family liaison team is available Monday–Saturday, 9am–5pm.</p>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                  <a href="tel:09011277600" style={{ color: 'var(--blue)' }}>09011277600</a>
+                  <a href="tel:09112777600" style={{ color: 'var(--blue)' }}>09112777600</a>
                 </div>
                 <div style={{ fontSize: '.82rem' }}>
                   <a href="mailto:e.abutu@freedomfoundationng.org" style={{ color: 'var(--blue)' }}>e.abutu@freedomfoundationng.org</a>

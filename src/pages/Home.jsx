@@ -14,14 +14,8 @@ export default function Home() {
       </Helmet>
       {/* ── Hero ── */}
       <section className={styles.hero}>
-        <svg className={styles.archBg} viewBox="0 0 520 520" fill="none" aria-hidden="true">
-          <path d="M20 500L20 260L260 20L500 260L500 500" stroke="#1A5FAD" strokeWidth="3" fill="none"/>
-          <path d="M60 500L60 278L260 60L460 278L460 500" stroke="#1A5FAD" strokeWidth="1.5" fill="none"/>
-          <path d="M100 500L100 296L260 100L420 296L420 500" stroke="#1A5FAD" strokeWidth="1" fill="none"/>
-        </svg>
-        <svg className={styles.archBg2} viewBox="0 0 380 380" fill="none" aria-hidden="true">
-          <path d="M10 370L10 190L190 10L370 190L370 370" stroke="#C08A30" strokeWidth="2" fill="none"/>
-        </svg>
+        <img className={styles.archBg} src="/logo-mark.svg" alt="" aria-hidden="true" />
+        <img className={styles.archBg2} src="/logo-mark.svg" alt="" aria-hidden="true" />
         <div className={styles.line} />
 
         <div className={styles.heroContent}>
@@ -41,7 +35,7 @@ export default function Home() {
               <span className={styles.dot} />
               <div>
                 <div className={styles.launchLbl}>Opening Soon</div>
-                <div className={styles.launchTxt}>Launching April 15, 2026 · Lekki, Lagos</div>
+                <div className={styles.launchTxt}>Launching May 2026 · Lekki, Lagos</div>
               </div>
             </div>
             <div className={styles.statsGrid}>
@@ -66,7 +60,7 @@ export default function Home() {
         <div className="container">
           <div className={styles.mGrid}>
             <div className={styles.mVis}>
-              <blockquote className={styles.quote}>"...setting the captives free, one life at a time."</blockquote>
+              <blockquote className={styles.quote}>"Restoring lives. Rebuilding families. One residency at a time."</blockquote>
               <cite className={styles.cite}>House of Refuge Vision Statement</cite>
               <div className={styles.mDivider} />
               <div className={styles.mOrgs}>
@@ -144,8 +138,8 @@ export default function Home() {
               <div style={{ marginTop:10, fontSize:'.8rem', color:'var(--g700)' }}>Medical · Facility · Therapeutic</div>
             </div>
             <div className="card" style={{ textAlign:'center' }}>
-              <div className={styles.bigN} style={{ color:'#1A7A4A' }}>15 Apr</div>
-              <div className={styles.bigL}>Target launch date, 2026</div>
+              <div className={styles.bigN} style={{ color:'#1A7A4A' }}>May</div>
+              <div className={styles.bigL}>Target launch, 2026</div>
               <div style={{ marginTop:10, fontSize:'.8rem', color:'var(--g700)' }}>Pre-launch workstreams active</div>
             </div>
           </div>
