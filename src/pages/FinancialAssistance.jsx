@@ -66,7 +66,7 @@ export default function FinancialAssistance() {
           </p>
           <div className={styles.coverGrid}>
             <ul className={styles.coverList}>
-              <li>On-site consultant psychiatrist (5 days/week)</li>
+              <li>On-site Medical Director (daily) · visiting consultant psychiatrist (2 sessions/week)</li>
               <li>24/7 nursing and supervised detox</li>
               <li>WHO/UNODC clinical protocols</li>
               <li>Daily group therapy (CBT, 12-step, faith)</li>
@@ -104,7 +104,7 @@ export default function FinancialAssistance() {
               { n: 2, t: 'Submit form + documents', m: 'Income, household, pastoral referral letter', d: 'Routed directly to Freedom Foundation. HOR clinical does not see financial details.' },
               { n: 3, t: 'Foundation review', m: 'Quarterly cycle', d: 'Independent committee. Notification within 30 days of cycle close, by phone and email.' },
               { n: 4, t: 'Clinical assessment', m: 'If financially approved', d: 'The same clinical pathway as paying admissions begins. Psychiatrist consult and decision in writing.' },
-              { n: 5, t: 'Pastoral interview', m: 'Pastor Tony Rapu · Patient and family', d: 'A mandatory discernment conversation with Pastor Tony Rapu, founder of Freedom Foundation. Patient and family attend together. Booked by admissions; required for every admission regardless of pathway.' },
+              { n: 5, t: 'Pastoral interview', m: 'an assigned pastor from the HOR chaplaincy team · Patient and family', d: 'A mandatory discernment conversation with an assigned pastor from the HOR chaplaincy team. Patient and family attend together. Booked by admissions; required for every admission regardless of pathway.' },
               { n: 6, t: 'Admission', m: 'On full clearance and bed availability', d: 'Phase One — Medical Stabilization — begins. Treatment plan, family touchpoints, and aftercare are identical to paying admissions.' },
             ].map(s => (
               <div key={s.n} className={styles.flowStep}>

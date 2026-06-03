@@ -233,7 +233,7 @@ export default function FinancialAssistanceDetail() {
 
           <div style={{ background: '#fff', border: '1px solid #E5E9EE', borderLeft: '3px solid #C08A30', borderRadius: 8, padding: 20, marginTop: 14 }}>
             <div style={{ fontSize: '.72rem', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--gold)', fontWeight: 700, marginBottom: 6 }}>Pastoral interview · Mandatory</div>
-            <h3 style={{ fontSize: '1rem', margin: '0 0 4px' }}>Pastor Tony Rapu</h3>
+            <h3 style={{ fontSize: '1rem', margin: '0 0 4px' }}>an assigned pastor from the HOR chaplaincy team</h3>
             <p style={{ fontSize: '.78rem', color: 'var(--g700)', margin: '0 0 14px', lineHeight: 1.5 }}>Patient + family · After psychiatrist clearance · Booked by admissions</p>
 
             {(() => {

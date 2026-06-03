@@ -54,9 +54,9 @@ The family-facing prospectus for House of Refuge — the marketing and conversio
 
 ## Executive summary
 
-House of Refuge is a 24-bed residential drug rehabilitation centre in Lekki, Lagos — a Freedom Foundation initiative, clinically governed and managed by ConsultForAfrica, launching May 2026.
+House of Refuge is a 19-bed residential drug rehabilitation centre in Lekki, Lagos — a Freedom Foundation initiative, clinically governed and managed by ConsultForAfrica, launching May 2026.
 
-The programme combines international clinical standards (WHO/UNODC protocols, on-site consultant psychiatrist, multidisciplinary team, 24/7 nursing) with faith-integrated recovery (chaplaincy, biblical formation, community). Two paying tiers — Signature (NGN 4.5M/month, 3 beds) and Premium (NGN 2.8M/month, 19 beds) — share the same clinical care; what differs is privacy, amenity, and the cadence of one-to-one contact.
+The programme combines international clinical standards (WHO/UNODC protocols, on-site Medical Director daily, visiting consultant psychiatrist 2 sessions/week, multidisciplinary team, 24/7 nursing) with faith-integrated recovery (chaplaincy, biblical formation, community). Two paying tiers — Signature (NGN 4.5M/month, 3 beds) and Premium (NGN 2.8M/month, 16 beds) — share the same clinical care; what differs is privacy, amenity, and the cadence of one-to-one contact.
 
 This prospectus is written for the family making one of the hardest decisions of their lives. It is honest about who HOR can and cannot help, transparent about cost and what every Naira buys, and explicit about what protects the family financially at every step.
 
@@ -66,12 +66,15 @@ This prospectus is written for the family making one of the hardest decisions of
 
 *A prospectus for families.*
 
-House of Refuge is a 24-bed residential drug rehabilitation centre in Lekki, Lagos — where international clinical standards and faith-integrated recovery are not in tension, but in partnership. Twelve weeks. A clinically-led programme. A son or daughter who comes home whole.
+House of Refuge is a 19-bed residential drug rehabilitation centre in Lekki, Lagos — where international clinical standards and faith-integrated recovery are not in tension, but in partnership. Twelve weeks. A clinically-led programme. A son or daughter who comes home whole.
 
 **Lagos MOH licensed · NDLEA registered · WHO/UNODC protocols · A Freedom Foundation Initiative**
 
 > **Every resident receives the same clinical standard.**
 > The same psychiatrist, the same protocols, the same nursing care. What you pay for is privacy and amenity — never better medicine.
+
+> **A device-free environment.**
+> No mobile phones, computers, or personal digital devices are permitted at the facility for the duration of the residential programme — a deliberate part of creating a focused, distraction-free environment for recovery. Staying connected with family is coordinated through the programme's structured family sessions.
 
 **To begin admission, call 0911 277 7600 or complete the self-assessment online.**
 
@@ -173,7 +176,7 @@ Both tiers receive the same clinical standard. The difference is privacy, amenit
 - Vocational planning + structured aftercare
 
 ### Premium — NGN 2,800,000 / month
-*19 beds · 3-month total NGN 8,400,000*
+*16 beds · 3-month total NGN 8,400,000*
 
 - En-suite room — 2-bed shared
 - 1:1 counselling — 3 sessions per week
@@ -183,7 +186,7 @@ Both tiers receive the same clinical standard. The difference is privacy, amenit
 - Premium menu (Signature menu add-on available)
 - Reintegration plan + structured aftercare
 
-**Both tiers include:** on-site consultant psychiatrist (5 days/week), 24/7 nursing, supervised detox, daily group therapy, daily fitness, full aftercare planning, and the same WHO/UNODC clinical protocols. The three-month programme may be paid in three monthly instalments — admission confirmed on receipt of Month 1.
+**Both tiers include:** on-site Medical Director (daily) · visiting consultant psychiatrist (2 sessions/week), 24/7 nursing, supervised detox, daily group therapy, daily fitness, full aftercare planning, and the same WHO/UNODC clinical protocols. The three-month programme may be paid in three monthly instalments — admission confirmed on receipt of Month 1.
 
 ## The admission flow
 
@@ -199,13 +202,17 @@ Once the file passes initial review, you're invited to pay the 1M deposit. This 
 
 ### 3. Clinical assessment
 *Within 7–14 days of deposit.*
-Our consultant psychiatrist completes the clinical assessment — diagnostics, structured interview, and case review with the multidisciplinary team. The decision (accept, decline, or refer) is shared with the family within 5 working days, with written reasoning either way.
+Our visiting consultant psychiatrist completes the clinical assessment — diagnostics, structured interview, and case review with the multidisciplinary team. The decision (accept, decline, or refer) is shared with the family within 5 working days, with written reasoning either way.
 
-### 4. Active waitlist *(if needed)*
+### 4. Pastoral interview
+*An assigned pastor from the HOR chaplaincy team · Patient and family · Booked by admissions.*
+A **mandatory** discernment conversation with an assigned pastor from the HOR chaplaincy team. The patient and family attend together. This step follows the psychiatrist's clinical decision and completes the admission gate — both clinical and pastoral clearance are required before a bed is allocated.
+
+### 5. Active waitlist *(if needed)*
 *Up to 6 months · Monthly check-in · Renewable.*
-Beds are limited (24 in total), so accepted families may need to wait. While you wait, your 600k is held — this is what reserves your place. The admissions team checks in monthly. You can withdraw at any time and receive your 600k in full.
+Beds are limited (19 in total), so accepted families may need to wait. While you wait, your 600k is held — this is what reserves your place. The admissions team checks in monthly. You can withdraw at any time and receive your 600k in full.
 
-### 5. Admission
+### 6. Admission
 *Bed offered, family confirms, admission scheduled.*
 The 600k is applied to Month 1 fees. The remaining balance (3.9M for Signature, 2.2M for Premium) is settled before admission day. Your loved one arrives, is welcomed, and begins Phase One — Medical Stabilization.
 

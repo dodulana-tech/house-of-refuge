@@ -912,7 +912,7 @@ export default function Waitlist() {
                     <div><span>1. Application reviewed</span><span>Within 1 working day</span></div>
                     <div><span>2. Deposit invited by email — NGN 1,000,000</span><span>400k assessment + 600k held toward Month 1</span></div>
                     <div><span>3. Clinical assessment + 9 lab tests</span><span>Within 7–14 days of deposit</span></div>
-                    <div><span>4. Pastoral interview — Pastor Tony Rapu</span><span>Patient + family, booked by admissions</span></div>
+                    <div><span>4. Pastoral interview — an assigned pastor from the HOR chaplaincy team</span><span>Patient + family, booked by admissions</span></div>
                     <div><span>5. Admission</span><span>600k applied to Month 1; balance settled</span></div>
                   </div>
                   <p style={{ fontSize: '.78rem', color: 'var(--g700)', marginTop: 12, lineHeight: 1.6 }}>
@@ -958,7 +958,7 @@ export default function Waitlist() {
                     ['1', 'Self-assessment (Free)', 'Complete the intake form. Our admissions team reviews every application within one working day.'],
                     ['2', 'Deposit — NGN 1,000,000', 'Invited by email once the file passes initial review. Split: ₦400,000 clinical assessment fee (consumed when psychiatrist begins your file — covers consult, 9 lab tests, MDT review, written decision/referral) + ₦600,000 held toward Month 1.'],
                     ['3', 'Clinical Assessment', 'Within 7–14 days of deposit. Consultant psychiatrist + the 9 pre-admission lab tests. Written decision (accept / decline / refer) within 5 working days.'],
-                    ['4', 'Pastoral Interview — Pastor Tony Rapu', 'Mandatory discernment conversation with Pastor Tony Rapu (founder, Freedom Foundation). Patient and family attend together. Booked by admissions after psychiatrist clearance. Required for every admission.'],
+                    ['4', 'Pastoral Interview — an assigned pastor from the HOR chaplaincy team', 'Mandatory discernment conversation with an assigned pastor from the HOR chaplaincy team (founder, Freedom Foundation). Patient and family attend together. Booked by admissions after psychiatrist clearance. Required for every admission.'],
                     ['5', 'Active Waitlist (if needed)', 'Up to 6 months, renewable. Monthly check-in by admissions. ₦600k held to reserve your place; refundable in full if you withdraw or no bed opens.'],
                     ['6', 'Admission', '₦600k applied to Month 1 fees; balance settled before admission day. Phase One — Medical Stabilization — begins.'],
                   ].map(([n, t, d]) => (

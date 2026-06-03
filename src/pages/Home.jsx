@@ -10,7 +10,7 @@ export default function Home() {
     <>
       <Helmet>
         <title>House of Refuge | Drug Rehabilitation Centre, Lagos</title>
-        <meta name="description" content="A 24-bed residential drug rehabilitation centre in Lekki, Lagos offering faith-based recovery rooted in clinical excellence." />
+        <meta name="description" content="A 19-bed residential drug rehabilitation centre in Lekki, Lagos offering faith-based recovery rooted in clinical excellence." />
       </Helmet>
       {/* ── Hero ── */}
       <section className={styles.hero}>
@@ -23,7 +23,7 @@ export default function Home() {
             <h1 className={`${styles.title} fu fu1`}>Restoring Lives,<br /><em>Rebuilding Futures</em></h1>
             <div className={`${styles.eyebrow} fu`}>A Freedom Foundation Initiative</div>
             <p className={`${styles.sub} fu fu2`}>
-              A 24-bed residential drug rehabilitation centre rooted in faith, clinical excellence, and community, serving Lagos and beyond.
+              A 19-bed residential drug rehabilitation centre rooted in faith, clinical excellence, and community, serving Lagos and beyond.
             </p>
             <div className={`${styles.acts} fu fu3`}>
               <button type="button" className="btn btn--primary" onClick={() => nav('/donate')}>Donate Now</button>
@@ -40,10 +40,10 @@ export default function Home() {
             </div>
             <div className={styles.statsGrid}>
               {[
-                { n: '24',  l: 'Residential Beds'  },
-                { n: '12+', l: 'Clinical Staff'     },
-                { n: '90',  l: 'Day Programme'      },
-                { n: '₦0',  l: 'Cost to Indigent'   },
+                { n: '19',    l: 'Residential Beds'   },
+                { n: 'Daily', l: 'Medical Director'   },
+                { n: '90',    l: 'Day Programme'      },
+                { n: '₦0',    l: 'Cost to Indigent'   },
               ].map(s => (
                 <div key={s.l} className={styles.stat}>
                   <div className={styles.statN}>{s.n}</div>
@@ -74,7 +74,7 @@ export default function Home() {
               <h2>Healing the whole person: body, mind &amp; soul</h2>
               <div className="dv" />
               <p style={{ fontSize: '1.02rem', lineHeight: 1.8, marginBottom: 18 }}>
-                House of Refuge is a 24-bed inpatient drug rehabilitation centre launching in Lekki, Lagos. We combine evidence-based clinical care with faith-based recovery support to help individuals overcome addiction and reintegrate into society.
+                House of Refuge is a 19-bed inpatient drug rehabilitation centre launching in Lekki, Lagos. We combine evidence-based clinical care with faith-based recovery support to help individuals overcome addiction and reintegrate into society.
               </p>
               <div className={styles.pillars}>
                 {[

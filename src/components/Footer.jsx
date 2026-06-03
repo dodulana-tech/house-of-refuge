@@ -9,7 +9,7 @@ export default function Footer() {
         <div className={styles.grid}>
           <div className={styles.brand}>
             <div className={styles.logoText}>HOUSE OF REFUGE</div>
-            <p>A 24-bed drug rehabilitation centre in Lekki, Lagos. A Freedom Foundation initiative managed by ConsultForAfrica.</p>
+            <p>A 19-bed drug rehabilitation centre in Lekki, Lagos. A Freedom Foundation initiative managed by ConsultForAfrica.</p>
             <div className={styles.orgs}>
               <span>Freedom Foundation Nigeria</span>
               <span className={styles.dot}>·</span>

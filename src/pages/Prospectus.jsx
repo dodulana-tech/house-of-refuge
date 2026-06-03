@@ -10,7 +10,7 @@ export default function Prospectus() {
     <>
       <Helmet>
         <title>Family Prospectus | House of Refuge — Drug Rehabilitation, Lekki</title>
-        <meta name="description" content="A complete family guide to House of Refuge: a 24-bed faith-integrated, clinically-governed residential drug rehabilitation programme in Lekki, Lagos. Admissions, the 12-week pathway, fees, and what families should expect." />
+        <meta name="description" content="A complete family guide to House of Refuge: a 19-bed faith-integrated, clinically-governed residential drug rehabilitation programme in Lekki, Lagos. Admissions, the 12-week pathway, fees, and what families should expect." />
       </Helmet>
 
       {/* ── Section 1: Hero ─────────────────────────────────── */}
@@ -21,7 +21,7 @@ export default function Prospectus() {
             When your family needs <em>more than hope.</em>
           </h1>
           <p className={`${styles.heroSub} fu fu2`}>
-            House of Refuge is a 24-bed residential drug rehabilitation centre in Lekki, Lagos — where international clinical standards and faith-integrated recovery are not in tension, but in partnership. Twelve weeks. A clinically-led programme. A son or daughter who comes home whole.
+            House of Refuge is a 19-bed residential drug rehabilitation centre in Lekki, Lagos — where international clinical standards and faith-integrated recovery are not in tension, but in partnership. Twelve weeks. A clinically-led programme. A son or daughter who comes home whole.
           </p>
           <div className={`${styles.trustRow} fu fu2`}>
             <span className={styles.trustPill}>Lagos MOH licensed</span>
@@ -36,6 +36,10 @@ export default function Prospectus() {
           <div className={`${styles.callout} fu fu4`}>
             <div className={styles.calloutLead}>Every resident receives the same clinical standard.</div>
             <div className={styles.calloutSub}>The same psychiatrist, the same protocols, the same nursing care. What you pay for is privacy and amenity — never better medicine.</div>
+          </div>
+          <div className={`${styles.callout} fu fu4`} style={{ marginTop: 16, borderColor: 'rgba(192,138,48,.4)' }}>
+            <div className={styles.calloutLead}>A device-free environment.</div>
+            <div className={styles.calloutSub}>No mobile phones, computers, or personal digital devices are permitted at the facility for the duration of the residential programme — a deliberate part of creating a focused, distraction-free environment for recovery. Staying connected with family is coordinated through the programme's structured family sessions.</div>
           </div>
         </div>
       </section>
@@ -250,7 +254,7 @@ export default function Prospectus() {
             </div>
             <div className={`${styles.tierCard} ${styles.tierPremium}`}>
               <div className={styles.tierBadge}>Premium</div>
-              <div className={styles.tierBeds}>19 beds</div>
+              <div className={styles.tierBeds}>16 beds</div>
               <div className={styles.tierPrice}>NGN 2,800,000<span className={styles.tierPer}>/month</span></div>
               <div className={styles.tierTotal}>3-month total: NGN 8,400,000</div>
               <ul className={styles.tierList}>
@@ -265,7 +269,7 @@ export default function Prospectus() {
             </div>
           </div>
           <p className={styles.tierFooter}>
-            <strong>Both tiers include:</strong> on-site consultant psychiatrist (5 days/week), 24/7 nursing, supervised detox, daily group therapy, daily fitness, full aftercare planning, and the same WHO/UNODC clinical protocols. Three-month programme may be paid in three monthly instalments — admission confirmed on receipt of Month 1.
+            <strong>Both tiers include:</strong> on-site Medical Director (daily) · visiting consultant psychiatrist (2 sessions/week), 24/7 nursing, supervised detox, daily group therapy, daily fitness, full aftercare planning, and the same WHO/UNODC clinical protocols. Three-month programme may be paid in three monthly instalments — admission confirmed on receipt of Month 1.
           </p>
 
           {/* 4b — 6-stage admission flow */}
@@ -302,8 +306,8 @@ export default function Prospectus() {
               <div className={styles.flowN}>4</div>
               <div>
                 <div className={styles.flowTitle}>Pastoral interview</div>
-                <div className={styles.flowMeta}>Pastor Tony Rapu · Patient and family · Booked by admissions</div>
-                <p className={styles.flowDesc}>A mandatory discernment conversation with <strong>Pastor Tony Rapu</strong>, founder of the Freedom Foundation (HOR's parent organisation). The patient and family attend together. This step follows the psychiatrist's clinical decision and completes the admission gate — both clinical and pastoral clearance are required before a bed is allocated.</p>
+                <div className={styles.flowMeta}>an assigned pastor from the HOR chaplaincy team · Patient and family · Booked by admissions</div>
+                <p className={styles.flowDesc}>A mandatory discernment conversation with <strong>an assigned pastor from the HOR chaplaincy team</strong>, founder of the Freedom Foundation (HOR's parent organisation). The patient and family attend together. This step follows the psychiatrist's clinical decision and completes the admission gate — both clinical and pastoral clearance are required before a bed is allocated.</p>
               </div>
             </div>
             <div className={styles.flowStep}>
@@ -311,7 +315,7 @@ export default function Prospectus() {
               <div>
                 <div className={styles.flowTitle}>Active waitlist (if needed)</div>
                 <div className={styles.flowMeta}>Up to 6 months · Monthly check-in · Renewable</div>
-                <p className={styles.flowDesc}>Beds are limited (24 in total), so accepted families may need to wait. While you wait, your 600k is held — this is what reserves your place. The admissions team checks in monthly. You can withdraw at any time and receive your 600k in full.</p>
+                <p className={styles.flowDesc}>Beds are limited (19 in total), so accepted families may need to wait. While you wait, your 600k is held — this is what reserves your place. The admissions team checks in monthly. You can withdraw at any time and receive your 600k in full.</p>
               </div>
             </div>
             <div className={styles.flowStep}>

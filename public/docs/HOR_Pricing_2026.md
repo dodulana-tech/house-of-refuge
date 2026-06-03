@@ -25,7 +25,7 @@ Both tiers receive the same clinical standard — same psychiatrist, same protoc
 - Vocational planning + structured aftercare
 
 ### Premium — NGN 2,800,000 / month
-*19 beds · 3-month total NGN 8,400,000*
+*16 beds · 3-month total NGN 8,400,000*
 
 - En-suite room — 2-bed shared
 - 1:1 counselling — 3 sessions per week
@@ -36,7 +36,7 @@ Both tiers receive the same clinical standard — same psychiatrist, same protoc
 - Reintegration plan + structured aftercare
 
 ### Both tiers include
-On-site consultant psychiatrist (5 days/week) · 24/7 nursing · supervised detox · daily group therapy (CBT, 12-step, faith) · daily fitness · daily MDT case reviews · full chaplaincy programme · WHO/UNODC clinical protocols · full discharge & aftercare plan.
+On-site Medical Director (daily) · visiting consultant psychiatrist (2 sessions/week) · 24/7 nursing · supervised detox · daily group therapy (CBT, 12-step, faith) · daily fitness · daily MDT case reviews · full chaplaincy programme · WHO/UNODC clinical protocols · full discharge & aftercare plan.
 
 ---
 
@@ -46,7 +46,7 @@ On-site consultant psychiatrist (5 days/week) · 24/7 nursing · supervised deto
 |---|---|---|
 | Accommodation | Private en-suite (single) | Shared en-suite (2-bed) |
 | Catering | Signature menu, 3 meals + 2 snacks | Premium menu, 3 meals + 2 snacks |
-| Consultant psychiatrist | On-site, 5 days/week | On-site, 5 days/week |
+| Medical Director | On-site daily | On-site daily (Medical Director) · visiting psychiatrist 2 sessions/week |
 | Medical detox | 24/7 nursing, MDT protocol | 24/7 nursing, MDT protocol |
 | 1:1 therapy | Daily — clinical psychologist | 3x/week — counsellor |
 | Group therapy | Daily (CBT, 12-step, faith) | Daily (CBT, 12-step, faith) |
