@@ -78,7 +78,7 @@ export default function Prospectus() {
             </div>
             <div className={styles.critItem}>
               <div><span className={styles.critN}>3</span><span className={styles.critTitle}>Medical Stability</span></div>
-              <p className={styles.critDesc}>Cleared on the nine pre-admission medical tests; safe to undergo supervised detox.</p>
+              <p className={styles.critDesc}>Cleared on the ten pre-admission medical tests; safe to undergo supervised detox.</p>
             </div>
             <div className={styles.critItem}>
               <div><span className={styles.critN}>4</span><span className={styles.critTitle}>Functional Capacity</span></div>
@@ -340,7 +340,7 @@ export default function Prospectus() {
                 <div className={styles.depRole}>Clinical assessment fee · itemised</div>
                 <ul>
                   <li><strong>Psychiatrist consultation</strong> (structured clinical interview)</li>
-                  <li><strong>Nine pre-admission lab tests</strong>: HIV, Hep A &amp; B, urine drug screen, full blood count, liver function, malaria, Widal, chest X-ray, blood glucose</li>
+                  <li><strong>Ten pre-admission lab tests</strong>: Full Blood Count (CBC), Fasting Blood Sugar (FBS), Liver Function Test, Toxicology Screen (Drug of Abuse), Blood Alcohol, Urinalysis, Renal Function Test, Serology (Hepatitis B), Serology (Hepatitis C), Serology (HIV)</li>
                   <li><strong>Multidisciplinary case review</strong> + written admission decision</li>
                   <li><strong>Referral</strong> to an appropriate setting if admission is declined</li>
                 </ul>

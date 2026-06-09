@@ -96,7 +96,7 @@ All five must be met for residential admission.
 
 1. **Voluntary Willingness** — Your loved one personally consents to treatment and demonstrates readiness for change.
 2. **SUD Diagnosis** — A clinically confirmed substance use disorder, established through ASI/ASSIST screening.
-3. **Medical Stability** — Cleared on the nine pre-admission medical tests; safe to undergo supervised detox.
+3. **Medical Stability** — Cleared on the ten pre-admission medical tests; safe to undergo supervised detox.
 4. **Functional Capacity** — Able to participate in daily therapy, group sessions, and structured residential life.
 5. **No Immediate Risk** — No active threat of harm to self or others requiring acute psychiatric containment.
 

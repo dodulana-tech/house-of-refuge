@@ -911,19 +911,19 @@ export default function Waitlist() {
                   <div className={styles.payBreakdown}>
                     <div><span>1. Application reviewed</span><span>Within 1 working day</span></div>
                     <div><span>2. Deposit invited by email — NGN 1,000,000</span><span>400k assessment + 600k held toward Month 1</span></div>
-                    <div><span>3. Clinical assessment + 9 lab tests</span><span>Within 7–14 days of deposit</span></div>
+                    <div><span>3. Clinical assessment + 10 lab tests</span><span>Within 7–14 days of deposit</span></div>
                     <div><span>4. Pastoral interview — an assigned pastor from the HOR chaplaincy team</span><span>Patient + family, booked by admissions</span></div>
                     <div><span>5. Admission</span><span>600k applied to Month 1; balance settled</span></div>
                   </div>
                   <p style={{ fontSize: '.78rem', color: 'var(--g700)', marginTop: 12, lineHeight: 1.6 }}>
-                    The NGN 1,000,000 deposit is split: <strong>₦400,000 is the clinical assessment fee</strong> — consumed once the psychiatrist begins your file (covers consultation, the 9 pre-admission lab tests, MDT review, and a written decision/referral). <strong>₦600,000 is held toward Month 1 fees</strong> — refundable in full if we decline admission, if you withdraw before psychiatrist work begins, if no bed opens within your active waitlist hold, or if you voluntarily leave the waitlist. Full refund policy is published in the prospectus.
+                    The NGN 1,000,000 deposit is split: <strong>₦400,000 is the clinical assessment fee</strong> — consumed once the psychiatrist begins your file (covers consultation, the 10 pre-admission lab tests, MDT review, and a written decision/referral). <strong>₦600,000 is held toward Month 1 fees</strong> — refundable in full if we decline admission, if you withdraw before psychiatrist work begins, if no bed opens within your active waitlist hold, or if you voluntarily leave the waitlist. Full refund policy is published in the prospectus.
                   </p>
                 </div>
 
                 <div className={styles.medTestNote}>
                   <div className={styles.medTestTitle}>Pre-Admission Lab Panel (covered by the 400k assessment fee)</div>
                   <p style={{ fontSize: '.8rem', color: 'var(--g700)' }}>
-                    The following nine tests are conducted under our clinical supervision as part of the 400k assessment fee — no additional charge: HIV, Hepatitis A &amp; B, Urine Drug Screen, Full Blood Count, Liver Function Tests, Malaria, Widal, Chest X-Ray, Blood Glucose.
+                    The following ten tests are conducted under our clinical supervision as part of the 400k assessment fee — no additional charge: Full Blood Count (CBC), Fasting Blood Sugar (FBS), Liver Function Test, Toxicology Screen (Drug of Abuse), Blood Alcohol, Urinalysis, Renal Function Test, Serology (Hepatitis B), Serology (Hepatitis C), Serology (HIV).
                   </p>
                 </div>
 
@@ -956,8 +956,8 @@ export default function Waitlist() {
                 <div className={styles.psteps}>
                   {[
                     ['1', 'Self-assessment (Free)', 'Complete the intake form. Our admissions team reviews every application within one working day.'],
-                    ['2', 'Deposit — NGN 1,000,000', 'Invited by email once the file passes initial review. Split: ₦400,000 clinical assessment fee (consumed when psychiatrist begins your file — covers consult, 9 lab tests, MDT review, written decision/referral) + ₦600,000 held toward Month 1.'],
-                    ['3', 'Clinical Assessment', 'Within 7–14 days of deposit. Consultant psychiatrist + the 9 pre-admission lab tests. Written decision (accept / decline / refer) within 5 working days.'],
+                    ['2', 'Deposit — NGN 1,000,000', 'Invited by email once the file passes initial review. Split: ₦400,000 clinical assessment fee (consumed when psychiatrist begins your file — covers consult, 10 lab tests, MDT review, written decision/referral) + ₦600,000 held toward Month 1.'],
+                    ['3', 'Clinical Assessment', 'Within 7–14 days of deposit. Consultant psychiatrist + the 10 pre-admission lab tests. Written decision (accept / decline / refer) within 5 working days.'],
                     ['4', 'Pastoral Interview — an assigned pastor from the HOR chaplaincy team', 'Mandatory discernment conversation with an assigned pastor from the HOR chaplaincy team (founder, Freedom Foundation). Patient and family attend together. Booked by admissions after psychiatrist clearance. Required for every admission.'],
                     ['5', 'Active Waitlist (if needed)', 'Up to 6 months, renewable. Monthly check-in by admissions. ₦600k held to reserve your place; refundable in full if you withdraw or no bed opens.'],
                     ['6', 'Admission', '₦600k applied to Month 1 fees; balance settled before admission day. Phase One — Medical Stabilization — begins.'],
