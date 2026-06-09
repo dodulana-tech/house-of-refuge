@@ -44,42 +44,26 @@ const UDS_SUBSTANCES = [
 
 const TEST_DEFINITIONS = [
   {
-    key: 'hiv',
-    name: 'HIV/AIDS Screening',
-    rationale: 'NIDA Principle 13. HIV-positive clients NOT excluded.',
-    statusOptions: ['Pending', 'Ordered', 'Completed (Negative)', 'Completed (Positive)', 'Completed (Inconclusive)'],
-    flagStatuses: { 'Completed (Positive)': 'Link to ART services' },
-  },
-  {
-    key: 'hepatitis',
-    name: 'Hepatitis A & B Serology',
-    rationale: 'NIDA Principle 13',
-    statusOptions: ['Pending', 'Ordered', 'Completed (Negative)', 'Completed (Positive-A)', 'Completed (Positive-B)', 'Completed (Positive-Both)', 'Completed (Immune)'],
-    flagStatuses: {
-      'Completed (Positive-A)': 'Immunisation/treatment referral',
-      'Completed (Positive-B)': 'Immunisation/treatment referral',
-      'Completed (Positive-Both)': 'Immunisation/treatment referral',
-    },
-  },
-  {
-    key: 'uds',
-    name: 'Urine Drug Screen (UDS)',
-    rationale: 'NIDA Principle 12, baseline for detox planning',
-    statusOptions: ['Pending', 'Ordered', 'Completed'],
-    flagStatuses: {},
-    hasSubstanceSelect: true,
-  },
-  {
     key: 'fbc',
-    name: 'Full Blood Count (FBC)',
+    name: 'Full Blood Count (CBC)',
     rationale: 'ASAM Dimension 2',
     statusOptions: ['Pending', 'Ordered', 'Completed (Normal)', 'Completed (Abnormal)'],
     flagStatuses: { 'Completed (Abnormal)': 'Flag for doctor review' },
   },
   {
-    key: 'lfts',
-    name: 'Liver Function Tests (LFTs)',
-    rationale: 'ASAM Clinical Practice Guideline',
+    key: 'fbs',
+    name: 'Fasting Blood Sugar (FBS)',
+    rationale: 'ASAM Dimension 2 — baseline glucose / diabetes screen',
+    statusOptions: ['Pending', 'Ordered', 'Completed (Normal)', 'Completed (Low)', 'Completed (High)'],
+    flagStatuses: {
+      'Completed (Low)': 'Nutritional management required',
+      'Completed (High)': 'Diabetes assessment required',
+    },
+  },
+  {
+    key: 'lft',
+    name: 'Liver Function Test',
+    rationale: 'ASAM Clinical Practice Guideline — critical for alcohol-dependent clients',
     statusOptions: ['Pending', 'Ordered', 'Completed (Normal)', 'Completed (Elevated)', 'Completed (Significantly Elevated)'],
     flagStatuses: {
       'Completed (Elevated)': 'Medication safety flag — critical for alcohol-dependent clients',
@@ -87,82 +71,105 @@ const TEST_DEFINITIONS = [
     },
   },
   {
-    key: 'malaria',
-    name: 'Malaria Parasite Smear',
-    rationale: 'Nigerian clinical context, WHO mhGAP LMIC',
-    statusOptions: ['Pending', 'Ordered', 'Completed (Negative)', 'Completed (Positive)'],
-    flagStatuses: { 'Completed (Positive)': 'Treat before/during detox (confounding factor)' },
+    key: 'toxicology',
+    name: 'Toxicology Screen (Drug of Abuse)',
+    rationale: 'NIDA Principle 12 — baseline for detox planning',
+    statusOptions: ['Pending', 'Ordered', 'Completed'],
+    flagStatuses: {},
+    hasSubstanceSelect: true,
   },
   {
-    key: 'widal',
-    name: 'Widal Test',
-    rationale: 'Nigerian clinical context',
+    key: 'bloodAlcohol',
+    name: 'Blood Alcohol',
+    rationale: 'Detox planning — confirms alcohol presence + level',
     statusOptions: ['Pending', 'Ordered', 'Completed (Negative)', 'Completed (Positive)'],
-    flagStatuses: { 'Completed (Positive)': 'Typhoid treatment required' },
+    flagStatuses: { 'Completed (Positive)': 'Confirm alcohol-related detox protocol' },
   },
   {
-    key: 'cxr',
-    name: 'Chest X-Ray (CXR)',
-    rationale: 'NIDA Principle 13, WHO TB screening',
+    key: 'urinalysis',
+    name: 'Urinalysis',
+    rationale: 'General health screen — renal function, infection, hydration',
     statusOptions: ['Pending', 'Ordered', 'Completed (Normal)', 'Completed (Abnormal)'],
-    flagStatuses: { 'Completed (Abnormal)': 'TB screening, pulmonary assessment required' },
+    flagStatuses: { 'Completed (Abnormal)': 'Flag for doctor review' },
   },
   {
-    key: 'glucose',
-    name: 'Blood Glucose (Random)',
-    rationale: 'ASAM Dimension 2',
-    statusOptions: ['Pending', 'Ordered', 'Completed (Normal)', 'Completed (Low)', 'Completed (High)'],
-    flagStatuses: {
-      'Completed (Low)': 'Nutritional management required',
-      'Completed (High)': 'Diabetes assessment required',
-    },
+    key: 'rft',
+    name: 'Renal Function Test',
+    rationale: 'Medication safety — dose adjustment for impaired kidney function',
+    statusOptions: ['Pending', 'Ordered', 'Completed (Normal)', 'Completed (Impaired)'],
+    flagStatuses: { 'Completed (Impaired)': 'Medication dosing adjustment required' },
+  },
+  {
+    key: 'hepB',
+    name: 'Serology (Hepatitis B)',
+    rationale: 'NIDA Principle 13 — infectious disease screen',
+    statusOptions: ['Pending', 'Ordered', 'Completed (Negative)', 'Completed (Positive)', 'Completed (Immune)'],
+    flagStatuses: { 'Completed (Positive)': 'Immunisation/treatment referral' },
+  },
+  {
+    key: 'hepC',
+    name: 'Serology (Hepatitis C)',
+    rationale: 'NIDA Principle 13 — infectious disease screen',
+    statusOptions: ['Pending', 'Ordered', 'Completed (Negative)', 'Completed (Positive)'],
+    flagStatuses: { 'Completed (Positive)': 'Treatment referral' },
+  },
+  {
+    key: 'hiv',
+    name: 'Serology (HIV)',
+    rationale: 'NIDA Principle 13. HIV-positive clients NOT excluded.',
+    statusOptions: ['Pending', 'Ordered', 'Completed (Negative)', 'Completed (Positive)', 'Completed (Inconclusive)'],
+    flagStatuses: { 'Completed (Positive)': 'Link to ART services' },
   },
 ]
 
 const INITIAL_TESTS = {
   CO: {
-    hiv: { status: 'Completed (Negative)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    hepatitis: { status: 'Completed (Immune)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    uds: { status: 'Completed', dateOrdered: '2026-03-06', dateCompleted: '2026-03-06', orderedBy: 'FA', substances: ['Alcohol', 'Cannabis'] },
-    fbc: { status: 'Completed (Normal)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    lfts: { status: 'Completed (Elevated)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    malaria: { status: 'Completed (Negative)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    widal: { status: 'Completed (Negative)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    cxr: { status: 'Completed (Normal)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-08', orderedBy: 'FA', substances: [] },
-    glucose: { status: 'Completed (Normal)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
+    fbc:          { status: 'Completed (Normal)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
+    fbs:          { status: 'Completed (Normal)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
+    lft:          { status: 'Completed (Elevated)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
+    toxicology:   { status: 'Completed',            dateOrdered: '2026-03-06', dateCompleted: '2026-03-06', orderedBy: 'FA', substances: ['Alcohol', 'Cannabis'] },
+    bloodAlcohol: { status: 'Completed (Positive)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-06', orderedBy: 'FA', substances: [] },
+    urinalysis:   { status: 'Completed (Normal)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
+    rft:          { status: 'Completed (Normal)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
+    hepB:         { status: 'Completed (Immune)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
+    hepC:         { status: 'Completed (Negative)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
+    hiv:          { status: 'Completed (Negative)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
   },
   AN: {
-    hiv: { status: 'Completed (Negative)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'FA', substances: [] },
-    hepatitis: { status: 'Completed (Positive-B)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'FA', substances: [] },
-    uds: { status: 'Completed', dateOrdered: '2026-02-18', dateCompleted: '2026-02-18', orderedBy: 'FA', substances: ['Opioids', 'Benzodiazepines'] },
-    fbc: { status: 'Completed (Normal)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
-    lfts: { status: 'Completed (Normal)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
-    malaria: { status: 'Completed (Negative)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
-    widal: { status: 'Pending', dateOrdered: '', dateCompleted: '', orderedBy: '', substances: [] },
-    cxr: { status: 'Ordered', dateOrdered: '2026-02-18', dateCompleted: '', orderedBy: 'FA', substances: [] },
-    glucose: { status: 'Completed (Normal)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
+    fbc:          { status: 'Completed (Normal)',   dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
+    fbs:          { status: 'Completed (Normal)',   dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
+    lft:          { status: 'Completed (Normal)',   dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
+    toxicology:   { status: 'Completed',            dateOrdered: '2026-02-18', dateCompleted: '2026-02-18', orderedBy: 'FA', substances: ['Opioids', 'Benzodiazepines'] },
+    bloodAlcohol: { status: 'Completed (Negative)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-18', orderedBy: 'FA', substances: [] },
+    urinalysis:   { status: 'Pending',              dateOrdered: '',           dateCompleted: '',           orderedBy: '',   substances: [] },
+    rft:          { status: 'Ordered',              dateOrdered: '2026-02-18', dateCompleted: '',           orderedBy: 'HM', substances: [] },
+    hepB:         { status: 'Completed (Positive)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'FA', substances: [] },
+    hepC:         { status: 'Completed (Negative)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'FA', substances: [] },
+    hiv:          { status: 'Completed (Negative)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'FA', substances: [] },
   },
   KA: {
-    hiv: { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'FA', substances: [] },
-    hepatitis: { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'FA', substances: [] },
-    uds: { status: 'Completed', dateOrdered: '2026-01-10', dateCompleted: '2026-01-10', orderedBy: 'FA', substances: ['Cannabis'] },
-    fbc: { status: 'Completed (Normal)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
-    lfts: { status: 'Completed (Normal)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
-    malaria: { status: 'Completed (Positive)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
-    widal: { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
-    cxr: { status: 'Completed (Normal)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-12', orderedBy: 'FA', substances: [] },
-    glucose: { status: 'Completed (Normal)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
+    fbc:          { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
+    fbs:          { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
+    lft:          { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
+    toxicology:   { status: 'Completed',            dateOrdered: '2026-01-10', dateCompleted: '2026-01-10', orderedBy: 'FA', substances: ['Cannabis'] },
+    bloodAlcohol: { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-10', orderedBy: 'FA', substances: [] },
+    urinalysis:   { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
+    rft:          { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
+    hepB:         { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'FA', substances: [] },
+    hepC:         { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'FA', substances: [] },
+    hiv:          { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'FA', substances: [] },
   },
   IM: {
-    hiv: { status: 'Completed (Positive)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'FA', substances: [] },
-    hepatitis: { status: 'Completed (Negative)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'FA', substances: [] },
-    uds: { status: 'Completed', dateOrdered: '2026-03-21', dateCompleted: '2026-03-21', orderedBy: 'FA', substances: ['Cocaine', 'Amphetamines', 'Cannabis'] },
-    fbc: { status: 'Ordered', dateOrdered: '2026-03-21', dateCompleted: '', orderedBy: 'HM', substances: [] },
-    lfts: { status: 'Ordered', dateOrdered: '2026-03-21', dateCompleted: '', orderedBy: 'HM', substances: [] },
-    malaria: { status: 'Completed (Positive)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'HM', substances: [] },
-    widal: { status: 'Pending', dateOrdered: '', dateCompleted: '', orderedBy: '', substances: [] },
-    cxr: { status: 'Pending', dateOrdered: '', dateCompleted: '', orderedBy: '', substances: [] },
-    glucose: { status: 'Completed (Normal)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'HM', substances: [] },
+    fbc:          { status: 'Ordered',              dateOrdered: '2026-03-21', dateCompleted: '',           orderedBy: 'HM', substances: [] },
+    fbs:          { status: 'Ordered',              dateOrdered: '2026-03-21', dateCompleted: '',           orderedBy: 'HM', substances: [] },
+    lft:          { status: 'Ordered',              dateOrdered: '2026-03-21', dateCompleted: '',           orderedBy: 'HM', substances: [] },
+    toxicology:   { status: 'Completed',            dateOrdered: '2026-03-21', dateCompleted: '2026-03-21', orderedBy: 'FA', substances: ['Cocaine', 'Amphetamines', 'Cannabis'] },
+    bloodAlcohol: { status: 'Completed (Negative)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-21', orderedBy: 'FA', substances: [] },
+    urinalysis:   { status: 'Pending',              dateOrdered: '',           dateCompleted: '',           orderedBy: '',   substances: [] },
+    rft:          { status: 'Pending',              dateOrdered: '',           dateCompleted: '',           orderedBy: '',   substances: [] },
+    hepB:         { status: 'Completed (Negative)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'FA', substances: [] },
+    hepC:         { status: 'Completed (Negative)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'FA', substances: [] },
+    hiv:          { status: 'Completed (Positive)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'FA', substances: [] },
   },
 }
 
@@ -192,7 +199,7 @@ function getCompletionBadge(count, admissionDate) {
   if (count > 0) {
     const pending = 9 - count
     const deadline = getDeadlineStatus(admissionDate)
-    return { text: `${count}/9 tests complete — ${pending} pending`, color: '#DD6B20', bg: '#FFFAF0', border: '#FEEBC8', deadline }
+    return { text: `${count}/10 tests complete — ${pending} pending`, color: '#DD6B20', bg: '#FFFAF0', border: '#FEEBC8', deadline }
   }
   return { text: 'Medical panel not started — 48-hour deadline', color: '#E53E3E', bg: '#FFF5F5', border: '#FED7D7' }
 }
@@ -618,7 +625,7 @@ export default function MedicalTests() {
           ASAM Clinical Practice Guideline (liver function monitoring for pharmacotherapy safety);
           WHO mhGAP LMIC (malaria co-morbidity in low-and-middle-income country clinical contexts);
           WHO TB Screening Guidelines (chest X-ray for at-risk populations).
-          All 9 tests must be completed within 48 hours of admission per Treatment Protocol Section 4.8.
+          All 10 tests must be completed within 48 hours of admission per Treatment Protocol Section 4.8.
         </p>
       </div>
     </div>
