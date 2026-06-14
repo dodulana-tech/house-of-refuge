@@ -254,7 +254,7 @@ export default function Prospectus() {
             </div>
             <div className={`${styles.tierCard} ${styles.tierPremium}`}>
               <div className={styles.tierBadge}>Premium</div>
-              <div className={styles.tierBeds}>16 beds</div>
+              <div className={styles.tierBeds}>14 beds</div>
               <div className={styles.tierPrice}>NGN 2,800,000<span className={styles.tierPer}>/month</span></div>
               <div className={styles.tierTotal}>3-month total: NGN 8,400,000</div>
               <ul className={styles.tierList}>

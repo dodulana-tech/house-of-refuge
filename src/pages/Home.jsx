@@ -35,7 +35,7 @@ export default function Home() {
               <span className={styles.dot} />
               <div>
                 <div className={styles.launchLbl}>Opening Soon</div>
-                <div className={styles.launchTxt}>Launching May 2026 · Lekki, Lagos</div>
+                <div className={styles.launchTxt}>Launching 1 July 2026 · Lekki, Lagos</div>
               </div>
             </div>
             <div className={styles.statsGrid}>

@@ -3,7 +3,7 @@
 **Drug Rehabilitation Centre · Lekki, Lagos**
 *A Freedom Foundation Initiative · Managed by ConsultForAfrica*
 
-**Effective:** May 2026
+**Effective:** July 2026
 **Status:** Supersedes all prior pricing one-pagers
 **All fees in Nigerian Naira (NGN). Confidential.**
 
@@ -25,7 +25,7 @@ Both tiers receive the same clinical standard — same psychiatrist, same protoc
 - Vocational planning + structured aftercare
 
 ### Premium — NGN 2,800,000 / month
-*16 beds · 3-month total NGN 8,400,000*
+*14 beds · 3-month total NGN 8,400,000*
 
 - En-suite room — 2-bed shared
 - 1:1 counselling — 3 sessions per week
