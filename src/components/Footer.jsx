@@ -21,9 +21,10 @@ export default function Footer() {
             <ul className={styles.links}>
               <li><Link to="/">Home</Link></li>
               <li><Link to="/about">About Us</Link></li>
+              <li><Link to="/apply">Apply for Admission</Link></li>
+              <li><Link to="/assistance">Financial Assistance</Link></li>
               <li><Link to="/donate">Donate</Link></li>
               <li><Link to="/sponsor">Sponsor Equipment</Link></li>
-              <li><Link to="/apply">Apply for Admission</Link></li>
             </ul>
           </div>
           <div>

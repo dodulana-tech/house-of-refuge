@@ -85,7 +85,54 @@
 .mobLink:hover { background: rgba(26,95,173,.06); }
 .mobCta { color: var(--blue); font-weight: 700; }
 
+/* Dropdown (desktop) */
+.navItem { position: relative; display: flex; align-items: center; }
+.dropBtn { display: inline-flex; align-items: center; gap: 5px; background: none; cursor: pointer; }
+.caret { width: 11px; height: 11px; opacity: .6; transition: transform .2s ease; flex: none; }
+.dropBtn[aria-expanded="true"] .caret { transform: rotate(180deg); }
+.dropPanel {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  min-width: 224px; padding: 8px;
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.12);
+  display: flex; flex-direction: column; gap: 2px;
+  animation: dropIn .16s ease;
+}
+/* invisible bridge so hover survives the gap between button and panel */
+.dropPanel::before { content: ''; position: absolute; top: -10px; left: 0; right: 0; height: 10px; }
+@keyframes dropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.dropLink {
+  padding: 10px 12px; border-radius: 8px;
+  font-size: .87rem; font-weight: 500; color: var(--g700);
+  white-space: nowrap; transition: var(--tr);
+}
+.dropLink:hover { background: rgba(26,95,173,.08); color: var(--charcoal); }
+.dropActive { color: var(--blue); background: rgba(26,95,173,.1); }
+
 @media (max-width: 860px) {
   .links { display: none; }
   .ham   { display: flex; }
 }
+
+/* Mobile accordion groups */
+.mobGroup { display: flex; flex-direction: column; }
+.mobGroupBtn {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; text-align: left; padding: 14px 14px;
+  border-radius: 8px; font-size: .92rem; font-weight: 500;
+  color: var(--g700); background: none; transition: var(--tr);
+}
+.mobGroupBtn:hover { background: rgba(26,95,173,.06); }
+.caretUp { transform: rotate(180deg); }
+.mobSub { display: flex; flex-direction: column; padding: 2px 0 6px 12px; }
+.mobSubLink {
+  display: block; text-align: left; padding: 11px 14px;
+  border-radius: 8px; font-size: .88rem; font-weight: 500;
+  color: var(--g700); border-left: 2px solid rgba(26,95,173,.18);
+  transition: var(--tr);
+}
+.mobSubLink:hover { background: rgba(26,95,173,.06); color: var(--charcoal); }
