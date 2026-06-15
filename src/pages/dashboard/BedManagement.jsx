@@ -1,10 +1,20 @@
 import React, { useState } from 'react'
 
 /*
-  Bed Management — 4 Wings × 6 Beds = 24 beds
+  Bed Management — 19 beds across 4 wings (A·B·C: 5 beds, D: 4 beds)
   Wing assignment is flexible: default 3 Male : 1 Female
   Can be reconfigured to 2:2 or 1:3 based on pipeline demand
 */
+
+const TOTAL_BEDS = 19
+
+// Per-wing bed counts (sum = 19)
+const WING_PLAN = [
+  { name: 'A', beds: 5 },
+  { name: 'B', beds: 5 },
+  { name: 'C', beds: 5 },
+  { name: 'D', beds: 4 },
+]
 
 const WING_CONFIGS = [
   { label: '3M : 1F', male: 3, female: 1 },
@@ -27,15 +37,14 @@ export default function BedManagement() {
   const config = WING_CONFIGS[configIdx]
 
   // Build wings dynamically
-  const wingNames = ['A', 'B', 'C', 'D']
-  const wings = wingNames.map((name, i) => {
+  const wings = WING_PLAN.map((plan, i) => {
     const gender = i < config.male ? 'Male' : 'Female'
-    const beds = Array.from({ length: 6 }, (_, j) => {
-      const bedId = `${name}${j + 1}`
+    const beds = Array.from({ length: plan.beds }, (_, j) => {
+      const bedId = `${plan.name}${j + 1}`
       const patient = PATIENTS.find(p => p.bed === bedId)
       return { id: bedId, number: j + 1, patient }
     })
-    return { name, gender, beds }
+    return { name: plan.name, gender, beds }
   })
 
   const totalOccupied = PATIENTS.length
@@ -43,13 +52,15 @@ export default function BedManagement() {
   const femaleOcc = PATIENTS.filter(p => p.gender === 'F').length
   const maleWings = config.male
   const femaleWings = config.female
+  const maleCap = wings.filter(w => w.gender === 'Male').reduce((s, w) => s + w.beds.length, 0)
+  const femaleCap = wings.filter(w => w.gender === 'Female').reduce((s, w) => s + w.beds.length, 0)
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Bed Management</h1>
-          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>4 wings × 6 beds · {totalOccupied} occupied · {24 - totalOccupied} available</p>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>4 wings · {TOTAL_BEDS} beds · {totalOccupied} occupied · {TOTAL_BEDS - totalOccupied} available</p>
         </div>
         {/* Wing config selector */}
         <div className="card" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -69,19 +80,19 @@ export default function BedManagement() {
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, marginBottom: 24 }}>
         <div className="card" style={{ textAlign: 'center', padding: 14 }}>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: 'var(--blue)' }}>{totalOccupied}/24</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: 'var(--blue)' }}>{totalOccupied}/{TOTAL_BEDS}</div>
           <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>Occupancy</div>
         </div>
         <div className="card" style={{ textAlign: 'center', padding: 14 }}>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: '#1A7A4A' }}>{24 - totalOccupied}</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: '#1A7A4A' }}>{TOTAL_BEDS - totalOccupied}</div>
           <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>Available</div>
         </div>
         <div className="card" style={{ textAlign: 'center', padding: 14 }}>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: 'var(--blue)' }}>{maleOcc}/{maleWings * 6}</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: 'var(--blue)' }}>{maleOcc}/{maleCap}</div>
           <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>Male ({maleWings} wings)</div>
         </div>
         <div className="card" style={{ textAlign: 'center', padding: 14 }}>
-          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: '#805AD5' }}>{femaleOcc}/{femaleWings * 6}</div>
+          <div style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', fontWeight: 700, color: '#805AD5' }}>{femaleOcc}/{femaleCap}</div>
           <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>Female ({femaleWings} wings)</div>
         </div>
       </div>
@@ -100,7 +111,7 @@ export default function BedManagement() {
                 }}>{wing.gender}</span>
               </div>
               <div style={{ fontSize: '.82rem', fontWeight: 700, color: 'var(--g500)' }}>
-                {wing.beds.filter(b => b.patient).length}/6
+                {wing.beds.filter(b => b.patient).length}/{wing.beds.length}
               </div>
             </div>
 

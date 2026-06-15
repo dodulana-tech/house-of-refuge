@@ -128,7 +128,7 @@ export default function Patients() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Patient Records</h1>
-          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{patients.length} current residents · 24 bed capacity</p>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{patients.length} current residents · 19 bed capacity</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <select className="fi" style={{ maxWidth: 200 }} value={search} onChange={e => setSearch(e.target.value)}>

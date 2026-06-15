@@ -12,8 +12,8 @@ const MOCK_KPIs = {
     title: 'Centre Overview',
     subtitle: 'Program Director Dashboard',
     cards: [
-      { n: '4', label: 'Current Residents', sub: 'of 24 beds', color: 'var(--blue)' },
-      { n: '20', label: 'Beds Available', sub: '83% capacity free', color: '#1A7A4A' },
+      { n: '4', label: 'Current Residents', sub: 'of 19 beds', color: 'var(--blue)' },
+      { n: '15', label: 'Beds Available', sub: '79% capacity free', color: '#1A7A4A' },
       { n: '3', label: 'Pending Applications', sub: '2 with deposit', color: '#DD6B20' },
       { n: fmt(3595000), label: 'Revenue (MTD)', sub: 'Deposits + fees', color: 'var(--gold)' },
     ],
