@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
-import { buildDepositEmail, DEPOSIT_AMOUNT_NAIRA } from '../../data/depositEmailTemplate'
+import { buildDepositEmail, DEFAULT_DEPOSIT_AMOUNT as DEPOSIT_AMOUNT_NAIRA } from '../../data/depositEmailTemplate'
 import { sendDepositRequestEmail, isSupabaseReady } from '../../utils/supabase'
 
 /*

@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { useNotif } from '../App'
 import { pay, ref, fmt } from '../utils/paystack'
 import { supabase, isSupabaseReady, recordPayment, getDepositApplication } from '../utils/supabase'
-import { DEPOSIT_AMOUNT_NAIRA, DEFAULT_ASSESSMENT_LINE_ITEMS } from '../data/depositEmailTemplate'
+import { DEFAULT_DEPOSIT_AMOUNT as DEPOSIT_AMOUNT_NAIRA, DEFAULT_ASSESSMENT_LINE_ITEMS } from '../data/depositEmailTemplate'
 
 /*
   Public-facing page reached from the deposit-request email link.
