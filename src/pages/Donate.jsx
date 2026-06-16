@@ -153,9 +153,10 @@ export default function Donate() {
                 <h4 style={{ fontFamily:'var(--fd)', fontSize:'1.25rem', marginBottom:10 }}>Prefer to transfer directly?</h4>
                 <div className={styles.bank}>
                   {[
-                    ['Bank Name',     'Freedom Foundation'],
-                    ['Account Name',  'House of Refuge'],
-                    ['Account No.',   'Contact us for details'],
+                    ['Account Name',  'Freedom Foundation House of Refuge'],
+                    ['Account No.',   '1014768696'],
+                    ['Bank',          'Zenith Bank'],
+                    ['Currency',      'Naira (₦)'],
                   ].map(([k,v]) => (
                     <div key={k} className={styles.bankRow}><span>{k}</span><span>{v}</span></div>
                   ))}
