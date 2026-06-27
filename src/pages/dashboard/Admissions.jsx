@@ -26,29 +26,23 @@ const PATHWAY_COLORS = Object.fromEntries(
   Object.entries(SUBSTANCE_PATHWAY_META).map(([k, v]) => [k, v.color])
 )
 
-const MOCK_APPS = [
-  { id: 'APP001', first_name: 'Tunde', last_name: 'Bakare', initials: 'TB', substance: 'Cocaine', substancePathway: 'Stimulant', careLevel: 'residential', populationPathway: 'standard', insight_level: 'contemplation', family_support: 'strong', pathway: 'A', deposit_paid: true, created_at: '2026-03-28', status: 'pre-screening', email: 'tunde@example.com', phone: '08011111111', age: 35, gender: 'M' },
-  { id: 'APP002', first_name: 'Grace', last_name: 'Obi', initials: 'GO', substance: 'Alcohol', substancePathway: 'AUD', careLevel: 'residential', populationPathway: 'womens', insight_level: 'preparation', family_support: 'moderate', pathway: 'A', deposit_paid: true, created_at: '2026-03-25', status: 'clinical-assessment', email: 'grace@example.com', phone: '08022222222', age: 28, gender: 'F' },
-  { id: 'APP003', first_name: 'Ahmed', last_name: 'Yusuf', initials: 'AY', substance: 'Multiple', substancePathway: 'Polysubstance', careLevel: 'outpatient', populationPathway: 'standard', insight_level: 'denial', family_support: 'weak', pathway: 'B', deposit_paid: false, created_at: '2026-03-20', status: 'outpatient-pathway', email: 'ahmed@example.com', phone: '08033333333', age: 22, gender: 'M' },
-]
-
 const insightColors = INSIGHT_COLORS
 
 export default function Admissions() {
-  const [apps, setApps] = useState(MOCK_APPS)
+  const [apps, setApps] = useState([])
   const [stage, setStage] = useState('all')
 
   useEffect(() => {
     async function load() {
       if (isSupabaseReady()) {
         const { data } = await getSupaApps()
-        if (data?.length) setApps([...MOCK_APPS, ...data])
+        if (data?.length) setApps(data)
       } else {
         const local = getLocalApps()
-        if (local?.length) setApps([...MOCK_APPS, ...local.map(a => ({
+        if (local?.length) setApps(local.map(a => ({
           ...a, first_name: a.fn, last_name: a.ln, insight_level: a.insightLevel,
           created_at: a.submittedAt, deposit_paid: a.depositPaid,
-        }))])
+        })))
       }
     }
     load()

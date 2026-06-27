@@ -1,10 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { SUBSTANCE_PATHWAYS, SUBSTANCE_PATHWAY_META, CARE_LEVELS, POPULATION_PATHWAYS } from '../../data/clinicalConstants'
+import { getPatients, getLatestCheckinsByPatient, createPatient, updatePatient, isSupabaseReady } from '../../utils/supabase'
+import { mapPatientRow } from '../../utils/patients'
 
 /*
-  Shared Patient Records — visible to admin, staff.
+  Shared Patient Records — visible to admin, staff. Live `patients` table.
   MECE columns: Identity, Programme, Clinical, Behavioral, Actions
 */
 
@@ -14,13 +16,6 @@ const PHASES = {
   deepening: { label: 'Deepening', color: '#D69E2E', weeks: '7–10' },
   reintegration: { label: 'Reintegration', color: '#1A7A4A', weeks: '11–12' },
 }
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO', gender: 'M', age: 32, day: 23, phase: 'foundation', substance: 'Alcohol', substancePathway: 'AUD', careLevel: 'residential', populationPathway: 'standard', pathway: 'A', insight: 'contemplation', mood: 4, cravings: 2, counselor: 'AI', bed: 'A1', status: 'admitted' },
-  { id: 'P002', initials: 'AN', gender: 'F', age: 28, day: 45, phase: 'deepening', substance: 'Tramadol', substancePathway: 'OUD', careLevel: 'residential', populationPathway: 'womens', pathway: 'A', insight: 'preparation', mood: 3, cravings: 3, counselor: 'FA', bed: 'B3', status: 'admitted' },
-  { id: 'P003', initials: 'KA', gender: 'M', age: 41, day: 74, phase: 'reintegration', substance: 'Cannabis', substancePathway: 'CUD', careLevel: 'residential', populationPathway: 'standard', pathway: 'B', insight: 'action', mood: 5, cravings: 1, counselor: 'AI', bed: 'A5', status: 'admitted' },
-  { id: 'P004', initials: 'IM', gender: 'M', age: 24, day: 8, phase: 'stabilization', substance: 'Heroin', substancePathway: 'OUD', careLevel: 'residential', populationPathway: 'adolescent', pathway: 'A', insight: 'precontemplation', mood: 2, cravings: 4, counselor: 'FA', bed: 'C2', status: 'admitted' },
-]
 
 const moodColors = ['', '#E53E3E', '#DD6B20', '#D69E2E', '#38A169', '#2B6CB0']
 
@@ -46,59 +41,60 @@ export default function Patients() {
   const { user } = useAuth()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
-  const [patients, setPatients] = useState(PATIENTS)
+  const [patients, setPatients] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [showAdmitForm, setShowAdmitForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [admitForm, setAdmitForm] = useState({
     ...INITIAL_ADMIT_FORM,
   })
 
+  const load = useCallback(async () => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    setLoading(true)
+    const [{ data: rows }, { data: checkins }] = await Promise.all([
+      getPatients(),
+      getLatestCheckinsByPatient(),
+    ])
+    const active = (rows || [])
+      .filter(p => ['admitted', 'on-pass', 'suspended'].includes(p.status))
+      .map(p => mapPatientRow(p, checkins?.[p.id]))
+    setPatients(active)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
   const takenBeds = patients.filter(p => p.id !== editingId).map(p => p.bed)
   const availableBeds = BED_OPTIONS.filter(b => !takenBeds.includes(b))
 
-  const handleAdmitSubmit = () => {
+  const handleAdmitSubmit = async () => {
     if (!admitForm.initials || admitForm.initials.length !== 2 || !admitForm.gender || !admitForm.age || !admitForm.substance || !admitForm.pathway || !admitForm.insight || !admitForm.bed || !admitForm.counselor) return
     const substancePathway = admitForm.substancePathway || SUBSTANCE_PATHWAYS[admitForm.substance] || 'Polysubstance'
-    if (editingId) {
-      setPatients(prev => prev.map(p => p.id === editingId ? {
-        ...p,
-        initials: admitForm.initials.toUpperCase(),
-        gender: admitForm.gender === 'Male' ? 'M' : admitForm.gender === 'Female' ? 'F' : admitForm.gender,
-        age: parseInt(admitForm.age),
-        substance: admitForm.substance,
-        substancePathway,
-        careLevel: admitForm.careLevel,
-        populationPathway: admitForm.populationPathway,
-        pathway: admitForm.pathway,
-        insight: admitForm.insight,
-        counselor: admitForm.counselor,
-        bed: admitForm.bed,
-      } : p))
-      setEditingId(null)
-    } else {
-      const newPatient = {
-        id: 'P' + String(patients.length + 1).padStart(3, '0'),
-        initials: admitForm.initials.toUpperCase(),
-        gender: admitForm.gender === 'Male' ? 'M' : 'F',
-        age: parseInt(admitForm.age),
-        day: 1,
-        phase: 'stabilization',
-        substance: admitForm.substance,
-        substancePathway,
-        careLevel: admitForm.careLevel,
-        populationPathway: admitForm.populationPathway,
-        pathway: admitForm.pathway,
-        insight: admitForm.insight,
-        mood: 3,
-        cravings: 3,
-        counselor: admitForm.counselor,
-        bed: admitForm.bed,
-        status: 'admitted',
-      }
-      setPatients(prev => [...prev, newPatient])
+    const record = {
+      full_name: admitForm.initials.toUpperCase(),
+      gender: admitForm.gender,
+      age: parseInt(admitForm.age),
+      primary_substance: admitForm.substance,
+      substance_pathway: substancePathway,
+      care_level: admitForm.careLevel,
+      population_pathway: admitForm.populationPathway,
+      pathway: admitForm.pathway,
+      insight_level: admitForm.insight,
+      counselor_code: admitForm.counselor,
+      bed: admitForm.bed,
     }
+    setSaving(true)
+    const { error } = editingId
+      ? await updatePatient(editingId, record)
+      : await createPatient({ ...record, status: 'admitted', current_phase: 'stabilization', day_in_programme: 1 })
+    setSaving(false)
+    if (error) { alert(`Could not save patient: ${error.message}`); return }
+    setEditingId(null)
     setAdmitForm({ initials: '', gender: '', age: '', substance: '', substancePathway: '', careLevel: 'residential', populationPathway: 'standard', pathway: '', insight: '', bed: '', counselor: '' })
     setShowAdmitForm(false)
+    await load()
   }
 
   const handleEditPatient = (p) => {
@@ -230,7 +226,7 @@ export default function Patients() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-            <button className="btn btn--primary btn--sm" onClick={handleAdmitSubmit}>{editingId ? 'Update Patient' : 'Admit Patient'}</button>
+            <button className="btn btn--primary btn--sm" onClick={handleAdmitSubmit} disabled={saving}>{saving ? 'Saving…' : editingId ? 'Update Patient' : 'Admit Patient'}</button>
             <button className="btn btn--secondary btn--sm" onClick={() => { setShowAdmitForm(false); setEditingId(null); setAdmitForm({ initials: '', gender: '', age: '', substance: '', substancePathway: '', careLevel: 'residential', populationPathway: 'standard', pathway: '', insight: '', bed: '', counselor: '' }) }}>Cancel</button>
           </div>
         </div>
@@ -251,6 +247,13 @@ export default function Patients() {
 
       {/* Patient cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {(loading || filtered.length === 0) && (
+          <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--g500)' }}>
+            {loading ? 'Loading residents…'
+              : patients.length === 0 ? 'No residents admitted yet. Use “Admit New Patient” once an applicant is admitted.'
+              : 'No residents in this phase.'}
+          </div>
+        )}
         {filtered.map(p => {
           const phase = PHASES[p.phase]
           return (
@@ -313,11 +316,11 @@ export default function Patients() {
                   </div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '.68rem', color: 'var(--g500)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Mood</div>
-                    <span style={{ fontWeight: 700, fontSize: '.92rem', color: moodColors[p.mood] }}>{p.mood}/5</span>
+                    <span style={{ fontWeight: 700, fontSize: '.92rem', color: p.mood != null ? moodColors[p.mood] : 'var(--g400)' }}>{p.mood != null ? `${p.mood}/5` : '—'}</span>
                   </div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '.68rem', color: 'var(--g500)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Cravings</div>
-                    <span style={{ fontWeight: 700, fontSize: '.92rem', color: p.cravings >= 4 ? '#E53E3E' : 'var(--g700)' }}>{p.cravings}/5</span>
+                    <span style={{ fontWeight: 700, fontSize: '.92rem', color: p.cravings != null && p.cravings >= 4 ? '#E53E3E' : 'var(--g700)' }}>{p.cravings != null ? `${p.cravings}/5` : '—'}</span>
                   </div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '.68rem', color: 'var(--g500)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>Insight</div>

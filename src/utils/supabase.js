@@ -66,6 +66,16 @@ export async function getApplications(filters = {}) {
   return { data: data || [], error }
 }
 
+export async function getApplicationById(id) {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase
+    .from('applications')
+    .select('*')
+    .eq('id', id)
+    .single()
+  return { data, error }
+}
+
 export async function updateApplication(id, updates) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
   const { data, error } = await supabase
@@ -171,6 +181,43 @@ export async function getPayments(userId) {
   if (userId) query = query.eq('user_id', userId)
   const { data, error } = await query
   return { data: data || [], error }
+}
+
+// ── Patient writes (admit / update / discharge) ───────────
+export async function createPatient(patientData) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase
+    .from('patients')
+    .insert([patientData])
+    .select()
+    .single()
+  return { data, error }
+}
+
+export async function updatePatient(id, updates) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase
+    .from('patients')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  return { data, error }
+}
+
+// Latest check-in per patient (for mood/cravings on roster screens).
+// Returns a map keyed by patient_id. Staff RLS lets staff read all check-ins.
+export async function getLatestCheckinsByPatient() {
+  if (!supabase) return { data: {}, error: null }
+  const { data, error } = await supabase
+    .from('checkins')
+    .select('patient_id, mood, cravings, anxiety, created_at')
+    .order('created_at', { ascending: false })
+  const latest = {}
+  for (const c of data || []) {
+    if (!latest[c.patient_id]) latest[c.patient_id] = c
+  }
+  return { data: latest, error }
 }
 
 // ── Visitation requests ───────────────────────────────────

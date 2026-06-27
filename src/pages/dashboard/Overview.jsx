@@ -1,121 +1,115 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
+import { getApplications, getPatients, getPayments, getLatestCheckinsByPatient, isSupabaseReady } from '../../utils/supabase'
+import { mapPatientRow, dayInProgramme, phaseForDay, PROGRAMME_DAYS } from '../../utils/patients'
 
 /*
   Role-aware overview — renders different KPI dashboards per role.
-  All roles see the same component, different data.
+  All figures are computed live from Supabase; no hardcoded data.
 */
 
-const MOCK_KPIs = {
-  admin: {
+const TOTAL_BEDS = 19
+const PENDING_STATUSES = ['submitted', 'pre-screening', 'clinical-assessment', 'admission-decision', 'documentation', 'intake', 'treatment-planning']
+const PHASE_LABELS = {
+  stabilization: 'Medical Stabilization (Wk 1–2)',
+  foundation: 'Therapeutic Foundation (Wk 3–6)',
+  deepening: 'Deepening & Skills (Wk 7–10)',
+  reintegration: 'Reintegration (Wk 11–12)',
+}
+const PHASE_COLORS = { stabilization: '#E53E3E', foundation: '#DD6B20', deepening: '#D69E2E', reintegration: '#1A7A4A' }
+
+function isThisMonth(iso) {
+  if (!iso) return false
+  const d = new Date(iso), now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+}
+
+function buildAdmin(apps, patients, payments) {
+  const active = patients.filter(p => ['admitted', 'on-pass', 'suspended'].includes(p.status))
+  const pending = apps.filter(a => PENDING_STATUSES.includes(a.status))
+  const settledMtd = payments.filter(p => (p.status === 'paid' || p.verified) && isThisMonth(p.created_at))
+  const revenueMtd = settledMtd.reduce((s, p) => s + Math.round((p.amount || 0) / 100), 0)
+  const occupancyFree = TOTAL_BEDS > 0 ? Math.round(((TOTAL_BEDS - active.length) / TOTAL_BEDS) * 100) : 0
+
+  const pipelineItems = [
+    ['submitted', 'Submitted', 'var(--blue)'],
+    ['pre-screening', 'Pre-screening', '#DD6B20'],
+    ['clinical-assessment', 'Clinical Assessment', '#D69E2E'],
+    ['admission-decision', 'Admission Decision', '#805AD5'],
+    ['outpatient-pathway', 'Outpatient Pathway', 'var(--g500)'],
+  ].map(([key, label, color]) => ({ label, color, count: apps.filter(a => a.status === key).length }))
+   .filter(i => i.count > 0)
+
+  const phaseItems = ['stabilization', 'foundation', 'deepening', 'reintegration'].map(ph => ({
+    label: PHASE_LABELS[ph],
+    color: PHASE_COLORS[ph],
+    count: active.filter(p => (p.current_phase && p.current_phase !== 'stabilization' ? p.current_phase : phaseForDay(dayInProgramme(p))) === ph).length,
+  }))
+
+  return {
     title: 'Centre Overview',
     subtitle: 'Program Director Dashboard',
     cards: [
-      { n: '4', label: 'Current Residents', sub: 'of 19 beds', color: 'var(--blue)' },
-      { n: '15', label: 'Beds Available', sub: '79% capacity free', color: '#1A7A4A' },
-      { n: '3', label: 'Pending Applications', sub: '2 with deposit', color: '#DD6B20' },
-      { n: fmt(3595000), label: 'Revenue (MTD)', sub: 'Deposits + fees', color: 'var(--gold)' },
+      { n: String(active.length), label: 'Current Residents', sub: `of ${TOTAL_BEDS} beds`, color: 'var(--blue)' },
+      { n: String(TOTAL_BEDS - active.length), label: 'Beds Available', sub: `${occupancyFree}% capacity free`, color: '#1A7A4A' },
+      { n: String(pending.length), label: 'Pending Applications', sub: `${apps.filter(a => a.deposit_paid).length} with deposit`, color: '#DD6B20' },
+      { n: fmt(revenueMtd), label: 'Revenue (MTD)', sub: 'Settled payments', color: 'var(--gold)' },
     ],
     sections: [
-      {
-        title: 'Admission Pipeline',
-        items: [
-          { label: 'Submitted', count: 2, color: 'var(--blue)' },
-          { label: 'Pre-screening', count: 1, color: '#DD6B20' },
-          { label: 'Clinical Assessment', count: 1, color: '#D69E2E' },
-          { label: 'Outpatient Pathway', count: 1, color: 'var(--g500)' },
-        ],
-      },
-      {
-        title: 'Residents by Phase',
-        items: [
-          { label: 'Medical Stabilization (Wk 1–2)', count: 1, color: '#E53E3E' },
-          { label: 'Therapeutic Foundation (Wk 3–6)', count: 1, color: '#DD6B20' },
-          { label: 'Deepening & Skills (Wk 7–10)', count: 1, color: '#D69E2E' },
-          { label: 'Reintegration (Wk 11–12)', count: 1, color: '#1A7A4A' },
-        ],
-      },
+      { title: 'Admission Pipeline', items: pipelineItems.length ? pipelineItems : [{ label: 'No active applications', count: null, color: 'var(--g500)' }] },
+      { title: 'Residents by Phase', items: phaseItems },
     ],
-  },
-  staff: {
-    title: 'Clinical Overview',
-    subtitle: 'Care Team Dashboard',
-    cards: [
-      { n: '2', label: 'My Caseload', sub: 'Active patients', color: 'var(--blue)' },
-      { n: '3', label: 'Sessions Today', sub: '1 individual, 2 group', color: '#1A7A4A' },
-      { n: '1', label: 'MDT Review Due', sub: 'Week 4 review', color: '#DD6B20' },
-      { n: '0', label: 'Open Incidents', sub: 'All resolved', color: 'var(--g500)' },
-    ],
-    sections: [
-      {
-        title: "Today's Schedule",
-        items: [
-          { label: '9:00 AM — Bible School / Spiritual Formation', count: null, color: 'var(--gold)' },
-          { label: '11:00 AM — Group CBT / Relapse Prevention', count: null, color: 'var(--blue)' },
-          { label: '1:30 PM — Life Skills Training Group', count: null, color: '#1A7A4A' },
-          { label: '3:30 PM — Individual Counseling (CO)', count: null, color: '#805AD5' },
-        ],
-      },
-      {
-        title: 'Patient Alerts',
-        items: [
-          { label: 'IM — Day 8, detox monitoring (CIWA)', count: 'HIGH', color: '#E53E3E' },
-          { label: 'CO — Week 4 treatment plan review due', count: 'DUE', color: '#DD6B20' },
-          { label: 'AN — Mood trend declining (3 days)', count: 'WATCH', color: '#D69E2E' },
-        ],
-      },
-    ],
-  },
-  patient: {
+  }
+}
+
+function buildPatientView(me, checkin) {
+  if (!me) {
+    return { title: 'My Recovery', subtitle: 'No active programme record', cards: [], sections: [] }
+  }
+  const m = mapPatientRow(me, checkin)
+  return {
     title: 'My Recovery',
-    subtitle: 'Day 23 of 84 — Therapeutic Foundation',
+    subtitle: `Day ${m.day} of ${PROGRAMME_DAYS}`,
     cards: [
-      { n: 'Day 23', label: 'Programme Progress', sub: 'of 84 days (12 weeks)', color: 'var(--blue)' },
-      { n: '4/5', label: "Today's Mood", sub: 'Last check-in', color: '#38A169' },
-      { n: '2/5', label: 'Cravings', sub: 'Last check-in', color: '#DD6B20' },
-      { n: '5/12', label: 'Individual Sessions', sub: 'Completed', color: 'var(--gold)' },
+      { n: `Day ${m.day}`, label: 'Programme Progress', sub: `of ${PROGRAMME_DAYS} days (12 weeks)`, color: 'var(--blue)' },
+      { n: m.mood != null ? `${m.mood}/5` : '—', label: "Today's Mood", sub: 'Last check-in', color: '#38A169' },
+      { n: m.cravings != null ? `${m.cravings}/5` : '—', label: 'Cravings', sub: 'Last check-in', color: '#DD6B20' },
+      { n: m.phase, label: 'Current Phase', sub: 'Programme phase', color: 'var(--gold)' },
     ],
-    sections: [
-      {
-        title: "Today's Schedule",
-        items: [
-          { label: '5:30 AM — Wake-up & Hygiene', count: null, color: 'var(--g500)' },
-          { label: '6:00 AM — Boot Camp (45 min)', count: null, color: '#805AD5' },
-          { label: '7:00 AM — Morning Prayer & Devotions', count: null, color: 'var(--gold)' },
-          { label: '9:00 AM — Bible School (2 hrs)', count: null, color: 'var(--gold)' },
-          { label: '11:00 AM — Group Therapy: CBT', count: null, color: 'var(--blue)' },
-          { label: '3:30 PM — Individual Counseling', count: null, color: '#805AD5' },
-        ],
-      },
-    ],
-  },
-  family: {
-    title: 'Patient Progress',
-    subtitle: 'Family Dashboard — Mother',
-    cards: [
-      { n: 'Day 23', label: 'Programme Day', sub: 'of 84 days', color: 'var(--blue)' },
-      { n: 'Positive', label: 'Overall Progress', sub: 'Care team assessment', color: '#1A7A4A' },
-      { n: '95%', label: 'Attendance', sub: 'Programme sessions', color: 'var(--gold)' },
-      { n: 'May 4', label: 'Next Visit', sub: 'Sunday 12–6 PM', color: '#805AD5' },
-    ],
-    sections: [
-      {
-        title: 'Recent Updates',
-        items: [
-          { label: 'Engaging well in group therapy — mood stable this week', count: 'Apr 1', color: '#1A7A4A' },
-          { label: 'Completed Detox & Stabilisation phase successfully', count: 'Mar 28', color: 'var(--blue)' },
-          { label: 'Comprehensive psychosocial assessment completed', count: 'Mar 20', color: 'var(--gold)' },
-        ],
-      },
-    ],
-  },
+    sections: [],
+  }
 }
 
 export default function Overview() {
   const { user } = useAuth()
   const role = user?.role || 'patient'
-  const data = MOCK_KPIs[role] || MOCK_KPIs.patient
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      if (!isSupabaseReady()) { if (active) setData({ title: 'Overview', subtitle: '', cards: [], sections: [] }); return }
+      if (role === 'admin' || role === 'staff') {
+        const [{ data: apps }, { data: patients }, { data: payments }] = await Promise.all([
+          getApplications(), getPatients(), getPayments(),
+        ])
+        if (active) setData(buildAdmin(apps || [], patients || [], payments || []))
+      } else {
+        const [{ data: patients }, { data: checkins }] = await Promise.all([
+          getPatients(), getLatestCheckinsByPatient(),
+        ])
+        const me = (patients || []).find(p => p.user_id === user?.id) || (patients || [])[0]
+        if (active) setData(buildPatientView(me, me ? checkins?.[me.id] : null))
+      }
+    }
+    load()
+    return () => { active = false }
+  }, [role, user?.id])
+
+  if (!data) {
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--g500)' }}>Loading overview…</div>
+  }
 
   return (
     <div>

@@ -1,9 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { getPatients, isSupabaseReady } from '../../utils/supabase'
+import { mapPatientRow } from '../../utils/patients'
 
 /*
   Bed Management — 19 beds across 4 wings (A·B·C: 5 beds, D: 4 beds)
   Wing assignment is flexible: default 3 Male : 1 Female
   Can be reconfigured to 2:2 or 1:3 based on pipeline demand
+  Occupancy is driven by the live `patients` table (patients.bed).
 */
 
 const TOTAL_BEDS = 19
@@ -22,19 +25,28 @@ const WING_CONFIGS = [
   { label: '1M : 3F', male: 1, female: 3 },
 ]
 
-const PATIENTS = [
-  { bed: 'A1', initials: 'CO', id: 'P001', day: 23, phase: 'foundation', gender: 'M', substance: 'Alcohol' },
-  { bed: 'B3', initials: 'AN', id: 'P002', day: 45, phase: 'deepening', gender: 'F', substance: 'Tramadol' },
-  { bed: 'A5', initials: 'KA', id: 'P003', day: 74, phase: 'reintegration', gender: 'M', substance: 'Cannabis' },
-  { bed: 'C2', initials: 'IM', id: 'P004', day: 8, phase: 'stabilization', gender: 'M', substance: 'Heroin' },
-]
-
 const phaseColors = { stabilization: '#E53E3E', foundation: '#DD6B20', deepening: '#D69E2E', reintegration: '#1A7A4A' }
 const phaseLabels = { stabilization: 'Stab', foundation: 'Found', deepening: 'Deep', reintegration: 'Reint' }
 
 export default function BedManagement() {
   const [configIdx, setConfigIdx] = useState(0)
   const config = WING_CONFIGS[configIdx]
+  const [PATIENTS, setPatients] = useState([])
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      if (!isSupabaseReady()) return
+      const { data } = await getPatients()
+      if (!active) return
+      const active_residents = (data || [])
+        .filter(p => p.bed && ['admitted', 'on-pass', 'suspended'].includes(p.status))
+        .map(p => mapPatientRow(p))
+      setPatients(active_residents)
+    }
+    load()
+    return () => { active = false }
+  }, [])
 
   // Build wings dynamically
   const wings = WING_PLAN.map((plan, i) => {

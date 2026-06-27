@@ -1,13 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
 import { buildDepositEmail, DEFAULT_DEPOSIT_AMOUNT as DEPOSIT_AMOUNT_NAIRA } from '../../data/depositEmailTemplate'
-import { sendDepositRequestEmail, isSupabaseReady } from '../../utils/supabase'
+import { sendDepositRequestEmail, getApplicationById, isSupabaseReady } from '../../utils/supabase'
 
 /*
-  Admission Detail — full view of a single application (APP001)
-  Visible to admin when clicking an application in the pipeline.
-  Uses initials only (HIPAA). 8-step pipeline stepper.
+  Admission Detail — full view of the single application identified by the :id
+  route param. Loads the real record from Supabase. Visible to admin when
+  clicking an application in the pipeline. 8-step pipeline stepper.
 */
 
 const PIPELINE_STEPS = [
@@ -21,35 +22,54 @@ const PIPELINE_STEPS = [
   { key: 'admitted', label: 'Admitted' },
 ]
 
-const MOCK_APP = {
-  id: 'APP001',
-  initials: 'TB',
-  applicantName: 'Tunde B.',
-  applicantEmail: 'applicant@example.com',
-  pathway: 'A',
-  substance: 'Cocaine',
-  substanceDuration: '4 years',
-  frequency: 'Daily',
-  route: 'Intranasal',
-  insight: 'contemplation',
-  status: 'pre-screening',
-  depositPaid: false,
-  depositRequestSentAt: null,
-  depositAmount: 1000000,
-  dateApplied: '2026-03-28',
-  mentalHealth: 'Moderate anxiety, mild depression',
-  suicideRisk: 'Low — no active ideation, no prior attempts',
-  exclusionScreening: 'Cleared — no acute psychosis, no active seizure disorder, no violent behavior',
-  stageOfChange: 'Contemplation',
-  motivation: 'Self-referred, expresses desire to change but ambivalent',
-  voluntary: true,
-  treatmentGoals: 'Achieve sustained abstinence, restore family relationships, develop vocational skills',
-  twelveWeekCommitment: true,
-  familyAwareness: 'Yes — family supportive and involved',
-  pfspDetails: 'Spouse enrolled in PFSP; two sessions completed',
-  household: '4-member household — spouse, 2 children',
-  enablers: 'Identified: peer group, nightlife environment',
-  aftercareHousing: 'Return to family home — safe environment confirmed',
+function initialsOf(first, last) {
+  return (((first || '').charAt(0)) + ((last || '').charAt(0))).toUpperCase() || '—'
+}
+
+function exclusionSummary(r) {
+  const flags = []
+  if (r.active_psychosis === 'yes') flags.push('active psychosis')
+  if (r.antipsychotic_need === 'yes') flags.push('antipsychotic requirement')
+  if (r.severe_cognitive === 'yes') flags.push('severe cognitive impairment')
+  if (r.legal_detention === 'yes') flags.push('legal detention')
+  return flags.length
+    ? `Flags requiring review: ${flags.join(', ')}`
+    : 'Cleared — no exclusion flags reported'
+}
+
+// Map a Supabase `applications` row into the shape this view renders.
+function mapApplication(r) {
+  return {
+    id: r.id,
+    initials: initialsOf(r.first_name, r.last_name),
+    applicantName: [r.first_name, r.last_name].filter(Boolean).join(' ') || '—',
+    applicantEmail: r.email || '',
+    applicantPhone: r.phone || '',
+    pathway: r.pathway || 'A',
+    substance: [r.substance, r.substance_other].filter(Boolean).join(' / ') || '—',
+    substanceDuration: r.duration || '—',
+    frequency: r.frequency || '—',
+    route: r.route_of_use || '—',
+    insight: r.insight_level || '',
+    status: r.status || 'submitted',
+    depositPaid: !!r.deposit_paid,
+    depositRequestSentAt: r.deposit_request_sent_at || null,
+    depositAmount: Math.round((r.deposit_amount ?? 100000000) / 100), // kobo → naira
+    dateApplied: r.created_at,
+    mentalHealth: r.mental_health || 'Not reported',
+    suicideRisk: r.suicide_history ? `History: ${r.suicide_history}` : 'No history reported',
+    exclusionScreening: exclusionSummary(r),
+    stageOfChange: r.insight_level || 'Not assessed',
+    motivation: r.motivation_source || 'Not reported',
+    voluntary: (r.seeking_voluntarily || '').toLowerCase() !== 'no',
+    treatmentGoals: r.treatment_goals || 'Not specified',
+    twelveWeekCommitment: r.willingness_confirm === 'yes',
+    familyAwareness: r.family_awareness || 'Not reported',
+    pfspDetails: [r.pfsp_name, r.pfsp_relationship].filter(Boolean).join(' — ') || 'Not provided',
+    household: r.household_type || 'Not reported',
+    enablers: r.enablers_present || 'Not reported',
+    aftercareHousing: r.housing_aftercare || 'Not reported',
+  }
 }
 
 const insightColors = {
@@ -95,7 +115,10 @@ const REFER_REASONS = [
 
 export default function AdmissionDetail() {
   const { user } = useAuth()
-  const [app, setApp] = useState(MOCK_APP)
+  const { id } = useParams()
+  const [app, setApp] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [confirm, setConfirm] = useState(null)
   const [actionReason, setActionReason] = useState('')
   const [depositModal, setDepositModal] = useState(false)
@@ -108,7 +131,44 @@ export default function AdmissionDetail() {
     sending: false,
   })
 
-  const currentStepIdx = PIPELINE_STEPS.findIndex(s => s.key === app.status)
+  useEffect(() => {
+    let active = true
+    async function load() {
+      setLoading(true)
+      setLoadError('')
+      if (!isSupabaseReady()) {
+        if (active) { setLoadError('not-configured'); setLoading(false) }
+        return
+      }
+      const { data, error } = await getApplicationById(id)
+      if (!active) return
+      if (error || !data) setLoadError('not-found')
+      else setApp(mapApplication(data))
+      setLoading(false)
+    }
+    load()
+    return () => { active = false }
+  }, [id])
+
+  if (loading) {
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--g500)' }}>Loading application…</div>
+  }
+  if (loadError || !app) {
+    return (
+      <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--g500)' }}>
+        <p style={{ marginBottom: 12 }}>
+          {loadError === 'not-configured'
+            ? 'Application data is unavailable — the database connection is not configured.'
+            : 'Application not found. It may have been removed.'}
+        </p>
+        <Link to="/dashboard/admissions" className="btn btn--secondary btn--sm">← Back to Admissions Pipeline</Link>
+      </div>
+    )
+  }
+
+  const currentStepIdx = PIPELINE_STEPS.findIndex(
+    s => s.key === (app.status === 'submitted' ? 'initial-contact' : app.status)
+  )
 
   function openDepositEmail() {
     setDepositForm({
@@ -200,10 +260,12 @@ export default function AdmissionDetail() {
           </div>
           <div>
             <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 2 }}>
-              Application {app.id}
+              {app.applicantName}
             </h1>
             <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>
-              Initials: <strong>{app.initials}</strong> &middot; Applied: {new Date(app.dateApplied).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+              {app.applicantPhone && <>📞 <a href={`tel:${app.applicantPhone}`} style={{ color: 'var(--blue)' }}>{app.applicantPhone}</a> &middot; </>}
+              {app.applicantEmail && <>✉️ <a href={`mailto:${app.applicantEmail}`} style={{ color: 'var(--blue)' }}>{app.applicantEmail}</a> &middot; </>}
+              Applied: {new Date(app.dateApplied).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
             </p>
           </div>
         </div>
