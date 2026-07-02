@@ -249,6 +249,8 @@ export const getAllUdsTests = () => listBy('uds_tests', null, null, 'test_date',
 export const addUdsTest = (row) => insertRow('uds_tests', row)
 
 export const getMedications = (patientId) => listBy('medications', 'patient_id', patientId)
+export const getAllMedications = () => listBy('medications', null, null)
+export const getAllMedAdministrations = () => listBy('medication_administrations', null, null, 'administered_at', false)
 export const addMedication = (row) => insertRow('medications', row)
 export async function updateMedication(id, updates) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
