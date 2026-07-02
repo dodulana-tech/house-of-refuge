@@ -1,10 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { getPatients, getClinicalNotes, addClinicalNote, deleteClinicalNote, isSupabaseReady } from '../../utils/supabase'
+import { activeBriefs, initialsFromName } from '../../utils/patients'
 
 /*
   Clinical Notes Module — add and view SOAP-format notes for all patients.
-  Note types map to the HOR multi-disciplinary team. Intelligent prompts
-  appear based on the selected note type. Initials only — no full names (HIPAA).
+  Live `clinical_notes` table. Note types map to the HOR multi-disciplinary
+  team. Initials only — no full names surfaced (HIPAA).
 */
 
 const NOTE_TYPES = [
@@ -103,29 +105,12 @@ const DEFAULT_PROMPTS = {
   plan: 'Next steps — interventions, referrals, follow-up schedule, homework, medication changes...',
 }
 
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
-
-const INITIAL_NOTES = [
-  { id: 1, date: '2026-05-07', patient: 'CO', author: 'AI', type: 'Individual CBT', subjective: 'Patient reports improved mood, less preoccupation with alcohol cravings. Acknowledges triggers around family contact.', objective: 'Engaged, good eye contact, affect congruent.', assessment: 'Progressing in contemplation stage. Beginning to identify cognitive distortions.', plan: 'Continue CBT 2x/week. Introduce thought record homework.' },
-  { id: 2, date: '2026-05-07', patient: 'AN', author: 'FA', type: 'Nursing', subjective: 'Reports mild nausea this morning. Sleep improved to 6 hours.', objective: 'BP 118/74, Pulse 82, Temp 36.5C. Weight 62kg, stable.', assessment: 'Tramadol withdrawal symptoms decreasing. Day 45 — vitals stabilizing.', plan: 'Continue monitoring. Adjust anti-nausea PRN. Next vitals 0630 tomorrow.' },
-  { id: 3, date: '2026-05-06', patient: 'CO', author: 'FA', type: 'Group CBT', subjective: 'Participated actively in group. Shared about family conflict as trigger.', objective: 'Appropriate peer interaction. Offered support to newer resident.', assessment: 'Developing group cohesion. Showing empathy and leadership qualities.', plan: 'Encourage peer mentoring role. Continue group 3x/week.' },
-  { id: 4, date: '2026-05-06', patient: 'KA', author: 'AI', type: 'Life Skills', subjective: 'Expressed excitement about vocational assessment results. Interested in carpentry.', objective: 'Completed skills inventory. Strong practical aptitude demonstrated.', assessment: 'Ready for supervised community placement. Reintegration on track.', plan: 'Arrange carpentry apprenticeship visit. Schedule employer meeting.' },
-  { id: 5, date: '2026-05-05', patient: 'IM', author: 'HM', type: 'Nursing', subjective: 'Complains of muscle aches and insomnia. Appetite poor.', objective: 'BP 134/88, Pulse 92, Temp 37.1C. Weight 71kg, down 1kg. Mild diaphoresis noted.', assessment: 'Active heroin withdrawal — Day 8. Symptoms expected to peak soon.', plan: 'Continue detox protocol. Clonidine 0.1mg as needed. Electrolyte monitoring. Reassess in 12h.' },
-  { id: 6, date: '2026-05-05', patient: 'CO', author: 'PK', type: 'Pastoral', subjective: 'Expressed interest in deeper spiritual engagement. Struggling with guilt about past actions.', objective: 'Attended morning devotion and evening Bible study. Receptive to counsel.', assessment: 'Spiritual growth emerging. Guilt processing needed alongside clinical work.', plan: 'Begin forgiveness workbook. Weekly chaplain sessions.' },
-  { id: 7, date: '2026-05-04', patient: 'AN', author: 'SN', type: 'Social Work', subjective: 'Worried about housing post-discharge. Parents in different city.', objective: 'Family mapping shows 1 supportive contact locally. Alumni network contacted.', assessment: 'Housing is primary reintegration barrier. Needs structured plan.', plan: 'Explore transitional housing options. Connect with alumni mentor in city.' },
-  { id: 8, date: '2026-05-03', patient: 'KA', author: 'AI', type: 'MDT Review', subjective: 'Team consensus: patient has shown consistent progress across all domains.', objective: 'Mood 5/5, Cravings 1/5, 0 behavioral incidents, 100% session attendance.', assessment: 'Ready for reintegration phase. Low relapse risk with current support plan.', plan: 'Transition to Phase 4. Begin discharge planning. Schedule family meeting.' },
-  { id: 9, date: '2026-05-01', patient: 'CO', author: 'SN', type: 'Social Work', subjective: 'Concerned about family dynamics post-discharge. Mother supportive, siblings distant.', objective: 'Family mapping completed. 2 supportive contacts, 3 high-risk contacts identified.', assessment: 'Family reintegration will need structured approach.', plan: 'Schedule family psychoeducation call. Explore alumni network.' },
-  { id: 10, date: '2026-04-15', patient: 'CO', author: 'AI', type: 'Admission', subjective: 'Presents voluntarily for alcohol dependency treatment. Reports daily drinking for 7 years. Cannabis use intermittent. Motivated by family pressure and job loss.', objective: 'BP 138/86, Pulse 88, Temp 36.8C. CAGE score 3/4. BAL 0.00 (sober on arrival). No acute withdrawal signs.', assessment: 'Alcohol Use Disorder, moderate-severe. Cannabis Use Disorder, mild. No active suicidal ideation.', plan: 'Admit to Pathway A. Bed A1. Begin stabilization protocol. Baseline labs ordered. Orientation tomorrow 0900.' },
-]
-
 export default function ClinicalNotes() {
   const { user } = useAuth()
-  const [notes, setNotes] = useState(INITIAL_NOTES)
+  const [patients, setPatients] = useState([])
+  const [notes, setNotes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [filterPatient, setFilterPatient] = useState('')
   const [filterType, setFilterType] = useState('')
@@ -134,7 +119,7 @@ export default function ClinicalNotes() {
   const [expandedNote, setExpandedNote] = useState(null)
 
   const [form, setForm] = useState({
-    patient: '',
+    patient: '', // patient_id
     type: '',
     subjective: '',
     objective: '',
@@ -142,10 +127,33 @@ export default function ClinicalNotes() {
     plan: '',
   })
 
+  const initialsById = Object.fromEntries(patients.map(p => [p.id, p.initials]))
+
+  const load = useCallback(async () => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    setLoading(true)
+    const [{ data: rows }, { data: noteRows }] = await Promise.all([getPatients(), getClinicalNotes()])
+    setPatients(activeBriefs(rows))
+    setNotes((noteRows || []).map(n => ({
+      id: n.id,
+      patient_id: n.patient_id,
+      date: (n.created_at || '').slice(0, 10),
+      author: n.author_code || '—',
+      type: n.type,
+      subjective: n.subjective || '',
+      objective: n.objective || '',
+      assessment: n.assessment || '',
+      plan: n.plan || '',
+    })))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
   const prompts = form.type ? (SOAP_PROMPTS[form.type] || DEFAULT_PROMPTS) : DEFAULT_PROMPTS
 
   const filteredNotes = notes
-    .filter(n => !filterPatient || n.patient === filterPatient)
+    .filter(n => !filterPatient || n.patient_id === filterPatient)
     .filter(n => !filterType || n.type === filterType)
     .filter(n => !filterDateFrom || n.date >= filterDateFrom)
     .filter(n => !filterDateTo || n.date <= filterDateTo)
@@ -154,23 +162,33 @@ export default function ClinicalNotes() {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.patient || !form.type || !form.subjective) return
     const authorInitials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'ST'
-    const newNote = {
-      id: Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      patient: form.patient,
-      author: authorInitials,
+    setSaving(true)
+    const { error } = await addClinicalNote({
+      patient_id: form.patient,
+      author_id: user?.id || null,
+      author_code: authorInitials,
       type: form.type,
       subjective: form.subjective,
       objective: form.objective,
       assessment: form.assessment,
       plan: form.plan,
-    }
-    setNotes(prev => [newNote, ...prev])
+    })
+    setSaving(false)
+    if (error) { alert(`Could not save note: ${error.message}`); return }
     setForm({ patient: '', type: '', subjective: '', objective: '', assessment: '', plan: '' })
     setShowForm(false)
+    await load()
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this note?')) return
+    const { error } = await deleteClinicalNote(id)
+    if (error) { alert(`Could not delete: ${error.message}`); return }
+    setExpandedNote(null)
+    await load()
   }
 
   return (
@@ -179,7 +197,7 @@ export default function ClinicalNotes() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Clinical Notes</h1>
-          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{notes.length} notes across {PATIENTS.length} patients · SOAP format</p>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{notes.length} notes across {patients.length} patients · SOAP format</p>
         </div>
         <button className="btn btn--primary btn--sm" onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Cancel' : 'Add Note'}
@@ -196,8 +214,8 @@ export default function ClinicalNotes() {
               <label className="flabel">Patient *</label>
               <select className="fi" value={form.patient} onChange={e => handleFormChange('patient', e.target.value)}>
                 <option value="">Select patient...</option>
-                {PATIENTS.map(p => (
-                  <option key={p.id} value={p.initials}>{p.initials} ({p.id})</option>
+                {patients.map(p => (
+                  <option key={p.id} value={p.id}>{p.initials}</option>
                 ))}
               </select>
             </div>
@@ -262,7 +280,7 @@ export default function ClinicalNotes() {
           </div>
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-            <button className="btn btn--primary btn--sm" onClick={handleSubmit}>Save Note</button>
+            <button className="btn btn--primary btn--sm" onClick={handleSubmit} disabled={saving}>{saving ? 'Saving…' : 'Save Note'}</button>
             <button className="btn btn--secondary btn--sm" onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </div>
@@ -275,8 +293,8 @@ export default function ClinicalNotes() {
             <label style={{ display: 'block', fontSize: '.72rem', fontWeight: 600, color: 'var(--g500)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Patient</label>
             <select className="fi" value={filterPatient} onChange={e => setFilterPatient(e.target.value)} style={{ fontSize: '.84rem' }}>
               <option value="">All patients</option>
-              {PATIENTS.map(p => (
-                <option key={p.id} value={p.initials}>{p.initials}</option>
+              {patients.map(p => (
+                <option key={p.id} value={p.id}>{p.initials}</option>
               ))}
             </select>
           </div>
@@ -339,11 +357,11 @@ export default function ClinicalNotes() {
                       color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '.72rem', fontWeight: 700, flexShrink: 0,
                     }}>
-                      {note.patient}
+                      {initialsById[note.patient_id] || '—'}
                     </div>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--charcoal)' }}>
-                        {note.patient} — {note.type}
+                        {(initialsById[note.patient_id] || '—')} — {note.type}
                       </div>
                       <div style={{ fontSize: '.76rem', color: 'var(--g500)' }}>
                         {note.date} · Author: {note.author}
@@ -382,7 +400,7 @@ export default function ClinicalNotes() {
                     ))}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
                       <button
-                        onClick={(e) => { e.stopPropagation(); if (confirm('Delete this note?')) { setNotes(prev => prev.filter(n => n.id !== note.id)); setExpandedNote(null) } }}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(note.id) }}
                         style={{ background: 'none', border: '1px solid #E53E3E', color: '#E53E3E', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600, padding: '4px 12px', borderRadius: 6 }}>
                         Delete Note
                       </button>

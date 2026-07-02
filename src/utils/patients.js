@@ -38,6 +38,13 @@ export function ageFromDob(dob) {
   return Math.floor(diff / (365.25 * 86400000))
 }
 
+// Brief {id, initials, full_name} list of active residents — for pickers.
+export function activeBriefs(rows) {
+  return (rows || [])
+    .filter(p => ['admitted', 'on-pass', 'suspended'].includes(p.status))
+    .map(p => ({ id: p.id, initials: initialsFromName(p.full_name), full_name: p.full_name }))
+}
+
 // Map a patients row (+ optional latest checkin) to the roster card shape.
 export function mapPatientRow(row, checkin) {
   const day = dayInProgramme(row)

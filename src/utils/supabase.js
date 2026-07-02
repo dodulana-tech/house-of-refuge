@@ -220,6 +220,60 @@ export async function getLatestCheckinsByPatient() {
   return { data: latest, error }
 }
 
+// ── Clinical domain (Wave 2) ──────────────────────────────
+// Generic per-patient list/insert helpers keep the pages thin.
+async function listBy(table, column, value, orderCol = 'created_at', asc = false) {
+  if (!supabase) return { data: [], error: null }
+  let q = supabase.from(table).select('*')
+  if (value !== undefined && value !== null) q = q.eq(column, value)
+  const { data, error } = await q.order(orderCol, { ascending: asc })
+  return { data: data || [], error }
+}
+async function insertRow(table, row) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase.from(table).insert([row]).select().single()
+  return { data, error }
+}
+async function deleteRow(table, id) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { error } = await supabase.from(table).delete().eq('id', id)
+  return { error }
+}
+
+export const getClinicalNotes = () => listBy('clinical_notes', null, null)
+export const addClinicalNote = (row) => insertRow('clinical_notes', row)
+export const deleteClinicalNote = (id) => deleteRow('clinical_notes', id)
+
+export const getUdsTests = (patientId) => listBy('uds_tests', 'patient_id', patientId, 'test_date', true)
+export const getAllUdsTests = () => listBy('uds_tests', null, null, 'test_date', true)
+export const addUdsTest = (row) => insertRow('uds_tests', row)
+
+export const getMedications = (patientId) => listBy('medications', 'patient_id', patientId)
+export const addMedication = (row) => insertRow('medications', row)
+export async function updateMedication(id, updates) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase.from('medications').update(updates).eq('id', id).select().single()
+  return { data, error }
+}
+export const getMedAdministrations = (patientId) => listBy('medication_administrations', 'patient_id', patientId, 'administered_at', false)
+export const addMedAdministration = (row) => insertRow('medication_administrations', row)
+
+export const getLabTests = (patientId) => listBy('lab_tests', 'patient_id', patientId, 'ordered_date', false)
+export const getAllLabTests = () => listBy('lab_tests', null, null, 'ordered_date', false)
+export const addLabTest = (row) => insertRow('lab_tests', row)
+
+export const getDetoxRecords = (patientId) => listBy('detox_records', 'patient_id', patientId)
+export const addDetoxRecord = (row) => insertRow('detox_records', row)
+
+export const getAssessments = (patientId, type) => {
+  if (!supabase) return Promise.resolve({ data: [], error: null })
+  let q = supabase.from('assessments').select('*')
+  if (patientId) q = q.eq('patient_id', patientId)
+  if (type) q = q.eq('type', type)
+  return q.order('created_at', { ascending: false }).then(({ data, error }) => ({ data: data || [], error }))
+}
+export const addAssessment = (row) => insertRow('assessments', row)
+
 // ── Visitation requests ───────────────────────────────────
 export async function requestVisitation(visitData) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }

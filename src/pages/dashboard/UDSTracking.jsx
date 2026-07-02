@@ -1,19 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { getPatients, getAllUdsTests, addUdsTest, isSupabaseReady } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
-  Urine Drug Screen (UDS) Tracking — Treatment Protocol Section 5.5
-  Monthly screening for ALL residents (NIDA Principle 12: drug use must
-  be monitored continuously). Additional testing on clinical suspicion,
-  return from pass, or behavioral changes. Initials only (HIPAA).
+  Urine Drug Screen (UDS) Tracking — Treatment Protocol Section 5.5.
+  Live `uds_tests` table. Monthly screening for ALL residents
+  (NIDA Principle 12). Initials only (HIPAA).
 */
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
 
 const STAFF_OPTIONS = [
   { value: 'AI', label: 'AI — Clinical Lead' },
@@ -51,7 +45,7 @@ const POSITIVE_ACTIONS = [
   'Compassionate clinical conversation (not punitive)',
 ]
 
-const TODAY = '2026-04-06'
+const TODAY = new Date().toISOString().slice(0, 10)
 
 function addDays(dateStr, days) {
   const d = new Date(dateStr)
@@ -90,87 +84,6 @@ function getOverallResult(substances) {
   const positives = SUBSTANCES.filter((s) => substances[s] === 'Positive')
   if (positives.length === 0) return { status: 'Clean', positives: [] }
   return { status: 'Positive', positives }
-}
-
-const INITIAL_TESTS = {
-  CO: [
-    {
-      id: 1,
-      date: '2026-02-01',
-      reason: 'Routine Monthly',
-      orderedBy: 'AI',
-      substances: { Cannabis: 'Negative', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-    {
-      id: 2,
-      date: '2026-03-01',
-      reason: 'Routine Monthly',
-      orderedBy: 'AI',
-      substances: { Cannabis: 'Negative', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-    {
-      id: 3,
-      date: '2026-03-31',
-      reason: 'Routine Monthly',
-      orderedBy: 'FA',
-      substances: { Cannabis: 'Negative', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-  ],
-  AN: [
-    {
-      id: 4,
-      date: '2026-02-15',
-      reason: 'Routine Monthly',
-      orderedBy: 'AI',
-      substances: { Cannabis: 'Negative', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-    {
-      id: 5,
-      date: '2026-03-20',
-      reason: 'Clinical Suspicion',
-      orderedBy: 'AI',
-      substances: { Cannabis: 'Positive', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-  ],
-  KA: [
-    {
-      id: 6,
-      date: '2026-01-05',
-      reason: 'Routine Monthly',
-      orderedBy: 'FA',
-      substances: { Cannabis: 'Negative', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-    {
-      id: 7,
-      date: '2026-02-04',
-      reason: 'Routine Monthly',
-      orderedBy: 'FA',
-      substances: { Cannabis: 'Negative', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-    {
-      id: 8,
-      date: '2026-03-05',
-      reason: 'Routine Monthly',
-      orderedBy: 'AI',
-      substances: { Cannabis: 'Negative', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-    {
-      id: 9,
-      date: '2026-04-03',
-      reason: 'Routine Monthly',
-      orderedBy: 'AI',
-      substances: { Cannabis: 'Negative', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-  ],
-  IM: [
-    {
-      id: 10,
-      date: '2026-03-07',
-      reason: 'Routine Monthly',
-      orderedBy: 'AI',
-      substances: { Cannabis: 'Negative', Opioids: 'Negative', Cocaine: 'Negative', Amphetamines: 'Negative', Benzodiazepines: 'Negative', Alcohol: 'Negative', Methamphetamine: 'Negative' },
-    },
-  ],
 }
 
 const resultBadgeStyle = (status) => ({
@@ -219,8 +132,9 @@ const onTrackBadgeStyle = {
 
 export default function UDSTracking() {
   const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
-  const [tests, setTests] = useState(INITIAL_TESTS)
+  const [patients, setPatients] = useState([])
+  const [selectedPatient, setSelectedPatient] = useState('') // patient_id
+  const [tests, setTests] = useState({}) // keyed by patient_id
   const [showForm, setShowForm] = useState(false)
   const [expandedTest, setExpandedTest] = useState(null)
   const [viewMode, setViewMode] = useState('patient') // 'patient' | 'summary'
@@ -229,6 +143,27 @@ export default function UDSTracking() {
     orderedBy: '',
     substances: SUBSTANCES.reduce((acc, s) => ({ ...acc, [s]: 'Negative' }), {}),
   })
+
+  const initialsById = Object.fromEntries(patients.map(p => [p.id, p.initials]))
+  const selectedInitials = initialsById[selectedPatient] || ''
+
+  const load = useCallback(async () => {
+    if (!isSupabaseReady()) return
+    const [{ data: rows }, { data: udsRows }] = await Promise.all([getPatients(), getAllUdsTests()])
+    const briefs = activeBriefs(rows)
+    setPatients(briefs)
+    const grouped = {}
+    for (const t of (udsRows || [])) {
+      const rec = { id: t.id, date: t.test_date, reason: t.reason, orderedBy: t.ordered_by_code, substances: t.substances || {} }
+      ;(grouped[t.patient_id] = grouped[t.patient_id] || []).push(rec)
+    }
+    // ascending by date for the next-due math
+    for (const k of Object.keys(grouped)) grouped[k].sort((a, b) => new Date(a.date) - new Date(b.date))
+    setTests(grouped)
+    setSelectedPatient(prev => prev || briefs[0]?.id || '')
+  }, [])
+
+  useEffect(() => { load() }, [load])
 
   const patientTests = tests[selectedPatient] || []
   const latestTest = patientTests.length > 0 ? patientTests[patientTests.length - 1] : null
@@ -252,23 +187,19 @@ export default function UDSTracking() {
     })
   }
 
-  const handleSubmit = () => {
-    if (!form.reason || !form.orderedBy) return
-
-    const newTest = {
-      id: Date.now(),
-      date: TODAY,
+  const handleSubmit = async () => {
+    if (!form.reason || !form.orderedBy || !selectedPatient) return
+    const { error } = await addUdsTest({
+      patient_id: selectedPatient,
+      test_date: TODAY,
       reason: form.reason,
-      orderedBy: form.orderedBy,
+      ordered_by_code: form.orderedBy,
       substances: { ...form.substances },
-    }
-
-    setTests((prev) => ({
-      ...prev,
-      [selectedPatient]: [...(prev[selectedPatient] || []), newTest],
-    }))
+    })
+    if (error) { alert(`Could not save UDS: ${error.message}`); return }
     setShowForm(false)
     resetForm()
+    await load()
   }
 
   const formResult = getOverallResult(form.substances)
@@ -334,8 +265,8 @@ export default function UDSTracking() {
                   background: '#fff',
                 }}
               >
-                {PATIENTS.map((p) => (
-                  <option key={p.id} value={p.initials}>{p.initials}</option>
+                {patients.map((p) => (
+                  <option key={p.id} value={p.id}>{p.initials}</option>
                 ))}
               </select>
             </>
@@ -371,8 +302,8 @@ export default function UDSTracking() {
                 </tr>
               </thead>
               <tbody>
-                {PATIENTS.map((p) => {
-                  const pTests = tests[p.initials] || []
+                {patients.map((p) => {
+                  const pTests = tests[p.id] || []
                   const pLatest = pTests.length > 0 ? pTests[pTests.length - 1] : null
                   const pResult = pLatest ? getOverallResult(pLatest.substances) : null
                   const pNextDue = pTests.length > 0 ? getNextDueDate(pTests) : null
@@ -387,7 +318,7 @@ export default function UDSTracking() {
                         background: pOverdue ? '#FFF5F5' : 'transparent',
                         cursor: 'pointer',
                       }}
-                      onClick={() => { setSelectedPatient(p.initials); setViewMode('patient') }}
+                      onClick={() => { setSelectedPatient(p.id); setViewMode('patient') }}
                     >
                       <td style={{ padding: '10px 10px', fontWeight: 700 }}>{p.initials}</td>
                       <td style={{ padding: '10px 10px' }}>{pTests.length}</td>
@@ -447,7 +378,7 @@ export default function UDSTracking() {
             >
               <span style={{ fontSize: 24 }}>!</span>
               <span>
-                UDS OVERDUE — {selectedPatient} has not had a routine drug screen in over 35 days.
+                UDS OVERDUE — {selectedInitials} has not had a routine drug screen in over 35 days.
                 Schedule immediately per Protocol 5.5.
               </span>
             </div>
@@ -466,7 +397,7 @@ export default function UDSTracking() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-                Current UDS Status — {selectedPatient}
+                Current UDS Status — {selectedInitials}
               </h2>
               {latestResult && (
                 <span style={resultBadgeStyle(latestResult.status)}>
@@ -652,7 +583,7 @@ export default function UDSTracking() {
               }}
             >
               <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: '0 0 8px' }}>
-                New UDS — {selectedPatient}
+                New UDS — {selectedInitials}
               </h2>
               <p style={{ fontSize: 13, color: '#718096', margin: '0 0 20px' }}>
                 Record urine drug screen results. Date auto-set to today ({TODAY}).
