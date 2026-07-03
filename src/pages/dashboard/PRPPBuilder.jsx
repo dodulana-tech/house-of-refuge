@@ -1,20 +1,15 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getTreatmentPlan, upsertTreatmentPlan, isSupabaseReady } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   Personal Relapse Prevention Plan (PRPP) Builder —
   Graduation requirement per Treatment Protocol Section 8.4.
   Every client must develop a written PRPP before completing the programme.
-  Graduation Criterion #4: Relapse Prevention Competence.
+  Graduation Criterion #4: Relapse Prevention Competence. Persisted to the
+  live `treatment_plans.prpp` JSONB column (one per patient).
   Initials only (HIPAA). All fields are selects/checkboxes — zero free text.
 */
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
 
 const STAFF_OPTIONS = [
   { value: 'AI', label: 'AI — Clinical Lead' },
@@ -128,71 +123,9 @@ const HOSPITAL_OPTIONS = [
   'Other',
 ]
 
-// Demo data
-const INITIAL_PRPP_DATA = {
-  CO: {
-    triggers: {
-      people: ['Former using friends', 'Dealers', 'Work colleagues who use'],
-      places: ['Bars/clubs', 'Former neighbourhood', 'Dealer locations'],
-      feelings: ['Anger', 'Loneliness', 'Boredom', 'Stress'],
-      situations: ['Financial pressure', 'Peer pressure', 'Being alone'],
-      times: ['Evenings', 'Friday nights', 'Paydays'],
-    },
-    copingStrategies: [
-      'Deep breathing exercises',
-      'Call sponsor/accountability partner',
-      'Attend NA/AA or church-based recovery group',
-      'Physical exercise',
-      'Prayer and meditation on Scripture',
-      'Grounding techniques (5-4-3-2-1)',
-    ],
-    supportNetwork: {
-      sponsor: 'Identified',
-      familyOrSocial: 'Identified',
-      pastor: 'Identified',
-      fellowship: 'Identified',
-    },
-    emergency: {
-      hospital: 'Yaba Psychiatric Hospital',
-      emergencyContact: 'Identified',
-    },
-    lastUpdated: '2026-03-28T14:30:00',
-    updatedBy: 'TA',
-  },
-  AN: {
-    triggers: {
-      people: ['Former using friends', 'Romantic partner associated with use'],
-      places: ['Bars/clubs', 'Social venues'],
-      feelings: ['Loneliness', 'Anxiety', 'Sadness'],
-      situations: ['Arguments', 'Relationship conflict'],
-      times: ['Evenings', 'Weekends'],
-    },
-    copingStrategies: [
-      'Journaling',
-      'Physical exercise',
-      'Talk to trusted family member',
-    ],
-    supportNetwork: {
-      sponsor: 'Not yet identified',
-      familyOrSocial: 'Identified',
-      pastor: 'Not yet identified',
-      fellowship: 'Not yet identified',
-    },
-    emergency: {
-      hospital: '',
-      emergencyContact: 'Not yet identified',
-    },
-    lastUpdated: '2026-03-20T10:15:00',
-    updatedBy: 'TA',
-  },
-  KA: {
-    triggers: {
-      people: [],
-      places: [],
-      feelings: [],
-      situations: [],
-      times: [],
-    },
+function defaultPRPP() {
+  return {
+    triggers: { people: [], places: [], feelings: [], situations: [], times: [] },
     copingStrategies: [],
     supportNetwork: {
       sponsor: 'Not yet identified',
@@ -200,39 +133,10 @@ const INITIAL_PRPP_DATA = {
       pastor: 'Not yet identified',
       fellowship: 'Not yet identified',
     },
-    emergency: {
-      hospital: '',
-      emergencyContact: 'Not yet identified',
-    },
+    emergency: { hospital: '', emergencyContact: 'Not yet identified' },
     lastUpdated: null,
     updatedBy: null,
-  },
-  IM: {
-    triggers: {
-      people: ['Former using friends', 'Dealers'],
-      places: ['Bars/clubs', 'Former neighbourhood', 'Dealer locations'],
-      feelings: ['Anger', 'Boredom', 'Frustration', 'Stress'],
-      situations: ['Financial pressure', 'Paydays', 'Peer pressure'],
-      times: ['Evenings', 'Weekends', 'Friday nights'],
-    },
-    copingStrategies: [
-      'Deep breathing exercises',
-      'Physical exercise',
-      'Remove self from triggering environment',
-    ],
-    supportNetwork: {
-      sponsor: 'Not yet identified',
-      familyOrSocial: 'Not yet identified',
-      pastor: 'Not yet identified',
-      fellowship: 'Not yet identified',
-    },
-    emergency: {
-      hospital: '',
-      emergencyContact: 'Not yet identified',
-    },
-    lastUpdated: '2026-03-25T09:45:00',
-    updatedBy: 'SN',
-  },
+  }
 }
 
 function calculateCompletionStatus(data) {
@@ -328,9 +232,11 @@ function getGraduationBadge(status) {
 }
 
 export default function PRPPBuilder() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
-  const [prppData, setPrppData] = useState(INITIAL_PRPP_DATA)
+  const [patients, setPatients] = useState([])
+  const [selectedPatient, setSelectedPatient] = useState('')
+  const [prppData, setPrppData] = useState({}) // patient_id -> prpp
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
     triggers: true,
     coping: false,
@@ -338,7 +244,55 @@ export default function PRPPBuilder() {
     emergency: false,
   })
 
+  const loadPRPP = useCallback(async (patientId) => {
+    if (!patientId || !isSupabaseReady()) return defaultPRPP()
+    const { data } = await getTreatmentPlan(patientId)
+    return data?.prpp && Object.keys(data.prpp).length ? { ...defaultPRPP(), ...data.prpp } : defaultPRPP()
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      if (!isSupabaseReady()) { setLoading(false); return }
+      const { data: rows } = await getPatients()
+      const briefs = activeBriefs(rows)
+      setPatients(briefs)
+      const first = briefs[0]?.id || ''
+      setSelectedPatient(first)
+      if (first) setPrppData({ [first]: await loadPRPP(first) })
+      setLoading(false)
+    })()
+  }, [loadPRPP])
+
+  const onSelectPatient = async (id) => {
+    setSelectedPatient(id)
+    if (!prppData[id]) {
+      const p = await loadPRPP(id)
+      setPrppData(prev => ({ ...prev, [id]: p }))
+    }
+  }
+
+  const handleSave = async () => {
+    if (!selectedPatient || !data) return
+    setSaving(true)
+    const { error } = await upsertTreatmentPlan(selectedPatient, { prpp: data }, data.updatedBy)
+    setSaving(false)
+    if (error) alert(`Could not save PRPP: ${error.message}`)
+    else alert('PRPP saved.')
+  }
+
   const data = prppData[selectedPatient]
+
+  if (loading || !data) {
+    return (
+      <div style={{ padding: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1A202C', margin: 0 }}>Personal Relapse Prevention Plan</h1>
+        <p style={{ color: '#718096', fontSize: 14, marginTop: 12 }}>
+          {loading ? 'Loading…' : 'No active patients on record yet.'}
+        </p>
+      </div>
+    )
+  }
+
   const completionStatus = calculateCompletionStatus(data)
   const gradBadge = getGraduationBadge(completionStatus)
 
@@ -455,10 +409,13 @@ export default function PRPPBuilder() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={getStatusBadgeStyle(completionStatus)}>{completionStatus}</span>
+          <button className="btn btn--primary" disabled={saving} onClick={handleSave}>
+            {saving ? 'Saving…' : 'Save PRPP'}
+          </button>
           <label style={{ fontWeight: 600, fontSize: 14, color: '#4A5568' }}>Patient:</label>
           <select
             value={selectedPatient}
-            onChange={(e) => setSelectedPatient(e.target.value)}
+            onChange={(e) => onSelectPatient(e.target.value)}
             style={{
               padding: '8px 12px',
               borderRadius: 8,
@@ -468,8 +425,8 @@ export default function PRPPBuilder() {
               background: '#fff',
             }}
           >
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>{p.initials}</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
           </select>
         </div>

@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getTreatmentPlan, upsertTreatmentPlan, isSupabaseReady } from '../../utils/supabase'
+import { mapPatientRow } from '../../utils/patients'
 import { POPULATION_PATHWAY_LABELS } from '../../data/clinicalConstants'
 
 /*
@@ -8,15 +9,9 @@ import { POPULATION_PATHWAY_LABELS } from '../../data/clinicalConstants'
   MDT reviews at Week 4, Week 8, pre-discharge.
 
   Structure: Problem Statement → SMART Goals → Objectives → Interventions → Progress
-  Per patient, per phase. Fully structured — zero free text.
+  Per patient, per phase. Persisted to the live `treatment_plans` table (one
+  JSONB plan per patient). Reference goal/intervention libraries stay static.
 */
-
-const PATIENTS = [
-  { initials: 'CO', day: 23, phase: 'foundation', substance: 'Alcohol', substancePathway: 'AUD', populationPathway: 'standard', pathway: 'A', counselor: 'AI' },
-  { initials: 'AN', day: 45, phase: 'deepening', substance: 'Tramadol', substancePathway: 'OUD', populationPathway: 'womens', pathway: 'A', counselor: 'FA' },
-  { initials: 'KA', day: 74, phase: 'reintegration', substance: 'Cannabis', substancePathway: 'CUD', populationPathway: 'standard', pathway: 'B', counselor: 'AI' },
-  { initials: 'IM', day: 8, phase: 'stabilization', substance: 'Heroin', substancePathway: 'OUD', populationPathway: 'adolescent', pathway: 'A', counselor: 'FA' },
-]
 
 const PHASE_META = [
   { key: 'stabilization', label: 'Phase 1: Medical Stabilisation', weeks: 'Wk 1–2', color: '#E53E3E' },
@@ -220,54 +215,89 @@ const COPING_STRATEGIES = [
   'Talk to trusted family member', 'Read Bible / devotional material',
 ]
 
-function initPatientData() {
-  const data = {}
-  PATIENTS.forEach(p => {
-    const problems = p.initials === 'IM' ? ['sud', 'withdrawal'] :
-      p.initials === 'CO' ? ['sud', 'relapse_risk', 'family', 'spiritual'] :
-      p.initials === 'AN' ? ['sud', 'mental_health', 'relapse_risk', 'employment'] :
-      ['sud', 'relapse_risk', 'spiritual', 'employment', 'housing']
-
-    const goalStatuses = {}
-    problems.forEach(prob => {
-      (SMART_GOALS[prob] || []).forEach((_, gi) => {
-        const key = `${prob}-${gi}`
-        // Pre-fill some progress for advanced patients
-        if (p.initials === 'KA') goalStatuses[key] = gi < 3 ? 'Completed' : 'In Progress'
-        else if (p.initials === 'AN') goalStatuses[key] = gi < 2 ? 'Completed' : gi < 4 ? 'In Progress' : 'Not Started'
-        else if (p.initials === 'CO') goalStatuses[key] = gi < 1 ? 'Completed' : gi < 3 ? 'In Progress' : 'Not Started'
-        else goalStatuses[key] = 'Not Started'
-      })
-    })
-
-    data[p.initials] = {
-      problems,
-      goalStatuses,
-      interventions: problems.reduce((acc, prob) => ({ ...acc, [prob]: (INTERVENTIONS[prob] || []).slice(0, 3) }), {}),
-      triggers: p.initials === 'KA' ? { People: ['Former using friends'], Feelings: ['Boredom', 'Loneliness'], Situations: ['Lack of structure'] } : {},
-      coping: p.initials === 'KA' ? ['Prayer and meditation on Scripture', 'Physical exercise', 'Call sponsor/accountability partner', 'Grounding techniques (5-4-3-2-1)', 'Journaling'] : [],
-      mdt: {
-        wk4: { date: '2026-05-13', status: p.day > 28 ? 'Completed' : 'Scheduled', outcome: p.day > 28 ? 'Continue current plan' : '' },
-        wk8: { date: '2026-06-10', status: p.day > 56 ? 'Completed' : 'Scheduled', outcome: p.day > 56 ? 'Initiate discharge planning' : '' },
-        predischarge: { date: p.day > 70 ? '2026-07-01' : '', status: 'Scheduled', outcome: '' },
-      },
-    }
-  })
-  return data
+function defaultPlan() {
+  return {
+    problems: ['sud'],
+    goalStatuses: {},
+    interventions: {},
+    triggers: {},
+    coping: [],
+    mdt: {
+      wk4: { date: '', status: 'Scheduled', outcome: '' },
+      wk8: { date: '', status: 'Scheduled', outcome: '' },
+      predischarge: { date: '', status: 'Scheduled', outcome: '' },
+    },
+  }
 }
 
 export default function TreatmentPlanBuilder() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
+  const [patients, setPatients] = useState([]) // mapped rows
+  const [selectedPatient, setSelectedPatient] = useState('') // patient_id
   const [tab, setTab] = useState('problems')
-  const [patientData, setPatientData] = useState(initPatientData)
+  const [patientData, setPatientData] = useState({}) // patient_id -> plan
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
-  const pt = PATIENTS.find(p => p.initials === selectedPatient)
+  const loadPlan = useCallback(async (patientId) => {
+    if (!patientId || !isSupabaseReady()) return defaultPlan()
+    const { data } = await getTreatmentPlan(patientId)
+    return data?.plan && Object.keys(data.plan).length ? { ...defaultPlan(), ...data.plan } : defaultPlan()
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      if (!isSupabaseReady()) { setLoading(false); return }
+      const { data: rows } = await getPatients()
+      const active = (rows || []).filter(p => ['admitted', 'on-pass', 'suspended'].includes(p.status))
+      const mapped = active.map(r => ({ ...mapPatientRow(r), id: r.id }))
+      setPatients(mapped)
+      const first = mapped[0]?.id || ''
+      setSelectedPatient(first)
+      if (first) setPatientData({ [first]: await loadPlan(first) })
+      setLoading(false)
+    })()
+  }, [loadPlan])
+
+  const onSelectPatient = async (id) => {
+    setSelectedPatient(id)
+    if (!patientData[id]) {
+      const plan = await loadPlan(id)
+      setPatientData(prev => ({ ...prev, [id]: plan }))
+    }
+  }
+
+  const pt = patients.find(p => p.id === selectedPatient)
   const pd = patientData[selectedPatient]
-  const phaseMeta = PHASE_META.find(p => p.key === pt.phase)
+  const phaseMeta = PHASE_META.find(p => p.key === pt?.phase) || PHASE_META[0]
+
+  const handleSave = async () => {
+    if (!selectedPatient || !pd) return
+    setSaving(true)
+    const { error } = await upsertTreatmentPlan(selectedPatient, { plan: pd }, pt?.counselor)
+    setSaving(false)
+    if (error) alert(`Could not save plan: ${error.message}`)
+    else alert('Treatment plan saved.')
+  }
 
   const updatePD = (field, value) => {
     setPatientData(prev => ({ ...prev, [selectedPatient]: { ...prev[selectedPatient], [field]: value } }))
+  }
+
+  if (!loading && patients.length === 0) {
+    return (
+      <div>
+        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Treatment Plan Builder</h1>
+        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>No active patients on record yet.</p>
+      </div>
+    )
+  }
+  if (loading || !pt || !pd) {
+    return (
+      <div>
+        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Treatment Plan Builder</h1>
+        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Loading…</p>
+      </div>
+    )
   }
 
   // Problem toggles
@@ -327,17 +357,22 @@ export default function TreatmentPlanBuilder() {
 
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Treatment Plan Builder</h1>
-        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Columbia Model — Problem Statements → SMART Goals → Interventions → PRPP → MDT Review</p>
+      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Treatment Plan Builder</h1>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Columbia Model — Problem Statements → SMART Goals → Interventions → PRPP → MDT Review</p>
+        </div>
+        <button className="btn btn--primary" disabled={saving} onClick={handleSave} style={{ whiteSpace: 'nowrap' }}>
+          {saving ? 'Saving…' : 'Save Plan'}
+        </button>
       </div>
 
       {/* Patient selector + KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         <div className="card" style={{ padding: 14 }}>
           <label style={{ fontSize: '.68rem', color: 'var(--g500)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 4 }}>Patient</label>
-          <select className="fi" value={selectedPatient} onChange={e => setSelectedPatient(e.target.value)}>
-            {PATIENTS.map(p => <option key={p.initials} value={p.initials}>{p.initials} — Day {p.day}</option>)}
+          <select className="fi" value={selectedPatient} onChange={e => onSelectPatient(e.target.value)}>
+            {patients.map(p => <option key={p.id} value={p.id}>{p.initials} — Day {p.day}</option>)}
           </select>
         </div>
         <div className="card" style={{ textAlign: 'center', padding: 14 }}>

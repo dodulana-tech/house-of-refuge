@@ -1,19 +1,14 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getLabTests, addLabTest, updateLabTest, isSupabaseReady } from '../../utils/supabase'
+import { initialsFromName } from '../../utils/patients'
 
 /*
   Pre-Admission Medical Tests — Treatment Protocol Section 4.8
-  9 mandatory tests within 48 hours of admission.
+  9 mandatory tests within 48 hours of admission. Live `lab_tests` table
+  (one row per patient+panel; rich status/dates/substances in results JSONB).
   NIDA Principle 13, ASAM Dimension 2, WHO mhGAP LMIC.
   Initials only (HIPAA). All fields are selects/checkboxes — zero free text.
 */
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
 
 const STAFF_OPTIONS = [
   { value: 'AI', label: 'AI — Clinical Lead' },
@@ -24,13 +19,6 @@ const STAFF_OPTIONS = [
   { value: 'TA', label: 'TA — Counsellor' },
   { value: 'HM', label: 'HM — Nurse' },
 ]
-
-const ADMISSION_DATES = {
-  CO: '2026-03-06',
-  AN: '2026-02-18',
-  KA: '2026-01-10',
-  IM: '2026-03-21',
-}
 
 const UDS_SUBSTANCES = [
   'Cannabis',
@@ -122,55 +110,13 @@ const TEST_DEFINITIONS = [
   },
 ]
 
-const INITIAL_TESTS = {
-  CO: {
-    fbc:          { status: 'Completed (Normal)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    fbs:          { status: 'Completed (Normal)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    lft:          { status: 'Completed (Elevated)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    toxicology:   { status: 'Completed',            dateOrdered: '2026-03-06', dateCompleted: '2026-03-06', orderedBy: 'FA', substances: ['Alcohol', 'Cannabis'] },
-    bloodAlcohol: { status: 'Completed (Positive)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-06', orderedBy: 'FA', substances: [] },
-    urinalysis:   { status: 'Completed (Normal)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    rft:          { status: 'Completed (Normal)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    hepB:         { status: 'Completed (Immune)',   dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    hepC:         { status: 'Completed (Negative)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-    hiv:          { status: 'Completed (Negative)', dateOrdered: '2026-03-06', dateCompleted: '2026-03-07', orderedBy: 'FA', substances: [] },
-  },
-  AN: {
-    fbc:          { status: 'Completed (Normal)',   dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
-    fbs:          { status: 'Completed (Normal)',   dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
-    lft:          { status: 'Completed (Normal)',   dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'HM', substances: [] },
-    toxicology:   { status: 'Completed',            dateOrdered: '2026-02-18', dateCompleted: '2026-02-18', orderedBy: 'FA', substances: ['Opioids', 'Benzodiazepines'] },
-    bloodAlcohol: { status: 'Completed (Negative)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-18', orderedBy: 'FA', substances: [] },
-    urinalysis:   { status: 'Pending',              dateOrdered: '',           dateCompleted: '',           orderedBy: '',   substances: [] },
-    rft:          { status: 'Ordered',              dateOrdered: '2026-02-18', dateCompleted: '',           orderedBy: 'HM', substances: [] },
-    hepB:         { status: 'Completed (Positive)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'FA', substances: [] },
-    hepC:         { status: 'Completed (Negative)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'FA', substances: [] },
-    hiv:          { status: 'Completed (Negative)', dateOrdered: '2026-02-18', dateCompleted: '2026-02-19', orderedBy: 'FA', substances: [] },
-  },
-  KA: {
-    fbc:          { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
-    fbs:          { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
-    lft:          { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
-    toxicology:   { status: 'Completed',            dateOrdered: '2026-01-10', dateCompleted: '2026-01-10', orderedBy: 'FA', substances: ['Cannabis'] },
-    bloodAlcohol: { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-10', orderedBy: 'FA', substances: [] },
-    urinalysis:   { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
-    rft:          { status: 'Completed (Normal)',   dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'HM', substances: [] },
-    hepB:         { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'FA', substances: [] },
-    hepC:         { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'FA', substances: [] },
-    hiv:          { status: 'Completed (Negative)', dateOrdered: '2026-01-10', dateCompleted: '2026-01-11', orderedBy: 'FA', substances: [] },
-  },
-  IM: {
-    fbc:          { status: 'Ordered',              dateOrdered: '2026-03-21', dateCompleted: '',           orderedBy: 'HM', substances: [] },
-    fbs:          { status: 'Ordered',              dateOrdered: '2026-03-21', dateCompleted: '',           orderedBy: 'HM', substances: [] },
-    lft:          { status: 'Ordered',              dateOrdered: '2026-03-21', dateCompleted: '',           orderedBy: 'HM', substances: [] },
-    toxicology:   { status: 'Completed',            dateOrdered: '2026-03-21', dateCompleted: '2026-03-21', orderedBy: 'FA', substances: ['Cocaine', 'Amphetamines', 'Cannabis'] },
-    bloodAlcohol: { status: 'Completed (Negative)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-21', orderedBy: 'FA', substances: [] },
-    urinalysis:   { status: 'Pending',              dateOrdered: '',           dateCompleted: '',           orderedBy: '',   substances: [] },
-    rft:          { status: 'Pending',              dateOrdered: '',           dateCompleted: '',           orderedBy: '',   substances: [] },
-    hepB:         { status: 'Completed (Negative)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'FA', substances: [] },
-    hepC:         { status: 'Completed (Negative)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'FA', substances: [] },
-    hiv:          { status: 'Completed (Positive)', dateOrdered: '2026-03-21', dateCompleted: '2026-03-22', orderedBy: 'FA', substances: [] },
-  },
+const EMPTY_TEST = { status: 'Pending', dateOrdered: '', dateCompleted: '', orderedBy: '', substances: [] }
+
+// Map a rich status label to the constrained lab_tests.status column value.
+function statusColumn(label) {
+  if ((label || '').startsWith('Completed')) return 'resulted'
+  if (label === 'Ordered') return 'ordered'
+  return 'pending'
 }
 
 function isCompleted(status) {
@@ -182,6 +128,7 @@ function getCompletionCount(patientTests) {
 }
 
 function getDeadlineStatus(admissionDate) {
+  if (!admissionDate) return { label: 'N/A', color: '#718096', bg: '#F7FAFC', border: '#E2E8F0', hours: null }
   const admission = new Date(admissionDate)
   const deadline = new Date(admission.getTime() + 48 * 60 * 60 * 1000)
   const now = new Date()
@@ -209,53 +156,105 @@ function getFlagForStatus(testDef, status) {
 }
 
 export default function MedicalTests() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
-  const [tests, setTests] = useState(INITIAL_TESTS)
+  const [patients, setPatients] = useState([]) // [{id, initials, admittedAt}]
+  const [selectedPatient, setSelectedPatient] = useState('') // patient_id
+  const [tests, setTests] = useState({}) // { [key]: testData }
+  const [rowIds, setRowIds] = useState({}) // { [key]: lab_test id }
+  const [loading, setLoading] = useState(true)
 
-  const patientTests = tests[selectedPatient] || {}
-  const admissionDate = ADMISSION_DATES[selectedPatient]
+  const loadPatientTests = useCallback(async (patientId) => {
+    if (!patientId || !isSupabaseReady()) { setTests({}); setRowIds({}); return }
+    const { data: rows } = await getLabTests(patientId)
+    const nextTests = {}
+    const nextRows = {}
+    for (const r of (rows || [])) {
+      const key = r.panel
+      if (!TEST_DEFINITIONS.some((t) => t.key === key)) continue
+      if (nextRows[key]) continue // keep first (latest by ordered_date desc)
+      const res = r.results || {}
+      nextTests[key] = {
+        status: res.status || 'Pending',
+        dateOrdered: res.dateOrdered || r.ordered_date || '',
+        dateCompleted: res.dateCompleted || r.result_date || '',
+        orderedBy: res.orderedBy || r.ordered_by_code || '',
+        substances: res.substances || [],
+      }
+      nextRows[key] = r.id
+    }
+    setTests(nextTests)
+    setRowIds(nextRows)
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      if (!isSupabaseReady()) { setLoading(false); return }
+      const { data: rows } = await getPatients()
+      const active = (rows || []).filter(p => ['admitted', 'on-pass', 'suspended'].includes(p.status))
+      const briefs = active.map(p => ({ id: p.id, initials: initialsFromName(p.full_name), admittedAt: p.admitted_at }))
+      setPatients(briefs)
+      const first = briefs[0]?.id || ''
+      setSelectedPatient(first)
+      if (first) await loadPatientTests(first)
+      setLoading(false)
+    })()
+  }, [loadPatientTests])
+
+  const onSelectPatient = async (id) => {
+    setSelectedPatient(id)
+    await loadPatientTests(id)
+  }
+
+  const patientTests = tests
+  const admissionDate = patients.find(p => p.id === selectedPatient)?.admittedAt
+    ? String(patients.find(p => p.id === selectedPatient).admittedAt).slice(0, 10)
+    : null
   const completionCount = getCompletionCount(patientTests)
   const badge = getCompletionBadge(completionCount, admissionDate)
   const deadlineStatus = getDeadlineStatus(admissionDate)
   const progressPct = Math.round((completionCount / 9) * 100)
 
+  // Persist a test row (insert or update) after local state change.
+  const persistTest = async (testKey, testData) => {
+    if (!isSupabaseReady() || !selectedPatient) return
+    const payload = {
+      patient_id: selectedPatient,
+      panel: testKey,
+      status: statusColumn(testData.status),
+      ordered_date: testData.dateOrdered || null,
+      result_date: testData.dateCompleted || null,
+      ordered_by_code: testData.orderedBy || null,
+      results: { ...testData },
+    }
+    const existing = rowIds[testKey]
+    if (existing) {
+      const { error } = await updateLabTest(existing, payload)
+      if (error) alert(`Could not save test: ${error.message}`)
+    } else {
+      const { data, error } = await addLabTest(payload)
+      if (error) { alert(`Could not save test: ${error.message}`); return }
+      if (data?.id) setRowIds((prev) => ({ ...prev, [testKey]: data.id }))
+    }
+  }
+
   const updateTestField = (testKey, field, value) => {
-    setTests((prev) => ({
-      ...prev,
-      [selectedPatient]: {
-        ...prev[selectedPatient],
-        [testKey]: {
-          ...prev[selectedPatient][testKey],
-          [field]: value,
-        },
-      },
-    }))
+    const current = tests[testKey] || EMPTY_TEST
+    const updated = { ...current, [field]: value }
+    setTests((prev) => ({ ...prev, [testKey]: updated }))
+    persistTest(testKey, updated)
   }
 
   const toggleSubstance = (testKey, substance) => {
-    setTests((prev) => {
-      const current = prev[selectedPatient][testKey].substances || []
-      let updated
-      if (substance === 'None detected') {
-        updated = current.includes('None detected') ? [] : ['None detected']
-      } else {
-        const without = current.filter((s) => s !== 'None detected')
-        updated = without.includes(substance)
-          ? without.filter((s) => s !== substance)
-          : [...without, substance]
-      }
-      return {
-        ...prev,
-        [selectedPatient]: {
-          ...prev[selectedPatient],
-          [testKey]: {
-            ...prev[selectedPatient][testKey],
-            substances: updated,
-          },
-        },
-      }
-    })
+    const current = (tests[testKey] || EMPTY_TEST).substances || []
+    let list
+    if (substance === 'None detected') {
+      list = current.includes('None detected') ? [] : ['None detected']
+    } else {
+      const without = current.filter((s) => s !== 'None detected')
+      list = without.includes(substance) ? without.filter((s) => s !== substance) : [...without, substance]
+    }
+    const updated = { ...(tests[testKey] || EMPTY_TEST), substances: list }
+    setTests((prev) => ({ ...prev, [testKey]: updated }))
+    persistTest(testKey, updated)
   }
 
   // Collect all active flags
@@ -266,6 +265,17 @@ export default function MedicalTests() {
       return flag ? { testName: t.name, flag } : null
     })
     .filter(Boolean)
+
+  const selectedInitials = patients.find(p => p.id === selectedPatient)?.initials || ''
+
+  if (!loading && patients.length === 0) {
+    return (
+      <div style={{ padding: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1A202C', margin: 0 }}>Pre-Admission Medical Tests</h1>
+        <p style={{ color: '#718096', fontSize: 14, marginTop: 12 }}>No active patients on record yet.</p>
+      </div>
+    )
+  }
 
   return (
     <div style={{ padding: 24 }}>
@@ -283,7 +293,7 @@ export default function MedicalTests() {
           <label style={{ fontWeight: 600, fontSize: 14, color: '#4A5568' }}>Patient:</label>
           <select
             value={selectedPatient}
-            onChange={(e) => setSelectedPatient(e.target.value)}
+            onChange={(e) => onSelectPatient(e.target.value)}
             style={{
               padding: '8px 12px',
               borderRadius: 8,
@@ -293,8 +303,8 @@ export default function MedicalTests() {
               background: '#fff',
             }}
           >
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>{p.initials}</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
           </select>
         </div>
@@ -313,7 +323,7 @@ export default function MedicalTests() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-            Completion Status — {selectedPatient}
+            Completion Status — {selectedInitials}
           </h2>
           <span
             style={{
@@ -483,7 +493,7 @@ export default function MedicalTests() {
                           <option value="">-- Select --</option>
                           {(() => {
                             const dates = []
-                            const start = new Date(admissionDate)
+                            const start = new Date(admissionDate || Date.now())
                             for (let i = 0; i < 7; i++) {
                               const d = new Date(start.getTime() + i * 24 * 60 * 60 * 1000)
                               dates.push(d.toISOString().split('T')[0])
@@ -508,7 +518,7 @@ export default function MedicalTests() {
                           <option value="">-- Select --</option>
                           {(() => {
                             const dates = []
-                            const start = new Date(admissionDate)
+                            const start = new Date(admissionDate || Date.now())
                             for (let i = 0; i < 14; i++) {
                               const d = new Date(start.getTime() + i * 24 * 60 * 60 * 1000)
                               dates.push(d.toISOString().split('T')[0])

@@ -1,18 +1,12 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getAssessments, addAssessment, isSupabaseReady } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   Risk Assessment — Columbia Suicide Severity Rating Scale (C-SSRS) +
-  general safety screening per SOP 2.3. Initials only (HIPAA).
-  All fields are selects/checkboxes — zero free text.
+  general safety screening per SOP 2.3. Live `assessments` table (type 'risk').
+  Initials only (HIPAA). All fields are selects/checkboxes — zero free text.
 */
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
 
 const CSSRS_QUESTIONS = [
   {
@@ -123,92 +117,16 @@ const STAFF_OPTIONS = [
   { value: 'HM', label: 'HM — Nurse' },
 ]
 
-const INITIAL_ASSESSMENTS = {
-  CO: [
-    {
-      id: 1,
-      date: '2026-03-08',
-      assessor: 'AI',
-      q1: 'No', q2: 'No', q3: 'No', q4: 'No', q5: 'No', q6: 'No',
-      q6Timeframe: '',
-      psychosis: 'None',
-      homicidalIdeation: 'No',
-      selfHarmHistory: 'None reported',
-      riskLevel: 'Low',
-    },
-    {
-      id: 2,
-      date: '2026-03-15',
-      assessor: 'AI',
-      q1: 'Yes', q2: 'No', q3: 'No', q4: 'No', q5: 'No', q6: 'No',
-      q6Timeframe: '',
-      psychosis: 'None',
-      homicidalIdeation: 'No',
-      selfHarmHistory: 'None reported',
-      riskLevel: 'Low',
-    },
-    {
-      id: 3,
-      date: '2026-03-22',
-      assessor: 'AI',
-      q1: 'No', q2: 'No', q3: 'No', q4: 'No', q5: 'No', q6: 'No',
-      q6Timeframe: '',
-      psychosis: 'None',
-      homicidalIdeation: 'No',
-      selfHarmHistory: 'None reported',
-      riskLevel: 'Low',
-    },
-  ],
-  AN: [
-    {
-      id: 4,
-      date: '2026-02-20',
-      assessor: 'AI',
-      q1: 'No', q2: 'No', q3: 'No', q4: 'No', q5: 'No', q6: 'No',
-      q6Timeframe: '',
-      psychosis: 'None',
-      homicidalIdeation: 'No',
-      selfHarmHistory: 'Historical only',
-      riskLevel: 'Low',
-    },
-    {
-      id: 5,
-      date: '2026-03-10',
-      assessor: 'AI',
-      q1: 'Yes', q2: 'Yes', q3: 'No', q4: 'No', q5: 'No', q6: 'No',
-      q6Timeframe: '',
-      psychosis: 'None',
-      homicidalIdeation: 'No',
-      selfHarmHistory: 'Historical only',
-      riskLevel: 'Low',
-    },
-  ],
-  KA: [
-    {
-      id: 6,
-      date: '2026-01-15',
-      assessor: 'FA',
-      q1: 'No', q2: 'No', q3: 'No', q4: 'No', q5: 'No', q6: 'No',
-      q6Timeframe: '',
-      psychosis: 'None',
-      homicidalIdeation: 'No',
-      selfHarmHistory: 'None reported',
-      riskLevel: 'Low',
-    },
-  ],
-  IM: [
-    {
-      id: 7,
-      date: '2026-03-23',
-      assessor: 'AI',
-      q1: 'Yes', q2: 'Yes', q3: 'Yes', q4: 'No', q5: 'No', q6: 'No',
-      q6Timeframe: '',
-      psychosis: 'None',
-      homicidalIdeation: 'No',
-      selfHarmHistory: 'Past 3 months',
-      riskLevel: 'Moderate',
-    },
-  ],
+// Map an `assessments` row (type 'risk') to the page's assessment shape.
+function rowToAssessment(r) {
+  const resp = r.responses || {}
+  const obj = { id: r.id, date: (r.created_at || '').slice(0, 10), assessor: r.assessed_by_code || '', riskLevel: r.level || 'Low' }
+  for (let i = 1; i <= 6; i++) obj[`q${i}`] = resp[`q${i}`] ?? ''
+  obj.q6Timeframe = resp.q6Timeframe ?? ''
+  obj.psychosis = resp.psychosis ?? 'None'
+  obj.homicidalIdeation = resp.homicidalIdeation ?? 'No'
+  obj.selfHarmHistory = resp.selfHarmHistory ?? 'None reported'
+  return obj
 }
 
 function calculateRiskLevel(form) {
@@ -250,9 +168,10 @@ const riskLevelStyle = (level) => {
 }
 
 export default function RiskAssessment() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
-  const [assessments, setAssessments] = useState(INITIAL_ASSESSMENTS)
+  const [patients, setPatients] = useState([])
+  const [selectedPatient, setSelectedPatient] = useState('')
+  const [assessments, setAssessments] = useState({}) // patient_id -> ascending[]
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     assessor: '',
@@ -263,6 +182,34 @@ export default function RiskAssessment() {
     selfHarmHistory: 'None reported',
   })
 
+  const loadAssessments = useCallback(async (patientId) => {
+    if (!patientId || !isSupabaseReady()) return []
+    const { data: rows } = await getAssessments(patientId, 'risk')
+    return (rows || []).map(rowToAssessment).reverse()
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      if (!isSupabaseReady()) return
+      const { data: rows } = await getPatients()
+      const briefs = activeBriefs(rows)
+      setPatients(briefs)
+      const first = briefs[0]?.id || ''
+      setSelectedPatient(first)
+      if (first) setAssessments({ [first]: await loadAssessments(first) })
+    })()
+  }, [loadAssessments])
+
+  const onSelectPatient = async (id) => {
+    setSelectedPatient(id)
+    setShowForm(false)
+    if (!assessments[id]) {
+      const a = await loadAssessments(id)
+      setAssessments(prev => ({ ...prev, [id]: a }))
+    }
+  }
+
+  const selectedInitials = patients.find(p => p.id === selectedPatient)?.initials || ''
   const patientAssessments = assessments[selectedPatient] || []
   const latestAssessment = patientAssessments.length > 0 ? patientAssessments[patientAssessments.length - 1] : null
   const currentRisk = latestAssessment ? latestAssessment.riskLevel : 'Not assessed'
@@ -281,24 +228,29 @@ export default function RiskAssessment() {
     })
   }
 
-  const handleSubmit = () => {
-    if (!form.assessor || !form.q1 || !form.q2 || !form.q3 || !form.q4 || !form.q5 || !form.q6 || !form.homicidalIdeation) {
+  const handleSubmit = async () => {
+    if (!form.assessor || !form.q1 || !form.q2 || !form.q3 || !form.q4 || !form.q5 || !form.q6 || !form.homicidalIdeation || !selectedPatient) {
       return
     }
     if (form.q6 === 'Yes' && !form.q6Timeframe) return
 
     const riskLevel = calculateRiskLevel(form)
-    const newAssessment = {
-      id: Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      ...form,
-      riskLevel,
-    }
+    const { assessor, ...rest } = form
+    const RISK_SCORE = { Low: 1, Moderate: 2, High: 3, Critical: 4 }
 
-    setAssessments((prev) => ({
-      ...prev,
-      [selectedPatient]: [...(prev[selectedPatient] || []), newAssessment],
-    }))
+    setSaving(true)
+    const { error } = await addAssessment({
+      patient_id: selectedPatient,
+      type: 'risk',
+      score: RISK_SCORE[riskLevel] || 1,
+      level: riskLevel,
+      responses: rest,
+      assessed_by_code: assessor,
+    })
+    setSaving(false)
+    if (error) { alert(`Could not save assessment: ${error.message}`); return }
+    const a = await loadAssessments(selectedPatient)
+    setAssessments(prev => ({ ...prev, [selectedPatient]: a }))
     setShowForm(false)
     resetForm()
   }
@@ -320,7 +272,7 @@ export default function RiskAssessment() {
           <label style={{ fontWeight: 600, fontSize: 14, color: '#4A5568' }}>Patient:</label>
           <select
             value={selectedPatient}
-            onChange={(e) => { setSelectedPatient(e.target.value); setShowForm(false) }}
+            onChange={(e) => onSelectPatient(e.target.value)}
             style={{
               padding: '8px 12px',
               borderRadius: 8,
@@ -330,8 +282,8 @@ export default function RiskAssessment() {
               background: '#fff',
             }}
           >
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>{p.initials}</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
           </select>
         </div>
@@ -376,7 +328,7 @@ export default function RiskAssessment() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-            Current Risk Status — {selectedPatient}
+            Current Risk Status — {selectedInitials}
           </h2>
           <span style={riskLevelStyle(currentRisk)}>{currentRisk}</span>
         </div>
@@ -544,7 +496,7 @@ export default function RiskAssessment() {
           }}
         >
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: '0 0 8px' }}>
-            New C-SSRS + Safety Screening — {selectedPatient}
+            New C-SSRS + Safety Screening — {selectedInitials}
           </h2>
           <p style={{ fontSize: 13, color: '#718096', margin: '0 0 20px' }}>
             Columbia Suicide Severity Rating Scale. All questions require a response.

@@ -239,6 +239,11 @@ async function deleteRow(table, id) {
   const { error } = await supabase.from(table).delete().eq('id', id)
   return { error }
 }
+async function updateRow(table, id, updates) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase.from(table).update(updates).eq('id', id).select().single()
+  return { data, error }
+}
 
 export const getClinicalNotes = () => listBy('clinical_notes', null, null)
 export const addClinicalNote = (row) => insertRow('clinical_notes', row)
@@ -263,9 +268,31 @@ export const addMedAdministration = (row) => insertRow('medication_administratio
 export const getLabTests = (patientId) => listBy('lab_tests', 'patient_id', patientId, 'ordered_date', false)
 export const getAllLabTests = () => listBy('lab_tests', null, null, 'ordered_date', false)
 export const addLabTest = (row) => insertRow('lab_tests', row)
+export const updateLabTest = (id, updates) => updateRow('lab_tests', id, updates)
 
 export const getDetoxRecords = (patientId) => listBy('detox_records', 'patient_id', patientId)
 export const addDetoxRecord = (row) => insertRow('detox_records', row)
+
+// ── Treatment plans (per-patient JSONB plan; Columbia Model builder) ──
+export async function getTreatmentPlan(patientId) {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase
+    .from('treatment_plans')
+    .select('*')
+    .eq('patient_id', patientId)
+    .maybeSingle()
+  return { data, error }
+}
+// fields is a partial column object, e.g. { plan } or { prpp }.
+export async function upsertTreatmentPlan(patientId, fields, updatedByCode) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase
+    .from('treatment_plans')
+    .upsert({ patient_id: patientId, ...fields, updated_by_code: updatedByCode || null, updated_at: new Date().toISOString() }, { onConflict: 'patient_id' })
+    .select()
+    .single()
+  return { data, error }
+}
 
 export const getAssessments = (patientId, type) => {
   if (!supabase) return Promise.resolve({ data: [], error: null })
