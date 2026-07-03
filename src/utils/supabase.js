@@ -366,6 +366,82 @@ export async function setScheduleAttendance(row) {
   return { data, error }
 }
 
+// ── Spiritual / family / discharge / alumni (Wave 4) ──────
+// Flexible per-patient JSONB progress store (domain-keyed).
+export async function getProgress(patientId, domain) {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase.from('progress_records')
+    .select('*').eq('patient_id', patientId).eq('domain', domain).maybeSingle()
+  return { data, error }
+}
+export async function getAllProgress(domain) {
+  if (!supabase) return { data: [], error: null }
+  const { data, error } = await supabase.from('progress_records').select('*').eq('domain', domain)
+  return { data: data || [], error }
+}
+export async function upsertProgress(patientId, domain, data, updatedByCode) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data: row, error } = await supabase.from('progress_records')
+    .upsert({ patient_id: patientId, domain, data, updated_by_code: updatedByCode || null, updated_at: new Date().toISOString() }, { onConflict: 'patient_id,domain' })
+    .select().single()
+  return { data: row, error }
+}
+
+// Therapy / counselling sessions
+export async function getTherapySessions(type) {
+  if (!supabase) return { data: [], error: null }
+  let q = supabase.from('therapy_sessions').select('*')
+  if (type) q = q.eq('type', type)
+  const { data, error } = await q.order('session_date', { ascending: false })
+  return { data: data || [], error }
+}
+export async function getTherapySessionsByPatient(patientId, type) {
+  if (!supabase) return { data: [], error: null }
+  let q = supabase.from('therapy_sessions').select('*').eq('patient_id', patientId)
+  if (type) q = q.eq('type', type)
+  const { data, error } = await q.order('session_date', { ascending: false })
+  return { data: data || [], error }
+}
+export const addTherapySession = (row) => insertRow('therapy_sessions', row)
+export const updateTherapySession = (id, updates) => updateRow('therapy_sessions', id, updates)
+export const deleteTherapySession = (id) => deleteRow('therapy_sessions', id)
+
+// Alumni CRM
+export const getAlumni = () => listBy('alumni', null, null, 'created_at', false)
+export async function getAlumnus(id) {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase.from('alumni').select('*').eq('id', id).single()
+  return { data, error }
+}
+export const addAlumnus = (row) => insertRow('alumni', row)
+export const updateAlumnus = (id, updates) => updateRow('alumni', id, updates)
+
+// Consent register
+export async function getConsents(patientId) {
+  if (!supabase) return { data: [], error: null }
+  const { data, error } = await supabase.from('consents').select('*').eq('patient_id', patientId)
+  return { data: data || [], error }
+}
+export const getAllConsents = () => listBy('consents', null, null, 'created_at', false)
+export async function upsertConsent(patientId, consentType, fields, recordedByCode) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase.from('consents')
+    .upsert({ patient_id: patientId, consent_type: consentType, ...fields, recorded_by_code: recordedByCode || null, updated_at: new Date().toISOString() }, { onConflict: 'patient_id,consent_type' })
+    .select().single()
+  return { data, error }
+}
+
+// Discharges
+export const getDischarges = () => listBy('discharges', null, null)
+export async function getDischargeByPatient(patientId) {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase.from('discharges')
+    .select('*').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  return { data, error }
+}
+export const addDischarge = (row) => insertRow('discharges', row)
+export const updateDischarge = (id, updates) => updateRow('discharges', id, updates)
+
 // ── Visitation requests ───────────────────────────────────
 export async function requestVisitation(visitData) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
@@ -386,6 +462,45 @@ export async function getVisitations(patientId) {
     .order('created_at', { ascending: false })
   return { data: data || [], error }
 }
+
+export async function getAllVisitations() {
+  if (!supabase) return { data: [], error: null }
+  const { data, error } = await supabase
+    .from('visitations')
+    .select('*')
+    .order('visit_date', { ascending: false })
+  return { data: data || [], error }
+}
+
+export const addVisitation = (row) => insertRow('visitations', row)
+export const updateVisitation = (id, updates) => updateRow('visitations', id, updates)
+
+// ── Governance & people (Wave 5) ──────────────────────────
+// Staff directory
+export const getStaff = () => listBy('staff', null, null, 'full_name', true)
+export async function getStaffMember(id) {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase.from('staff').select('*').eq('id', id).single()
+  return { data, error }
+}
+export const addStaff = (row) => insertRow('staff', row)
+export const updateStaff = (id, updates) => updateRow('staff', id, updates)
+
+// Staff training
+export const getStaffTraining = () => listBy('staff_training', null, null, 'created_at', false)
+export const getStaffTrainingFor = (staffId) => listBy('staff_training', 'staff_id', staffId, 'created_at', false)
+export const addStaffTraining = (row) => insertRow('staff_training', row)
+export const updateStaffTraining = (id, updates) => updateRow('staff_training', id, updates)
+
+// Donors
+export const getDonors = () => listBy('donors', null, null, 'created_at', false)
+export async function getDonor(id) {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase.from('donors').select('*').eq('id', id).single()
+  return { data, error }
+}
+export const addDonor = (row) => insertRow('donors', row)
+export const updateDonor = (id, updates) => updateRow('donors', id, updates)
 
 // ── Meal orders ───────────────────────────────────────────
 export async function submitMealOrder(patientId, orderData) {

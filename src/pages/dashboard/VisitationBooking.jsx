@@ -1,18 +1,12 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getAllVisitations, addVisitation, updateVisitation } from '../../utils/supabase'
+import { activeBriefs, initialsFromName } from '../../utils/patients'
 
 /*
   Visitation Booking — SOP Section 5.4.2
   Sunday 12:00–6:00 PM visitation management.
   HIPAA: initials only.
 */
-
-const PATIENTS = [
-  { initials: 'CO', id: 'P001' },
-  { initials: 'AN', id: 'P002' },
-  { initials: 'KA', id: 'P003' },
-  { initials: 'IM', id: 'P004' },
-]
 
 const TIME_SLOTS = ['12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM']
 
@@ -40,42 +34,63 @@ function getNextSundays(count) {
 
 const NEXT_SUNDAYS = getNextSundays(4)
 
-const INITIAL_VISITS = [
-  { id: 1, patient: 'KA', visitor: 'M. Kamara', relationship: 'Mother', timeSlot: '1:00 PM', visitors: 3, date: NEXT_SUNDAYS[0], status: 'approved' },
-  { id: 2, patient: 'CO', visitor: 'B. Cole', relationship: 'Father', timeSlot: '2:00 PM', visitors: 2, date: NEXT_SUNDAYS[0], status: 'pending' },
-  { id: 3, patient: 'AN', visitor: 'F. Annan', relationship: 'Sister', timeSlot: '12:00 PM', visitors: 1, date: NEXT_SUNDAYS[1], status: 'pending' },
-  { id: 4, patient: 'KA', visitor: 'J. Kamara', relationship: 'Brother', timeSlot: '3:00 PM', visitors: 2, date: NEXT_SUNDAYS[1], status: 'approved' },
-  // past visits
-  { id: 5, patient: 'KA', visitor: 'M. Kamara', relationship: 'Mother', timeSlot: '1:00 PM', visitors: 4, date: '2026-03-22', status: 'completed' },
-  { id: 6, patient: 'AN', visitor: 'F. Annan', relationship: 'Sister', timeSlot: '12:00 PM', visitors: 2, date: '2026-03-22', status: 'completed' },
-  { id: 7, patient: 'CO', visitor: 'B. Cole', relationship: 'Father', timeSlot: '2:00 PM', visitors: 1, date: '2026-03-15', status: 'completed' },
-]
-
-const statusColors = { approved: '#1A7A4A', pending: '#DD6B20', completed: 'var(--g500)', declined: '#E53E3E' }
+const statusColors = { approved: '#1A7A4A', pending: '#DD6B20', completed: 'var(--g500)', declined: '#E53E3E', cancelled: 'var(--g400)' }
 
 export default function VisitationBooking() {
-  const { user } = useAuth()
-  const [visits, setVisits] = useState(INITIAL_VISITS)
+  const [patients, setPatients] = useState([])
+  const [visits, setVisits] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState('calendar')
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ patient: '', visitor: '', relationship: '', timeSlot: '', visitors: '1', children: 'None', specialRequirements: [], date: NEXT_SUNDAYS[0] || '' })
+  const [form, setForm] = useState({ patient: '', relationship: '', timeSlot: '', visitors: '1', children: 'None', specialRequirements: [], date: NEXT_SUNDAYS[0] || '' })
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const [{ data: pats }, { data: v }] = await Promise.all([getPatients(), getAllVisitations()])
+    setPatients(pats || [])
+    setVisits(v || [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const activePatients = activeBriefs(patients)
+  const initialsFor = (pid) => initialsFromName(patients.find(p => p.id === pid)?.full_name)
 
   const pendingVisits = visits.filter(v => v.status === 'pending')
   const pastVisits = visits.filter(v => v.status === 'completed')
   const upcomingVisits = visits.filter(v => v.status === 'approved' || v.status === 'pending')
 
-  const handleApprove = (id) => setVisits(visits.map(v => v.id === id ? { ...v, status: 'approved' } : v))
-  const handleDecline = (id) => setVisits(visits.map(v => v.id === id ? { ...v, status: 'declined' } : v))
+  const applyUpdate = async (id, updates) => {
+    setSaving(true)
+    const { error } = await updateVisitation(id, updates)
+    setSaving(false)
+    if (error) { alert(error.message || 'Could not update visit'); return }
+    load()
+  }
+  const handleApprove = (id) => applyUpdate(id, { status: 'approved' })
+  const handleDecline = (id) => applyUpdate(id, { status: 'declined' })
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.patient || !form.relationship || !form.timeSlot || !form.date) return
-    const visitorLabel = `${form.relationship} (${form.visitors} visitor${form.visitors !== '1' ? 's' : ''}${form.children !== 'None' ? `, ${form.children} child${form.children !== '1' ? 'ren' : ''}` : ''})`
-    setVisits([{
-      id: Date.now(), patient: form.patient, visitor: visitorLabel, relationship: form.relationship,
-      timeSlot: form.timeSlot, visitors: parseInt(form.visitors) || 1, date: form.date, status: 'pending',
-    }, ...visits])
-    setForm({ patient: '', visitor: '', relationship: '', timeSlot: '', visitors: '1', children: 'None', specialRequirements: [], date: NEXT_SUNDAYS[0] || '' })
+    setSaving(true)
+    const label = `${form.relationship} (${form.visitors} visitor${form.visitors !== '1' ? 's' : ''}${form.children !== 'None' ? `, ${form.children} child${form.children !== '1' ? 'ren' : ''}` : ''})`
+    const reqs = form.specialRequirements.filter(r => r !== 'None')
+    const { error } = await addVisitation({
+      patient_id: form.patient,
+      visit_date: form.date,
+      visit_time: form.timeSlot,
+      visitors: form.visitors,
+      notes: reqs.length ? reqs.join(', ') : null,
+      requested_by_name: label,
+      status: 'pending',
+    })
+    setSaving(false)
+    if (error) { alert(error.message || 'Could not submit visit request'); return }
+    setForm({ patient: '', relationship: '', timeSlot: '', visitors: '1', children: 'None', specialRequirements: [], date: NEXT_SUNDAYS[0] || '' })
     setShowForm(false)
+    load()
   }
 
   return (
@@ -124,7 +139,7 @@ export default function VisitationBooking() {
               <select style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
                 value={form.patient} onChange={e => setForm({ ...form, patient: e.target.value })}>
                 <option value="">Select patient</option>
-                {PATIENTS.map(p => <option key={p.initials} value={p.initials}>{p.initials}</option>)}
+                {activePatients.map(p => <option key={p.id} value={p.id}>{p.initials}</option>)}
               </select>
             </div>
             <div>
@@ -190,8 +205,8 @@ export default function VisitationBooking() {
             </div>
           </div>
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-            <button className="btn btn--primary" style={{ padding: '8px 20px' }} onClick={handleSubmit}>Submit Request</button>
-            <button className="btn btn--secondary" style={{ padding: '8px 20px' }} onClick={() => setShowForm(false)}>Cancel</button>
+            <button className="btn btn--primary" style={{ padding: '8px 20px', opacity: saving ? 0.6 : 1 }} disabled={saving} onClick={handleSubmit}>{saving ? 'Submitting…' : 'Submit Request'}</button>
+            <button className="btn btn--secondary" style={{ padding: '8px 20px' }} disabled={saving} onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </div>
       )}
@@ -208,90 +223,96 @@ export default function VisitationBooking() {
         ))}
       </div>
 
-      {/* Calendar View — next 4 Sundays */}
-      {tab === 'calendar' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-          {NEXT_SUNDAYS.map(sunday => {
-            const dayVisits = visits.filter(v => v.date === sunday && (v.status === 'approved' || v.status === 'pending'))
-            return (
-              <div className="card" key={sunday} style={{ padding: 16 }}>
-                <div style={{ fontFamily: 'var(--fd)', fontSize: '1rem', fontWeight: 700, marginBottom: 10, color: 'var(--blue)' }}>
-                  Sunday {sunday}
-                </div>
-                {dayVisits.length === 0 && (
-                  <div style={{ fontSize: '.82rem', color: 'var(--g400)', fontStyle: 'italic' }}>No visits scheduled</div>
-                )}
-                {dayVisits.map(v => (
-                  <div key={v.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--g100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: '.85rem', fontWeight: 600 }}>
-                        <span style={{ background: 'var(--blue)', color: '#fff', padding: '2px 6px', borderRadius: 4, fontSize: '.72rem', marginRight: 6 }}>{v.patient}</span>
-                        {v.timeSlot}
+      {loading ? (
+        <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--g500)', fontSize: '.88rem' }}>Loading…</div>
+      ) : (
+        <>
+          {/* Calendar View — next 4 Sundays */}
+          {tab === 'calendar' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+              {NEXT_SUNDAYS.map(sunday => {
+                const dayVisits = visits.filter(v => v.visit_date === sunday && (v.status === 'approved' || v.status === 'pending'))
+                return (
+                  <div className="card" key={sunday} style={{ padding: 16 }}>
+                    <div style={{ fontFamily: 'var(--fd)', fontSize: '1rem', fontWeight: 700, marginBottom: 10, color: 'var(--blue)' }}>
+                      Sunday {sunday}
+                    </div>
+                    {dayVisits.length === 0 && (
+                      <div style={{ fontSize: '.82rem', color: 'var(--g400)', fontStyle: 'italic' }}>No visits scheduled</div>
+                    )}
+                    {dayVisits.map(v => (
+                      <div key={v.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--g100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: '.85rem', fontWeight: 600 }}>
+                            <span style={{ background: 'var(--blue)', color: '#fff', padding: '2px 6px', borderRadius: 4, fontSize: '.72rem', marginRight: 6 }}>{initialsFor(v.patient_id)}</span>
+                            {v.visit_time}
+                          </div>
+                          <div style={{ fontSize: '.75rem', color: 'var(--g500)', marginTop: 2 }}>{v.requested_by_name || '—'} · {v.visitors} visitor(s)</div>
+                        </div>
+                        <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: '.68rem', fontWeight: 600, background: `${statusColors[v.status]}18`, color: statusColors[v.status], textTransform: 'capitalize' }}>
+                          {v.status}
+                        </span>
                       </div>
-                      <div style={{ fontSize: '.75rem', color: 'var(--g500)', marginTop: 2 }}>{v.visitor} ({v.relationship}) · {v.visitors} visitor{v.visitors > 1 ? 's' : ''}</div>
-                    </div>
-                    <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: '.68rem', fontWeight: 600, background: `${statusColors[v.status]}18`, color: statusColors[v.status], textTransform: 'capitalize' }}>
-                      {v.status}
-                    </span>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Pending View */}
-      {tab === 'pending' && (
-        <div>
-          {pendingVisits.length === 0 && (
-            <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--g500)', fontSize: '.88rem' }}>No pending visit requests.</div>
-          )}
-          {pendingVisits.map(v => (
-            <div className="card" key={v.id} style={{ padding: 16, marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '.88rem' }}>
-                    {v.patient}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '.92rem' }}>{v.visitor} — {v.relationship}</div>
-                    <div style={{ fontSize: '.78rem', color: 'var(--g500)' }}>
-                      {v.date} at {v.timeSlot} · {v.visitors} visitor{v.visitors > 1 ? 's' : ''}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn--sm btn--primary" style={{ padding: '5px 14px', fontSize: '.74rem' }} onClick={() => handleApprove(v.id)}>Approve</button>
-                  <button className="btn btn--sm btn--secondary" style={{ padding: '5px 14px', fontSize: '.74rem', color: '#E53E3E' }} onClick={() => handleDecline(v.id)}>Decline</button>
-                </div>
-              </div>
+                )
+              })}
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Past Visits Log */}
-      {tab === 'past' && (
-        <div>
-          {pastVisits.length === 0 && (
-            <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--g500)', fontSize: '.88rem' }}>No past visits.</div>
           )}
-          {pastVisits.map(v => (
-            <div className="card" key={v.id} style={{ padding: 14, marginBottom: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ background: 'var(--g200)', color: 'var(--g600)', padding: '4px 8px', borderRadius: 4, fontSize: '.76rem', fontWeight: 700 }}>{v.patient}</span>
-                  <div>
-                    <div style={{ fontSize: '.85rem', fontWeight: 600 }}>{v.visitor} ({v.relationship})</div>
-                    <div style={{ fontSize: '.75rem', color: 'var(--g500)' }}>{v.date} at {v.timeSlot} · {v.visitors} visitor{v.visitors > 1 ? 's' : ''}</div>
+
+          {/* Pending View */}
+          {tab === 'pending' && (
+            <div>
+              {pendingVisits.length === 0 && (
+                <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--g500)', fontSize: '.88rem' }}>No visits booked yet.</div>
+              )}
+              {pendingVisits.map(v => (
+                <div className="card" key={v.id} style={{ padding: 16, marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '.88rem' }}>
+                        {initialsFor(v.patient_id)}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '.92rem' }}>{v.requested_by_name || '—'}</div>
+                        <div style={{ fontSize: '.78rem', color: 'var(--g500)' }}>
+                          {v.visit_date} at {v.visit_time} · {v.visitors} visitor(s)
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn btn--sm btn--primary" style={{ padding: '5px 14px', fontSize: '.74rem' }} disabled={saving} onClick={() => handleApprove(v.id)}>Approve</button>
+                      <button className="btn btn--sm btn--secondary" style={{ padding: '5px 14px', fontSize: '.74rem', color: '#E53E3E' }} disabled={saving} onClick={() => handleDecline(v.id)}>Decline</button>
+                    </div>
                   </div>
                 </div>
-                <span style={{ fontSize: '.72rem', color: 'var(--g500)' }}>Completed</span>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* Past Visits Log */}
+          {tab === 'past' && (
+            <div>
+              {pastVisits.length === 0 && (
+                <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--g500)', fontSize: '.88rem' }}>No visits booked yet.</div>
+              )}
+              {pastVisits.map(v => (
+                <div className="card" key={v.id} style={{ padding: 14, marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ background: 'var(--g200)', color: 'var(--g600)', padding: '4px 8px', borderRadius: 4, fontSize: '.76rem', fontWeight: 700 }}>{initialsFor(v.patient_id)}</span>
+                      <div>
+                        <div style={{ fontSize: '.85rem', fontWeight: 600 }}>{v.requested_by_name || '—'}</div>
+                        <div style={{ fontSize: '.75rem', color: 'var(--g500)' }}>{v.visit_date} at {v.visit_time} · {v.visitors} visitor(s)</div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '.72rem', color: 'var(--g500)' }}>Completed</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

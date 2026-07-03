@@ -1,19 +1,17 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect } from 'react'
+import { getPatients, getProgress, upsertProgress } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   Fruit of the Spirit Assessment — Galatians 5:22-23
   Treatment Protocol Section 10.5.
   Ties to Graduation Criterion #5: Spiritual Formation.
   Initials only (HIPAA). All fields are selects — pastoral notes is the only textarea (staff clinical notes).
+  Persisted per-patient as a JSONB doc in progress_records (domain 'fruit_of_spirit'),
+  shape: { history: [ { id, date, assessor, <9 fruit ratings>, notes } ] }.
 */
 
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
+const DOMAIN = 'fruit_of_spirit'
 
 const STAFF_OPTIONS = [
   { value: 'AI', label: 'AI — Clinical Lead' },
@@ -62,59 +60,6 @@ function calcTotal(assessment) {
   return FRUITS.reduce((sum, f) => sum + (assessment[f.id] || 0), 0)
 }
 
-const INITIAL_ASSESSMENTS = {
-  CO: [
-    {
-      id: 1,
-      date: '2026-03-01',
-      assessor: 'PK',
-      love: 2, joy: 1, peace: 2, patience: 1, kindness: 2, goodness: 2, faithfulness: 1, gentleness: 2, selfControl: 1,
-      notes: 'Growing awareness of love and peace. Patience and self-control need continued pastoral support.',
-    },
-    {
-      id: 2,
-      date: '2026-03-22',
-      assessor: 'PK',
-      love: 3, joy: 2, peace: 2, patience: 2, kindness: 3, goodness: 2, faithfulness: 2, gentleness: 2, selfControl: 2,
-      notes: 'Marked growth in love and kindness. Consistently reaching out to peers. Joy emerging more naturally.',
-    },
-  ],
-  AN: [
-    {
-      id: 3,
-      date: '2026-03-10',
-      assessor: 'PK',
-      love: 2, joy: 1, peace: 1, patience: 2, kindness: 2, goodness: 2, faithfulness: 1, gentleness: 2, selfControl: 1,
-      notes: 'Developing character evident. Patience and kindness strong. Peace and joy areas for continued growth.',
-    },
-  ],
-  KA: [
-    {
-      id: 4,
-      date: '2026-02-15',
-      assessor: 'PK',
-      love: 1, joy: 1, peace: 1, patience: 1, kindness: 1, goodness: 1, faithfulness: 0, gentleness: 1, selfControl: 0,
-      notes: 'Early formation stage. Beginning to engage with spiritual concepts. Needs consistent encouragement.',
-    },
-  ],
-  IM: [
-    {
-      id: 5,
-      date: '2026-02-28',
-      assessor: 'PK',
-      love: 2, joy: 1, peace: 2, patience: 2, kindness: 2, goodness: 2, faithfulness: 1, gentleness: 2, selfControl: 1,
-      notes: 'Good foundation forming. Peace and patience growing. Faithfulness and self-control areas to develop.',
-    },
-    {
-      id: 6,
-      date: '2026-03-20',
-      assessor: 'PK',
-      love: 3, joy: 2, peace: 3, patience: 2, kindness: 3, goodness: 2, faithfulness: 2, gentleness: 3, selfControl: 2,
-      notes: 'Strong growth across all fruits. Love, peace, kindness, and gentleness consistently demonstrated. Approaching maturity.',
-    },
-  ],
-}
-
 const overallStyle = (assessment) => {
   const total = calcTotal(assessment)
   const oa = getOverallAssessment(total)
@@ -131,9 +76,12 @@ const overallStyle = (assessment) => {
 }
 
 export default function FruitOfSpirit() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
-  const [assessments, setAssessments] = useState(INITIAL_ASSESSMENTS)
+  const [patients, setPatients] = useState([])
+  const [selectedPatient, setSelectedPatient] = useState('')
+  const [patientAssessments, setPatientAssessments] = useState([])
+  const [loadingPatients, setLoadingPatients] = useState(true)
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const emptyForm = () => {
     const f = { assessor: '', notes: '' }
@@ -142,7 +90,40 @@ export default function FruitOfSpirit() {
   }
   const [form, setForm] = useState(emptyForm())
 
-  const patientAssessments = assessments[selectedPatient] || []
+  // Load active patients for the selector.
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      setLoadingPatients(true)
+      const { data, error } = await getPatients()
+      if (!alive) return
+      if (error) console.error('Failed to load patients', error)
+      const briefs = activeBriefs(data)
+      setPatients(briefs)
+      setSelectedPatient((prev) => prev || (briefs[0]?.id || ''))
+      setLoadingPatients(false)
+    })()
+    return () => { alive = false }
+  }, [])
+
+  // Load persisted assessment history for the selected patient.
+  useEffect(() => {
+    if (!selectedPatient) { setPatientAssessments([]); return }
+    let alive = true
+    ;(async () => {
+      setLoadingHistory(true)
+      const { data, error } = await getProgress(selectedPatient, DOMAIN)
+      if (!alive) return
+      if (error) console.error('Failed to load assessments', error)
+      setPatientAssessments(data?.data?.history || [])
+      setLoadingHistory(false)
+    })()
+    return () => { alive = false }
+  }, [selectedPatient])
+
+  const selectedBrief = patients.find((p) => p.id === selectedPatient)
+  const selectedInitials = selectedBrief?.initials || '—'
+
   const latestAssessment = patientAssessments.length > 0 ? patientAssessments[patientAssessments.length - 1] : null
   const latestTotal = latestAssessment ? calcTotal(latestAssessment) : null
   const latestOverall = latestTotal !== null ? getOverallAssessment(latestTotal) : null
@@ -153,8 +134,8 @@ export default function FruitOfSpirit() {
 
   const formComplete = form.assessor && FRUITS.every((f) => form[f.id] !== '')
 
-  const handleSubmit = () => {
-    if (!formComplete) return
+  const handleSubmit = async () => {
+    if (!formComplete || saving || !selectedPatient) return
     const parsed = { ...form }
     FRUITS.forEach((f) => { parsed[f.id] = Number(parsed[f.id]) })
     const newAssessment = {
@@ -162,10 +143,17 @@ export default function FruitOfSpirit() {
       date: new Date().toISOString().split('T')[0],
       ...parsed,
     }
-    setAssessments((prev) => ({
-      ...prev,
-      [selectedPatient]: [...(prev[selectedPatient] || []), newAssessment],
-    }))
+    const newHistory = [...patientAssessments, newAssessment]
+    setSaving(true)
+    const { error } = await upsertProgress(selectedPatient, DOMAIN, { history: newHistory }, 'PK')
+    setSaving(false)
+    if (error) {
+      alert('Failed to save assessment: ' + (error.message || 'unknown error'))
+      return
+    }
+    // Reflect the saved history.
+    const { data } = await getProgress(selectedPatient, DOMAIN)
+    setPatientAssessments(data?.data?.history || newHistory)
     setShowForm(false)
     resetForm()
   }
@@ -186,6 +174,7 @@ export default function FruitOfSpirit() {
           <select
             value={selectedPatient}
             onChange={(e) => { setSelectedPatient(e.target.value); setShowForm(false) }}
+            disabled={loadingPatients || patients.length === 0}
             style={{
               padding: '8px 12px',
               borderRadius: 8,
@@ -195,8 +184,10 @@ export default function FruitOfSpirit() {
               background: '#fff',
             }}
           >
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>{p.initials}</option>
+            {loadingPatients && <option value="">Loading…</option>}
+            {!loadingPatients && patients.length === 0 && <option value="">No active patients</option>}
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
           </select>
         </div>
@@ -215,16 +206,20 @@ export default function FruitOfSpirit() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-            Current Assessment — {selectedPatient}
+            Current Assessment — {selectedInitials}
           </h2>
-          {latestAssessment && (
+          {!loadingHistory && latestAssessment && (
             <span style={overallStyle(latestAssessment)}>
               {latestOverall.label} ({latestTotal}/27)
             </span>
           )}
         </div>
 
-        {latestAssessment && (
+        {loadingHistory && (
+          <p style={{ color: '#A0AEC0', fontSize: 14 }}>Loading assessments…</p>
+        )}
+
+        {!loadingHistory && latestAssessment && (
           <div>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, color: '#4A5568', marginBottom: 16 }}>
               <span><strong>Last Assessed:</strong> {latestAssessment.date}</span>
@@ -266,8 +261,8 @@ export default function FruitOfSpirit() {
           </div>
         )}
 
-        {!latestAssessment && (
-          <p style={{ color: '#A0AEC0', fontSize: 14 }}>No assessment on file. Complete initial assessment.</p>
+        {!loadingHistory && !latestAssessment && (
+          <p style={{ color: '#A0AEC0', fontSize: 14 }}>Not yet assessed. Complete initial assessment.</p>
         )}
       </div>
 
@@ -288,26 +283,31 @@ export default function FruitOfSpirit() {
           </h2>
           <button
             onClick={() => { setShowForm(!showForm); resetForm() }}
+            disabled={!selectedPatient}
             style={{
               padding: '8px 18px',
               borderRadius: 8,
               border: 'none',
-              background: '#2B6CB0',
+              background: !selectedPatient ? '#CBD5E0' : '#2B6CB0',
               color: '#fff',
               fontWeight: 600,
               fontSize: 14,
-              cursor: 'pointer',
+              cursor: !selectedPatient ? 'not-allowed' : 'pointer',
             }}
           >
             {showForm ? 'Cancel' : 'New Assessment'}
           </button>
         </div>
 
-        {patientAssessments.length === 0 && !showForm && (
-          <p style={{ color: '#A0AEC0', fontSize: 14 }}>No assessments recorded.</p>
+        {loadingHistory && (
+          <p style={{ color: '#A0AEC0', fontSize: 14 }}>Loading assessments…</p>
         )}
 
-        {patientAssessments.length > 0 && (
+        {!loadingHistory && patientAssessments.length === 0 && !showForm && (
+          <p style={{ color: '#A0AEC0', fontSize: 14 }}>No assessments recorded yet.</p>
+        )}
+
+        {!loadingHistory && patientAssessments.length > 0 && (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
@@ -379,7 +379,7 @@ export default function FruitOfSpirit() {
           }}
         >
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: '0 0 8px' }}>
-            New Fruit of the Spirit Assessment — {selectedPatient}
+            New Fruit of the Spirit Assessment — {selectedInitials}
           </h2>
           <p style={{ fontSize: 13, color: '#718096', margin: '0 0 20px' }}>
             Assess each fruit on a 4-level scale. Galatians 5:22-23.
@@ -523,19 +523,19 @@ export default function FruitOfSpirit() {
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={handleSubmit}
-              disabled={!formComplete}
+              disabled={!formComplete || saving}
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,
                 border: 'none',
-                background: !formComplete ? '#CBD5E0' : '#2B6CB0',
+                background: (!formComplete || saving) ? '#CBD5E0' : '#2B6CB0',
                 color: '#fff',
                 fontWeight: 600,
                 fontSize: 14,
-                cursor: !formComplete ? 'not-allowed' : 'pointer',
+                cursor: (!formComplete || saving) ? 'not-allowed' : 'pointer',
               }}
             >
-              Submit Assessment
+              {saving ? 'Saving…' : 'Submit Assessment'}
             </button>
             <button
               onClick={() => { setShowForm(false); resetForm() }}

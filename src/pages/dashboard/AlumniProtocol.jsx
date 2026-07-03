@@ -1,16 +1,18 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect } from 'react'
+import { isSupabaseReady, getAlumni, updateAlumnus } from '../../utils/supabase'
+import { initialsFromName } from '../../utils/patients'
 
 /*
   Alumni Protocol — Structured 24-month follow-up per SOP 8.5
-  REPLACES AlumniCRM.jsx with protocol engine, outcome snapshots,
-  contact-due indicators, and relapse response protocol.
+  Protocol engine, outcome snapshots, contact-due indicators, and relapse
+  response protocol, driven by the live `alumni` table.
   HIPAA: initials only. ALL fields are selects/checkboxes — ZERO free text.
 */
 
 const TODAY = new Date('2026-03-31')
 
 const calcMonthsSince = (dateStr) => {
+  if (!dateStr) return 0
   const d = new Date(dateStr)
   return (TODAY.getFullYear() - d.getFullYear()) * 12 + (TODAY.getMonth() - d.getMonth())
 }
@@ -24,6 +26,7 @@ const getPhase = (months) => {
 }
 
 const getDaysUntilNextContact = (lastContactStr, freq) => {
+  if (!lastContactStr) return null
   const last = new Date(lastContactStr)
   let intervalDays = 7
   if (freq === 'Bi-weekly') intervalDays = 14
@@ -70,88 +73,113 @@ const CONTACT_OUTCOMES = ['Connected — doing well', 'Connected — needs suppo
 const selectS = { width: '100%', padding: '7px 8px', borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }
 const labelS = { fontSize: '.73rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 3 }
 
-const initAlumni = () => [
-  {
-    id: 1, initials: 'C.O.', graduationDate: '2025-12-15', lastContact: '2026-03-28', status: 'active',
-    snapshots: {
-      3: { sobriety: 'Abstinent', employment: 'Employed', church: 'Weekly', family: 'In progress', housing: 'Stable', support: 'Church group active', overall: 'Thriving' },
-    },
-    contacts: [
-      { date: '2026-03-28', type: 'Phone call', outcome: 'Connected — doing well' },
-      { date: '2026-03-21', type: 'Phone call', outcome: 'Connected — doing well' },
-      { date: '2026-03-10', type: 'Home visit', outcome: 'Connected — doing well' },
-    ],
-    relapse: { outreach: false, risk: false, counseling: false, readmission: false, gapRule: false },
-  },
-  {
-    id: 2, initials: 'A.N.', graduationDate: '2025-06-01', lastContact: '2026-03-15', status: 'relapsed',
-    snapshots: {
-      3: { sobriety: 'Abstinent', employment: 'Employed', church: 'Weekly', family: 'Reunified', housing: 'Stable', support: 'AA/NA active', overall: 'Stable' },
-      6: { sobriety: 'Abstinent', employment: 'Employed', church: 'Bi-weekly', family: 'Reunified', housing: 'Stable', support: 'AA/NA active', overall: 'Stable' },
-    },
-    contacts: [
-      { date: '2026-03-15', type: 'Phone call', outcome: 'Connected — relapse reported' },
-      { date: '2026-02-28', type: 'Home visit', outcome: 'Connected — needs support' },
-      { date: '2026-01-20', type: 'Phone call', outcome: 'Connected — needs support' },
-    ],
-    relapse: { outreach: true, risk: true, counseling: true, readmission: false, gapRule: false },
-  },
-  {
-    id: 3, initials: 'K.A.', graduationDate: '2024-04-01', lastContact: '2026-02-10', status: 'active',
-    snapshots: {
-      3: { sobriety: 'Abstinent', employment: 'Self-employed', church: 'Weekly', family: 'Reunified', housing: 'Stable', support: 'Church group active', overall: 'Thriving' },
-      6: { sobriety: 'Abstinent', employment: 'Self-employed', church: 'Weekly', family: 'Reunified', housing: 'Stable', support: 'HOR alumni group', overall: 'Thriving' },
-      12: { sobriety: 'Abstinent', employment: 'Self-employed', church: 'Weekly', family: 'Reunified', housing: 'Stable', support: 'HOR alumni group', overall: 'Thriving' },
-    },
-    contacts: [
-      { date: '2026-02-10', type: 'Phone call', outcome: 'Connected — doing well' },
-      { date: '2025-12-15', type: 'Home visit', outcome: 'Connected — doing well' },
-    ],
-    relapse: { outreach: false, risk: false, counseling: false, readmission: false, gapRule: false },
-  },
-]
+// Normalise the per-alumnus records that live under row.data.
+const contactsOf = (row) => (row?.data?.contactLog || [])
+const snapshotsOf = (row) => (row?.data?.snapshots || {})
+const relapseOf = (row) => (row?.data?.relapse || {})
+const lastContactOf = (row) => row?.data?.lastContact || contactsOf(row)[0]?.date || null
 
 export default function AlumniProtocol() {
-  const { user } = useAuth()
-  const [alumni, setAlumni] = useState(initAlumni)
-  const [selectedId, setSelectedId] = useState(1)
+  const [alumni, setAlumni] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [selectedId, setSelectedId] = useState(null)
   const [showLogContact, setShowLogContact] = useState(false)
   const [contactForm, setContactForm] = useState({ date: '', type: 'Phone call', outcome: 'Connected — doing well' })
   const [showSnapshot, setShowSnapshot] = useState(false)
   const [snapshotMonth, setSnapshotMonth] = useState('3')
   const [snapshotForm, setSnapshotForm] = useState({ sobriety: 'Abstinent', employment: 'Employed', church: 'Weekly', family: 'N/A', housing: 'Stable', support: 'None', overall: 'Stable' })
 
-  const al = alumni.find(a => a.id === selectedId)
-  const months = calcMonthsSince(al.graduationDate)
-  const phase = getPhase(months)
-  const daysUntil = getDaysUntilNextContact(al.lastContact, phase.freq)
+  const load = async () => {
+    setLoading(true)
+    const { data, error } = await getAlumni()
+    if (error) alert('Failed to load alumni: ' + error.message)
+    const rows = data || []
+    setAlumni(rows)
+    setSelectedId(prev => (prev && rows.some(r => r.id === prev)) ? prev : (rows[0]?.id ?? null))
+    setLoading(false)
+  }
 
-  const logContact = () => {
+  useEffect(() => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    load()
+  }, [])
+
+  const applyRow = (row) => {
+    if (!row) return
+    setAlumni(prev => prev.map(a => a.id === row.id ? row : a))
+  }
+
+  if (loading) {
+    return <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)' }}>Loading alumni…</div>
+  }
+
+  if (alumni.length === 0) {
+    return (
+      <div>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Alumni Protocol</h1>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>SOP 8.5 — Structured 24-month post-discharge follow-up protocol</p>
+        </div>
+        <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)' }}>No alumni on record yet.</div>
+      </div>
+    )
+  }
+
+  const al = alumni.find(a => a.id === selectedId) || alumni[0]
+  const months = calcMonthsSince(al.discharge_date)
+  const phase = getPhase(months)
+  const lastContact = lastContactOf(al)
+  const daysUntil = getDaysUntilNextContact(lastContact, phase.freq)
+  const contacts = contactsOf(al)
+  const snapshots = snapshotsOf(al)
+  const relapse = relapseOf(al)
+
+  const logContact = async () => {
     if (!contactForm.date) return
-    setAlumni(prev => prev.map(a => a.id === selectedId ? {
-      ...a,
-      lastContact: contactForm.date,
-      contacts: [{ date: contactForm.date, type: contactForm.type, outcome: contactForm.outcome }, ...a.contacts],
-    } : a))
+    const existing = al.data || {}
+    const newContact = { date: contactForm.date, type: contactForm.type, outcome: contactForm.outcome }
+    setSaving(true)
+    const { data, error } = await updateAlumnus(al.id, {
+      data: { ...existing, lastContact: contactForm.date, contactLog: [newContact, ...(existing.contactLog || [])] },
+    })
+    setSaving(false)
+    if (error) { alert('Failed to log contact: ' + error.message); return }
+    applyRow(data)
     setContactForm({ date: '', type: 'Phone call', outcome: 'Connected — doing well' })
     setShowLogContact(false)
   }
 
-  const saveSnapshot = () => {
-    setAlumni(prev => prev.map(a => a.id === selectedId ? {
-      ...a, snapshots: { ...a.snapshots, [snapshotMonth]: { ...snapshotForm } },
-    } : a))
+  const saveSnapshot = async () => {
+    const existing = al.data || {}
+    setSaving(true)
+    const { data, error } = await updateAlumnus(al.id, {
+      data: { ...existing, snapshots: { ...(existing.snapshots || {}), [snapshotMonth]: { ...snapshotForm } } },
+    })
+    setSaving(false)
+    if (error) { alert('Failed to save snapshot: ' + error.message); return }
+    applyRow(data)
     setShowSnapshot(false)
   }
 
-  const toggleRelapse = (field) => {
-    setAlumni(prev => prev.map(a => a.id === selectedId ? {
-      ...a, relapse: { ...a.relapse, [field]: !a.relapse[field] },
-    } : a))
+  const toggleRelapse = async (field) => {
+    const existing = al.data || {}
+    const current = existing.relapse || {}
+    setSaving(true)
+    const { data, error } = await updateAlumnus(al.id, {
+      data: { ...existing, relapse: { ...current, [field]: !current[field] } },
+    })
+    setSaving(false)
+    if (error) { alert('Failed to update: ' + error.message); return }
+    applyRow(data)
   }
 
-  const closeCaseHandler = () => {
-    setAlumni(prev => prev.map(a => a.id === selectedId ? { ...a, status: 'closed' } : a))
+  const closeCaseHandler = async () => {
+    setSaving(true)
+    const { data, error } = await updateAlumnus(al.id, { status: 'closed' })
+    setSaving(false)
+    if (error) { alert('Failed to close case: ' + error.message); return }
+    applyRow(data)
   }
 
   return (
@@ -164,8 +192,8 @@ export default function AlumniProtocol() {
       {/* Alumni Selector */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
         {alumni.map(a => {
-          const m = calcMonthsSince(a.graduationDate)
-          const ph = getPhase(m)
+          const m = calcMonthsSince(a.discharge_date)
+          const initials = a.initials || initialsFromName(a.full_name)
           return (
             <button key={a.id} onClick={() => setSelectedId(a.id)}
               style={{
@@ -173,7 +201,7 @@ export default function AlumniProtocol() {
                 background: selectedId === a.id ? 'var(--blue)' : '#fff', color: selectedId === a.id ? '#fff' : 'var(--g700)',
                 cursor: 'pointer', fontWeight: 600, fontSize: '.9rem', textAlign: 'left',
               }}>
-              <div>{a.initials}</div>
+              <div>{initials}</div>
               <div style={{ fontSize: '.7rem', opacity: .8 }}>{m} months | {a.status}</div>
             </button>
           )
@@ -184,7 +212,7 @@ export default function AlumniProtocol() {
       <div className="card" style={{ padding: 20, marginBottom: 24, display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: '.73rem', color: 'var(--g500)', fontWeight: 600 }}>Graduation Date</div>
-          <div style={{ fontSize: '1rem', fontWeight: 700 }}>{al.graduationDate}</div>
+          <div style={{ fontSize: '1rem', fontWeight: 700 }}>{al.discharge_date || '—'}</div>
         </div>
         <div>
           <div style={{ fontSize: '.73rem', color: 'var(--g500)', fontWeight: 600 }}>Months Since Discharge</div>
@@ -197,7 +225,7 @@ export default function AlumniProtocol() {
         <div>
           <div style={{ fontSize: '.73rem', color: 'var(--g500)', fontWeight: 600 }}>Status</div>
           <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: '.78rem', fontWeight: 600, background: overallColor(al.status === 'relapsed' ? 'Relapsed' : al.status === 'closed' ? 'Lost to follow-up' : 'Thriving') + '18', color: overallColor(al.status === 'relapsed' ? 'Relapsed' : al.status === 'closed' ? 'Lost to follow-up' : 'Thriving') }}>
-            {al.status.charAt(0).toUpperCase() + al.status.slice(1)}
+            {(al.status || 'active').charAt(0).toUpperCase() + (al.status || 'active').slice(1)}
           </span>
         </div>
       </div>
@@ -207,7 +235,7 @@ export default function AlumniProtocol() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', marginBottom: 4 }}>Next Required Contact</h3>
-            <p style={{ fontSize: '.85rem', color: 'var(--g600)' }}>Frequency: <strong>{phase.freq}</strong> | Last contact: <strong>{al.lastContact}</strong></p>
+            <p style={{ fontSize: '.85rem', color: 'var(--g600)' }}>Frequency: <strong>{phase.freq}</strong> | Last contact: <strong>{lastContact || '—'}</strong></p>
             <span style={{ display: 'inline-block', marginTop: 6, padding: '4px 14px', borderRadius: 20, fontSize: '.82rem', fontWeight: 700, background: contactStatusColor(daysUntil) + '18', color: contactStatusColor(daysUntil) }}>
               {contactStatusLabel(daysUntil)}
             </span>
@@ -237,7 +265,7 @@ export default function AlumniProtocol() {
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button onClick={logContact} style={{ padding: '8px 20px', borderRadius: 6, background: '#1A7A4A', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '.82rem' }}>Save Contact</button>
+              <button onClick={logContact} disabled={saving} style={{ padding: '8px 20px', borderRadius: 6, background: '#1A7A4A', color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '.82rem', opacity: saving ? .6 : 1 }}>{saving ? 'Saving…' : 'Save Contact'}</button>
             </div>
           </div>
         )}
@@ -246,9 +274,9 @@ export default function AlumniProtocol() {
       {/* Contact History */}
       <div className="card" style={{ padding: 20, marginBottom: 24 }}>
         <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', marginBottom: 12 }}>Contact History</h3>
-        {al.contacts.length === 0 && <p style={{ fontSize: '.85rem', color: 'var(--g400)' }}>No contacts logged yet.</p>}
-        {al.contacts.map((c, idx) => (
-          <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderBottom: idx < al.contacts.length - 1 ? '1px solid var(--g100)' : 'none' }}>
+        {contacts.length === 0 && <p style={{ fontSize: '.85rem', color: 'var(--g400)' }}>No contacts logged yet.</p>}
+        {contacts.map((c, idx) => (
+          <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderBottom: idx < contacts.length - 1 ? '1px solid var(--g100)' : 'none' }}>
             <span style={{ fontSize: '.78rem', color: 'var(--g500)', minWidth: 85 }}>{c.date}</span>
             <span style={{ fontSize: '.78rem', padding: '2px 8px', borderRadius: 10, background: 'var(--g100)', fontWeight: 600 }}>{c.type}</span>
             <span style={{ fontSize: '.82rem', color: 'var(--g700)' }}>{c.outcome}</span>
@@ -321,7 +349,7 @@ export default function AlumniProtocol() {
                 </select>
               </div>
             </div>
-            <button onClick={saveSnapshot} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 6, background: '#1A7A4A', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '.82rem' }}>Save Snapshot</button>
+            <button onClick={saveSnapshot} disabled={saving} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 6, background: '#1A7A4A', color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '.82rem', opacity: saving ? .6 : 1 }}>{saving ? 'Saving…' : 'Save Snapshot'}</button>
           </div>
         )}
 
@@ -341,7 +369,7 @@ export default function AlumniProtocol() {
                 <tr key={field} style={{ borderBottom: '1px solid var(--g100)' }}>
                   <td style={{ padding: '6px', fontWeight: 600, textTransform: 'capitalize' }}>{field}</td>
                   {[3, 6, 12, 24].map(m => {
-                    const snap = al.snapshots[m]
+                    const snap = snapshots[m]
                     const val = snap ? snap[field] : '--'
                     const color = field === 'overall' && snap ? overallColor(snap[field]) : 'var(--g700)'
                     return <td key={m} style={{ textAlign: 'center', padding: '6px', color }}>{val}</td>
@@ -366,10 +394,10 @@ export default function AlumniProtocol() {
               { key: 'readmission', label: 'Residential re-admission offered' },
               { key: 'gapRule', label: '30-day gap rule acknowledged (for behavioural discharge)' },
             ].map(item => (
-              <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '.85rem', cursor: 'pointer', padding: '6px 0' }}>
-                <input type="checkbox" checked={al.relapse[item.key]} onChange={() => toggleRelapse(item.key)}
+              <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '.85rem', cursor: saving ? 'not-allowed' : 'pointer', padding: '6px 0' }}>
+                <input type="checkbox" checked={!!relapse[item.key]} disabled={saving} onChange={() => toggleRelapse(item.key)}
                   style={{ width: 18, height: 18, accentColor: '#1A7A4A' }} />
-                <span style={{ color: al.relapse[item.key] ? '#1A7A4A' : 'var(--g600)' }}>{item.label}</span>
+                <span style={{ color: relapse[item.key] ? '#1A7A4A' : 'var(--g600)' }}>{item.label}</span>
               </label>
             ))}
           </div>
@@ -381,11 +409,11 @@ export default function AlumniProtocol() {
         <div className="card" style={{ padding: 20, marginBottom: 24, background: '#F0FFF4', borderLeft: '4px solid #1A7A4A' }}>
           <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', marginBottom: 8 }}>24-Month Case Closure</h3>
           <p style={{ fontSize: '.85rem', color: 'var(--g600)', marginBottom: 16 }}>
-            {al.initials} has reached {months} months post-discharge. Per SOP 8.5, this case is eligible for formal closure after final assessment.
+            {al.initials || initialsFromName(al.full_name)} has reached {months} months post-discharge. Per SOP 8.5, this case is eligible for formal closure after final assessment.
           </p>
-          <button onClick={closeCaseHandler}
-            style={{ padding: '10px 24px', borderRadius: 8, background: '#1A7A4A', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '.88rem' }}>
-            Close Case — 24-Month Protocol Complete
+          <button onClick={closeCaseHandler} disabled={saving}
+            style={{ padding: '10px 24px', borderRadius: 8, background: '#1A7A4A', color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '.88rem', opacity: saving ? .6 : 1 }}>
+            {saving ? 'Saving…' : 'Close Case — 24-Month Protocol Complete'}
           </button>
         </div>
       )}
@@ -393,7 +421,7 @@ export default function AlumniProtocol() {
       {al.status === 'closed' && (
         <div className="card" style={{ padding: 20, marginBottom: 24, background: '#F7FAFC', textAlign: 'center' }}>
           <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--g500)' }}>Case Closed</p>
-          <p style={{ fontSize: '.85rem', color: 'var(--g400)' }}>24-month follow-up protocol completed for {al.initials}.</p>
+          <p style={{ fontSize: '.85rem', color: 'var(--g400)' }}>24-month follow-up protocol completed for {al.initials || initialsFromName(al.full_name)}.</p>
         </div>
       )}
     </div>
