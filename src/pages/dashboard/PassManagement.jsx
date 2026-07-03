@@ -1,18 +1,12 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getPasses, addPass, updatePass, deletePass, isSupabaseReady } from '../../utils/supabase'
+import { mapPatientRow } from '../../utils/patients'
 
 /*
   Pass Management — SOP Section 5.4
-  4 pass types with eligibility rules, approval workflow, and post-return assessment.
-  HIPAA: initials only.
+  4 pass types with eligibility rules, approval workflow, and post-return
+  assessment. Live `passes` table. HIPAA: initials only.
 */
-
-const PATIENTS = [
-  { initials: 'CO', id: 'P001', day: 23, phase: 'foundation', onDiscipline: false },
-  { initials: 'AN', id: 'P002', day: 45, phase: 'deepening', onDiscipline: false },
-  { initials: 'KA', id: 'P003', day: 74, phase: 'reintegration', onDiscipline: false },
-  { initials: 'IM', id: 'P004', day: 8, phase: 'stabilization', onDiscipline: false },
-]
 
 const PASS_TYPES = [
   { value: '3hr', label: '3-Hour Pass', desc: 'Family only, 1 month min residency, not on discipline', minDays: 30, requiresCleanScreen: false },
@@ -21,72 +15,102 @@ const PASS_TYPES = [
   { value: 'emergency', label: 'Emergency Pass', desc: 'Family death or hospitalization only', minDays: 0, requiresCleanScreen: false },
 ]
 
-const INITIAL_PASSES = [
-  { id: 1, patient: 'KA', type: '48hr', status: 'active', startDate: '2026-03-27', endDate: '2026-03-29', guardian: 'M. Kamara', reason: 'Weekend family visit', returnedOnTime: null, substanceClear: null, notes: '' },
-  { id: 2, patient: 'AN', type: '3hr', status: 'pending', startDate: '2026-04-05', endDate: '2026-04-05', guardian: 'F. Annan', reason: 'Family birthday gathering', returnedOnTime: null, substanceClear: null, notes: '' },
-  { id: 3, patient: 'CO', type: '3hr', status: 'completed', startDate: '2026-03-15', endDate: '2026-03-15', guardian: 'B. Cole', reason: 'Family visit', returnedOnTime: true, substanceClear: true, notes: 'Returned in good spirits.' },
-  { id: 4, patient: 'KA', type: '24hr', status: 'completed', startDate: '2026-03-08', endDate: '2026-03-09', guardian: 'M. Kamara', reason: 'Church event', returnedOnTime: true, substanceClear: true, notes: '' },
-  { id: 5, patient: 'AN', type: 'emergency', status: 'completed', startDate: '2026-02-20', endDate: '2026-02-21', guardian: 'F. Annan', reason: 'Grandmother hospitalized', returnedOnTime: true, substanceClear: true, notes: 'Patient was emotionally affected. Follow-up session scheduled.' },
-]
-
 const statusColors = { active: '#1A7A4A', pending: '#DD6B20', completed: 'var(--g500)', denied: '#E53E3E' }
 const typeColors = { '3hr': '#3182CE', '24hr': '#805AD5', '48hr': '#D69E2E', emergency: '#E53E3E' }
 
+function mapPassRow(r) {
+  return {
+    id: r.id,
+    patientId: r.patient_id,
+    type: r.type,
+    status: r.status,
+    startDate: r.start_date || '',
+    endDate: r.end_date || r.start_date || '',
+    guardian: r.guardian || '',
+    reason: r.reason || '',
+    returnedOnTime: r.returned_on_time,
+    substanceClear: r.substance_clear,
+    notes: r.notes || '',
+  }
+}
+
 export default function PassManagement() {
-  const { user } = useAuth()
-  const [passes, setPasses] = useState(INITIAL_PASSES)
+  const [patients, setPatients] = useState([]) // [{id, initials, day, status}]
+  const [passes, setPasses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState('active')
   const [showForm, setShowForm] = useState(false)
   const [returnModal, setReturnModal] = useState(null)
 
-  // New request form state
+  // New request form state (patient = patient_id)
   const [form, setForm] = useState({ patient: '', type: '', startDate: '', endDate: '', guardian: '', reason: '' })
 
   // Post-return state
   const [returnData, setReturnData] = useState({ returnedOnTime: false, substanceClear: false, notes: '' })
 
+  const load = useCallback(async () => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    const [{ data: rows }, { data: passRows }] = await Promise.all([getPatients(), getPasses()])
+    const active = (rows || []).filter(p => ['admitted', 'on-pass', 'suspended'].includes(p.status))
+    setPatients(active.map(r => { const m = mapPatientRow(r); return { id: r.id, initials: m.initials, day: m.day, status: r.status } }))
+    setPasses((passRows || []).map(mapPassRow))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const initialsFor = (id) => patients.find(p => p.id === id)?.initials || '—'
+
   const activePasses = passes.filter(p => p.status === 'active')
   const pendingPasses = passes.filter(p => p.status === 'pending')
   const historyPasses = passes.filter(p => p.status === 'completed' || p.status === 'denied')
 
-  const getEligibility = (patientInitials, passType) => {
-    const pt = PATIENTS.find(p => p.initials === patientInitials)
+  const getEligibility = (patientId, passType) => {
+    const pt = patients.find(p => p.id === patientId)
     const type = PASS_TYPES.find(t => t.value === passType)
     if (!pt || !type) return { eligible: false, reason: 'Select patient and pass type' }
-    if (pt.onDiscipline && passType !== 'emergency') return { eligible: false, reason: 'Patient is on discipline' }
+    if (pt.status === 'suspended' && passType !== 'emergency') return { eligible: false, reason: 'Patient is on discipline' }
     if (pt.day < type.minDays) return { eligible: false, reason: `Min ${type.minDays} days residency required (current: Day ${pt.day})` }
     if (type.requiresCleanScreen) return { eligible: true, reason: 'Clean drug screen required before departure' }
     return { eligible: true, reason: 'Eligible' }
   }
 
-  const handleSubmitRequest = () => {
+  const handleSubmitRequest = async () => {
     if (!form.patient || !form.type || !form.startDate || !form.guardian || !form.reason) return
-    const newPass = {
-      id: Date.now(),
-      patient: form.patient,
+    setSaving(true)
+    const { error } = await addPass({
+      patient_id: form.patient,
       type: form.type,
       status: 'pending',
-      startDate: form.startDate,
-      endDate: form.endDate || form.startDate,
+      start_date: form.startDate,
+      end_date: form.endDate || form.startDate,
       guardian: form.guardian,
       reason: form.reason,
-      returnedOnTime: null,
-      substanceClear: null,
-      notes: '',
-    }
-    setPasses([newPass, ...passes])
+    })
+    setSaving(false)
+    if (error) { alert(`Could not submit request: ${error.message}`); return }
     setForm({ patient: '', type: '', startDate: '', endDate: '', guardian: '', reason: '' })
     setShowForm(false)
+    await load()
   }
 
-  const handleApprove = (id) => setPasses(passes.map(p => p.id === id ? { ...p, status: 'active' } : p))
-  const handleDeny = (id) => setPasses(passes.map(p => p.id === id ? { ...p, status: 'denied' } : p))
+  const handleApprove = async (id) => { const { error } = await updatePass(id, { status: 'active' }); if (error) alert(error.message); else await load() }
+  const handleDeny = async (id) => { const { error } = await updatePass(id, { status: 'denied' }); if (error) alert(error.message); else await load() }
+  const handleCancelPending = async (id) => { if (!confirm('Cancel this pending pass?')) return; const { error } = await deletePass(id); if (error) alert(error.message); else await load() }
 
-  const handleReturnSubmit = () => {
+  const handleReturnSubmit = async () => {
     if (!returnModal) return
-    setPasses(passes.map(p => p.id === returnModal ? { ...p, status: 'completed', returnedOnTime: returnData.returnedOnTime, substanceClear: returnData.substanceClear, notes: returnData.notes } : p))
+    const { error } = await updatePass(returnModal, {
+      status: 'completed',
+      returned_on_time: returnData.returnedOnTime,
+      substance_clear: returnData.substanceClear,
+      notes: returnData.notes,
+    })
+    if (error) { alert(error.message); return }
     setReturnModal(null)
     setReturnData({ returnedOnTime: false, substanceClear: false, notes: '' })
+    await load()
   }
 
   const eligibility = form.patient && form.type ? getEligibility(form.patient, form.type) : null
@@ -134,7 +158,7 @@ export default function PassManagement() {
               <select style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--g200)' }}
                 value={form.patient} onChange={e => setForm({ ...form, patient: e.target.value })}>
                 <option value="">Select patient</option>
-                {PATIENTS.map(p => <option key={p.initials} value={p.initials}>{p.initials} — Day {p.day}</option>)}
+                {patients.map(p => <option key={p.id} value={p.id}>{p.initials} — Day {p.day}</option>)}
               </select>
             </div>
             <div>
@@ -218,7 +242,7 @@ export default function PassManagement() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 40, height: 40, borderRadius: '50%', background: typeColors[p.type], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '.88rem' }}>
-                {p.patient}
+                {initialsFor(p.patientId)}
               </div>
               <div>
                 <div style={{ fontWeight: 600, fontSize: '.92rem' }}>{PASS_TYPES.find(t => t.value === p.type)?.label}</div>
@@ -236,7 +260,7 @@ export default function PassManagement() {
                 <>
                   <button className="btn btn--sm btn--primary" style={{ padding: '5px 12px', fontSize: '.74rem' }} onClick={() => handleApprove(p.id)}>Approve</button>
                   <button className="btn btn--sm btn--secondary" style={{ padding: '5px 12px', fontSize: '.74rem', color: '#E53E3E' }} onClick={() => handleDeny(p.id)}>Deny</button>
-                  <button className="btn btn--sm btn--secondary" style={{ padding: '5px 12px', fontSize: '.74rem', color: '#E53E3E' }} onClick={() => { if (confirm('Cancel this pending pass?')) setPasses(prev => prev.filter(x => x.id !== p.id)) }}>Cancel</button>
+                  <button className="btn btn--sm btn--secondary" style={{ padding: '5px 12px', fontSize: '.74rem', color: '#E53E3E' }} onClick={() => handleCancelPending(p.id)}>Cancel</button>
                 </>
               )}
               {p.status === 'active' && (

@@ -1,5 +1,8 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect } from 'react'
+import { isSupabaseReady, getPatients } from '../../utils/supabase'
+import { mapPatientRow } from '../../utils/patients'
+
+const ACTIVE_STATUSES = ['admitted', 'on-pass', 'suspended']
 
 /*
   Patient Schedule — Patient-facing daily schedule view (SOP Chapter 5)
@@ -79,25 +82,72 @@ function getCurrentActivityIndex(schedule) {
 }
 
 export default function PatientSchedule() {
-  const { user } = useAuth()
   const today = new Date()
   const isSunday = today.getDay() === 0
   const [viewDay, setViewDay] = useState(isSunday ? 'sunday' : 'weekday')
 
+  const [patients, setPatients] = useState([])
+  const [selectedId, setSelectedId] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      if (!isSupabaseReady()) {
+        if (!cancelled) setLoading(false)
+        return
+      }
+      const { data, error } = await getPatients()
+      if (cancelled) return
+      if (!error) {
+        const active = (data || [])
+          .filter(p => ACTIVE_STATUSES.includes(p.status))
+          .map(row => mapPatientRow(row))
+        setPatients(active)
+        setSelectedId(prev => prev || (active[0]?.id || ''))
+      }
+      setLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  const selectedPatient = patients.find(p => p.id === selectedId) || null
+
   const schedule = viewDay === 'sunday' ? SUNDAY_SCHEDULE : WEEKDAY_SCHEDULE
   const currentIdx = viewDay === (isSunday ? 'sunday' : 'weekday') ? getCurrentActivityIndex(schedule) : -1
 
-  // Mock: patient is in week 3 (past detox)
-  const currentWeek = 3
-  const isDetoxPhase = currentWeek <= 2
+  // Detox / Medical Stabilisation phase covers Week 1-2 (days 1-14).
+  const currentDay = selectedPatient?.day || 0
+  const isDetoxPhase = selectedPatient?.phase === 'stabilization' || (currentDay > 0 && currentDay <= 14)
+
+  if (loading) {
+    return (
+      <div style={{ padding: 24, fontSize: '.88rem', color: 'var(--g500)' }}>Loading schedule…</div>
+    )
+  }
+
+  if (patients.length === 0) {
+    return (
+      <div>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Patient Schedule</h1>
+        </div>
+        <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)', fontSize: '.88rem' }}>
+          No active patients on record yet.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>My Schedule</h1>
+        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Patient Schedule</h1>
         <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>
           {today.toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           {isSunday ? ' — Sunday Schedule' : ' — Weekday Schedule'}
+          {selectedPatient ? ` · ${selectedPatient.initials} — Day ${selectedPatient.day}` : ''}
         </p>
       </div>
 
@@ -113,6 +163,15 @@ export default function PatientSchedule() {
 
       {/* Day toggle + Session summary */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
+        <div className="card" style={{ padding: 16 }}>
+          <label style={{ fontSize: '.72rem', color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Patient</label>
+          <select value={selectedId} onChange={e => setSelectedId(e.target.value)}
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--g200)', fontSize: '.84rem' }}>
+            {patients.map(p => (
+              <option key={p.id} value={p.id}>{p.initials} — Day {p.day}</option>
+            ))}
+          </select>
+        </div>
         <div className="card" style={{ padding: 16 }}>
           <label style={{ fontSize: '.72rem', color: 'var(--g500)', display: 'block', marginBottom: 4 }}>View Schedule</label>
           <select value={viewDay} onChange={e => setViewDay(e.target.value)}

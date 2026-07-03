@@ -1,5 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
+import {
+  isSupabaseReady,
+  getInventoryItems,
+  updateInventoryItem,
+  getInventoryOrders,
+  addInventoryOrder,
+} from '../../utils/supabase'
 
 /*
   Inventory Management — 4 categories per SOP:
@@ -34,54 +42,106 @@ const STOCK_STATUS = {
 
 const REORDER_URGENCY = ['Routine (next monthly order)', 'Urgent (within 48 hours)', 'Emergency (immediate)']
 
-const INVENTORY = [
-  // Medical Supplies
-  { id: 'M001', name: 'Disposable gloves (box/100)', category: 'medical', unit: 'Box', currentQty: 12, minQty: 10, maxQty: 50, status: 'adequate', location: 'Nursing Station', lastRestocked: '2026-03-25', expiryDate: '2027-06-01', costPerUnit: 3500 },
-  { id: 'M002', name: 'Face masks (box/50)', category: 'medical', unit: 'Box', currentQty: 4, minQty: 8, maxQty: 30, status: 'low', location: 'Nursing Station', lastRestocked: '2026-03-15', expiryDate: '2027-12-01', costPerUnit: 2500 },
-  { id: 'M003', name: 'Sharps disposal containers', category: 'medical', unit: 'Unit', currentQty: 8, minQty: 12, maxQty: 24, status: 'low', location: 'Clinical Room', lastRestocked: '2026-03-01', expiryDate: null, costPerUnit: 5000 },
-  { id: 'M004', name: 'Sterile wound dressing packs', category: 'medical', unit: 'Pack', currentQty: 25, minQty: 15, maxQty: 60, status: 'adequate', location: 'Dressing Drums', lastRestocked: '2026-03-20', expiryDate: '2027-03-01', costPerUnit: 1200 },
-  { id: 'M005', name: 'Clinical aprons', category: 'medical', unit: 'Pack/10', currentQty: 2, minQty: 5, maxQty: 15, status: 'critical', location: 'Nursing Station', lastRestocked: '2026-02-10', expiryDate: null, costPerUnit: 4000 },
-  { id: 'M006', name: 'First Aid Kit refill', category: 'medical', unit: 'Kit', currentQty: 4, minQty: 4, maxQty: 8, status: 'adequate', location: 'Common Areas (4 locations)', lastRestocked: '2026-03-10', expiryDate: '2027-03-10', costPerUnit: 15000 },
+const TODAY = new Date().toISOString().slice(0, 10)
 
-  // Medication Stock
-  { id: 'RX01', name: 'Diazepam 10mg (detox)', category: 'medication', unit: 'Tab', currentQty: 120, minQty: 60, maxQty: 300, status: 'adequate', location: 'Locked Cabinet', lastRestocked: '2026-03-28', expiryDate: '2027-09-01', costPerUnit: 150 },
-  { id: 'RX02', name: 'Thiamine 100mg', category: 'medication', unit: 'Tab', currentQty: 200, minQty: 100, maxQty: 500, status: 'adequate', location: 'Locked Cabinet', lastRestocked: '2026-03-20', expiryDate: '2028-01-01', costPerUnit: 50 },
-  { id: 'RX03', name: 'Paracetamol 500mg', category: 'medication', unit: 'Tab', currentQty: 80, minQty: 100, maxQty: 500, status: 'low', location: 'Locked Cabinet', lastRestocked: '2026-03-15', expiryDate: '2028-06-01', costPerUnit: 20 },
-  { id: 'RX04', name: 'Chlordiazepoxide 25mg (detox)', category: 'medication', unit: 'Tab', currentQty: 30, minQty: 40, maxQty: 200, status: 'critical', location: 'Locked Cabinet', lastRestocked: '2026-03-10', expiryDate: '2027-05-01', costPerUnit: 200 },
-  { id: 'RX05', name: 'Multivitamin tablets', category: 'medication', unit: 'Tab', currentQty: 350, minQty: 200, maxQty: 1000, status: 'adequate', location: 'Locked Cabinet', lastRestocked: '2026-03-25', expiryDate: '2028-12-01', costPerUnit: 30 },
-  { id: 'RX06', name: 'Metoclopramide 10mg (antiemetic)', category: 'medication', unit: 'Tab', currentQty: 60, minQty: 40, maxQty: 200, status: 'adequate', location: 'Locked Cabinet', lastRestocked: '2026-03-20', expiryDate: '2027-08-01', costPerUnit: 80 },
+// Derive stock status from quantity vs minimum level
+function computeStatus(qty, min) {
+  const q = Number(qty) || 0
+  const m = Number(min) || 0
+  if (q <= m * 0.5) return 'critical'
+  if (q < m) return 'low'
+  return 'adequate'
+}
 
-  // Equipment & Assets (from 32 sponsorship items)
-  { id: 'E001', name: 'Patient Monitor (multi-parameter)', category: 'equipment', unit: 'Unit', currentQty: 1, minQty: 2, maxQty: 2, status: 'low', location: 'Clinical Room', lastRestocked: '2026-01-15', expiryDate: null, costPerUnit: 680000 },
-  { id: 'E002', name: 'Digital Sphygmomanometer', category: 'equipment', unit: 'Unit', currentQty: 3, minQty: 3, maxQty: 5, status: 'adequate', location: 'Nursing Station', lastRestocked: '2026-02-01', expiryDate: null, costPerUnit: 35000 },
-  { id: 'E003', name: 'Pulse Oximeters', category: 'equipment', unit: 'Unit', currentQty: 4, minQty: 5, maxQty: 8, status: 'low', location: 'Nursing Station', lastRestocked: '2026-02-01', expiryDate: null, costPerUnit: 12000 },
-  { id: 'E004', name: 'Stethoscopes', category: 'equipment', unit: 'Unit', currentQty: 5, minQty: 7, maxQty: 10, status: 'low', location: 'Clinical Room', lastRestocked: '2026-01-20', expiryDate: null, costPerUnit: 18000 },
-  { id: 'E005', name: 'Drip Stands (IV poles)', category: 'equipment', unit: 'Unit', currentQty: 3, minQty: 5, maxQty: 8, status: 'low', location: 'Detox Ward', lastRestocked: '2026-02-15', expiryDate: null, costPerUnit: 18000 },
-
-  // Household & Kitchen
-  { id: 'H001', name: 'Toiletry packs (per resident)', category: 'household', unit: 'Pack', currentQty: 18, minQty: 24, maxQty: 48, status: 'low', location: 'Store Room', lastRestocked: '2026-03-20', expiryDate: null, costPerUnit: 1500 },
-  { id: 'H002', name: 'Bed linen sets', category: 'household', unit: 'Set', currentQty: 30, minQty: 24, maxQty: 48, status: 'adequate', location: 'Laundry', lastRestocked: '2026-03-01', expiryDate: null, costPerUnit: 8000 },
-  { id: 'H003', name: 'Cleaning supplies (monthly)', category: 'household', unit: 'Kit', currentQty: 2, minQty: 3, maxQty: 6, status: 'low', location: 'Janitor Closet', lastRestocked: '2026-03-15', expiryDate: null, costPerUnit: 25000 },
-  { id: 'H004', name: 'Cooking gas (kg)', category: 'household', unit: 'Kg', currentQty: 25, minQty: 20, maxQty: 100, status: 'adequate', location: 'Kitchen', lastRestocked: '2026-03-28', expiryDate: null, costPerUnit: 1200 },
-  { id: 'H005', name: 'Drinking water (20L dispensers)', category: 'household', unit: 'Unit', currentQty: 6, minQty: 10, maxQty: 30, status: 'low', location: 'Kitchen / Common Areas', lastRestocked: '2026-03-30', expiryDate: null, costPerUnit: 500 },
-]
+// Map a DB (snake_case) row to the camelCase shape the JSX expects.
+function mapItem(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    unit: row.unit,
+    currentQty: row.current_qty,
+    minQty: row.min_qty,
+    maxQty: row.max_qty,
+    status: row.status,
+    location: row.location,
+    lastRestocked: row.last_restocked,
+    expiryDate: row.expiry_date,
+    costPerUnit: row.cost_per_unit,
+  }
+}
 
 export default function InventoryManagement() {
+  const { user } = useAuth()
   const [category, setCategory] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [showReorder, setShowReorder] = useState(false)
   const [reorderForm, setReorderForm] = useState({ item: '', qty: '', urgency: '', supplier: '', notes: '' })
   const [expanded, setExpanded] = useState(null)
   const [edits, setEdits] = useState({})
+  const [items, setItems] = useState([])
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [savingId, setSavingId] = useState(null)
 
-  const filtered = INVENTORY
+  const load = useCallback(async () => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    setLoading(true)
+    const [{ data: itemRows }, { data: orderRows }] = await Promise.all([getInventoryItems(), getInventoryOrders()])
+    setItems((itemRows || []).map(mapItem))
+    setOrders(orderRows || [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const requesterCode = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'ST'
+
+  const handleSaveEdit = async (item) => {
+    const edit = edits[item.id] || {}
+    const hasQty = edit.qty !== undefined && edit.qty !== ''
+    const newQty = hasQty ? Number(edit.qty) : item.currentQty
+    const newStatus = edit.status || computeStatus(newQty, item.minQty)
+    setSavingId(item.id)
+    const updates = { current_qty: newQty, status: newStatus }
+    if (hasQty) updates.last_restocked = TODAY
+    const { error } = await updateInventoryItem(item.id, updates)
+    setSavingId(null)
+    if (error) { alert(`Could not save stock update: ${error.message}`); return }
+    setEdits(p => { const n = { ...p }; delete n[item.id]; return n })
+    await load()
+  }
+
+  const handleSubmitRequisition = async () => {
+    if (!reorderForm.item || !reorderForm.qty || !reorderForm.urgency) return
+    const selected = items.find(i => i.id === reorderForm.item)
+    setSaving(true)
+    const { error } = await addInventoryOrder({
+      item_id: reorderForm.item,
+      item_name: selected?.name || '',
+      qty: Number(reorderForm.qty),
+      urgency: reorderForm.urgency,
+      supplier: reorderForm.supplier,
+      notes: reorderForm.notes,
+      status: 'requested',
+      requested_by_code: requesterCode,
+    })
+    setSaving(false)
+    if (error) { alert(`Could not submit requisition: ${error.message}`); return }
+    setReorderForm({ item: '', qty: '', urgency: '', supplier: '', notes: '' })
+    setShowReorder(false)
+    await load()
+  }
+
+  const filtered = items
     .filter(i => category === 'all' || i.category === category)
     .filter(i => statusFilter === 'all' || i.status === statusFilter)
 
-  const criticalCount = INVENTORY.filter(i => i.status === 'critical').length
-  const lowCount = INVENTORY.filter(i => i.status === 'low').length
-  const totalValue = INVENTORY.reduce((s, i) => s + (i.currentQty * i.costPerUnit), 0)
-  const expiringCount = INVENTORY.filter(i => {
+  const criticalCount = items.filter(i => i.status === 'critical').length
+  const lowCount = items.filter(i => i.status === 'low').length
+  const totalValue = items.reduce((s, i) => s + (i.currentQty * i.costPerUnit), 0)
+  const expiringCount = items.filter(i => {
     if (!i.expiryDate) return false
     const exp = new Date(i.expiryDate)
     const now = new Date()
@@ -94,7 +154,7 @@ export default function InventoryManagement() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Inventory Management</h1>
-          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{INVENTORY.length} items tracked · 4 categories · Monthly requisition cycle</p>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>{items.length} items tracked · 4 categories · Monthly requisition cycle</p>
         </div>
         <button className="btn btn--primary btn--sm" onClick={() => setShowReorder(!showReorder)}>
           {showReorder ? 'Cancel' : 'New Requisition'}
@@ -104,7 +164,7 @@ export default function InventoryManagement() {
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 10, marginBottom: 20 }}>
         {[
-          { n: INVENTORY.length, label: 'Total Items', color: 'var(--blue)' },
+          { n: items.length, label: 'Total Items', color: 'var(--blue)' },
           { n: criticalCount, label: 'Critical', color: '#E53E3E' },
           { n: lowCount, label: 'Low Stock', color: '#DD6B20' },
           { n: expiringCount, label: 'Expiring <90d', color: '#D69E2E' },
@@ -120,10 +180,10 @@ export default function InventoryManagement() {
       {/* Category filters */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <button className={`btn btn--sm ${category === 'all' ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setCategory('all')}>
-          All ({INVENTORY.length})
+          All ({items.length})
         </button>
         {CATEGORIES.map(cat => {
-          const count = INVENTORY.filter(i => i.category === cat.key).length
+          const count = items.filter(i => i.category === cat.key).length
           return (
             <button key={cat.key} className={`btn btn--sm ${category === cat.key ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setCategory(cat.key)}>
               {cat.icon} {cat.label} ({count})
@@ -137,7 +197,7 @@ export default function InventoryManagement() {
         <button onClick={() => setStatusFilter('all')} style={{ padding: '4px 10px', borderRadius: 14, fontSize: '.72rem', fontWeight: 700, border: 'none', cursor: 'pointer', background: statusFilter === 'all' ? 'var(--charcoal)' : 'var(--off)', color: statusFilter === 'all' ? 'white' : 'var(--g500)' }}>All</button>
         {Object.entries(STOCK_STATUS).filter(([k]) => k !== 'na').map(([key, cfg]) => (
           <button key={key} onClick={() => setStatusFilter(key)} style={{ padding: '4px 10px', borderRadius: 14, fontSize: '.72rem', fontWeight: 700, border: 'none', cursor: 'pointer', background: statusFilter === key ? cfg.color : cfg.bg, color: statusFilter === key ? 'white' : cfg.color }}>
-            {cfg.label} ({INVENTORY.filter(i => i.status === key).length})
+            {cfg.label} ({items.filter(i => i.status === key).length})
           </button>
         ))}
       </div>
@@ -149,7 +209,7 @@ export default function InventoryManagement() {
           <div className="fg"><label className="flabel">Item *</label>
             <select className="fi" value={reorderForm.item} onChange={e => setReorderForm(p => ({ ...p, item: e.target.value }))}>
               <option value="">Select item...</option>
-              {INVENTORY.map(i => <option key={i.id} value={i.id}>{i.name} (Current: {i.currentQty} {i.unit})</option>)}
+              {items.map(i => <option key={i.id} value={i.id}>{i.name} (Current: {i.currentQty} {i.unit})</option>)}
             </select>
           </div>
           <div className="frow">
@@ -178,16 +238,20 @@ export default function InventoryManagement() {
               {['Program Director', 'Admin Coordinator', 'Head Nurse (medical supplies)', 'Head of Clinical Services (medications)'].map(a => <option key={a}>{a}</option>)}
             </select>
           </div>
-          <button className="btn btn--primary btn--sm" onClick={() => {
-            if (!reorderForm.item || !reorderForm.qty || !reorderForm.urgency) return
-            alert('Requisition submitted successfully. Awaiting approval.')
-            setReorderForm({ item: '', qty: '', urgency: '', supplier: '', notes: '' })
-            setShowReorder(false)
-          }}>Submit Requisition</button>
+          <button className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmitRequisition}>
+            {saving ? 'Submitting…' : 'Submit Requisition'}
+          </button>
         </div>
       )}
 
       {/* Inventory table */}
+      {loading ? (
+        <div className="card" style={{ textAlign: 'center', padding: 32, color: 'var(--g500)', fontSize: '.88rem' }}>Loading inventory…</div>
+      ) : items.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: 32, color: 'var(--g500)', fontSize: '.88rem' }}>No inventory items recorded yet.</div>
+      ) : filtered.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: 32, color: 'var(--g500)', fontSize: '.88rem' }}>No items match the selected filters.</div>
+      ) : (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {filtered.map(item => {
           const status = STOCK_STATUS[item.status]
@@ -278,10 +342,9 @@ export default function InventoryManagement() {
                       <input type="text" value={edit.notes || ''} onChange={e => setEdits(p => ({ ...p, [item.id]: { ...p[item.id], notes: e.target.value } }))} placeholder="e.g. Restocked by nurse" style={{ width: '100%', padding: '7px 10px', borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }} />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                      <button className="btn btn--primary btn--sm" style={{ width: '100%' }} onClick={() => {
-                        alert(`Stock update saved for ${item.name}.\nNew qty: ${edit.qty || item.currentQty}\nStatus: ${edit.status || item.status}\nNotes: ${edit.notes || 'None'}`)
-                        setEdits(p => { const n = { ...p }; delete n[item.id]; return n })
-                      }}>Save Changes</button>
+                      <button className="btn btn--primary btn--sm" style={{ width: '100%' }} disabled={savingId === item.id} onClick={() => handleSaveEdit(item)}>
+                        {savingId === item.id ? 'Saving…' : 'Save Changes'}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -290,6 +353,29 @@ export default function InventoryManagement() {
           )
         })}
       </div>
+      )}
+
+      {/* Recent requisitions */}
+      {orders.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ fontSize: '.82rem', fontWeight: 700, color: 'var(--charcoal)', marginBottom: 10 }}>Recent Requisitions</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {orders.map(o => (
+              <div key={o.id} className="card" style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--charcoal)' }}>
+                  {o.item_name} <span style={{ color: 'var(--g500)', fontWeight: 400 }}>× {o.qty}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 12, fontSize: '.72rem', color: 'var(--g500)', flexWrap: 'wrap' }}>
+                  {o.urgency && <span>{o.urgency}</span>}
+                  {o.supplier && <span>📦 {o.supplier}</span>}
+                  {o.requested_by_code && <span>By {o.requested_by_code}</span>}
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontWeight: 700, background: 'var(--off)', color: 'var(--blue)' }}>{o.status || 'requested'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* No opioid warning */}
       {category === 'medication' && (

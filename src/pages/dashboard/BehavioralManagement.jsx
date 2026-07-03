@@ -1,17 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getIncidents, addIncident, deleteIncident, isSupabaseReady } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   3-Tier Behavioral Management System per SOP Chapter 5
   Tier 1 — Minor Offenses: verbal warning, written reflection, privilege loss
   Tier 2 — Major Offenses: formal reprimand, extra work, loss of all privileges
   Tier 3 — Motivational Discipline: 2-week min, graduation hold, all free time → prayer/Bible study
+  Live `incidents` table.
 */
-
-const INITIAL_INCIDENTS = [
-  { id: 1, patient: 'IM', tier: 1, type: 'Lateness to sessions', date: '2026-04-01', response: 'Verbal warning documented', status: 'resolved', reportedBy: 'HM' },
-  { id: 2, patient: 'CO', tier: 1, type: 'Dormitory cleanliness', date: '2026-03-29', response: 'Written reflection exercise assigned', status: 'resolved', reportedBy: 'HM' },
-  { id: 3, patient: 'AN', tier: 2, type: 'Persistent negative attitude', date: '2026-03-25', response: 'Formal reprimand, loss of phone privileges', status: 'monitoring', reportedBy: 'CL' },
-]
 
 const tierConfig = {
   1: { label: 'Tier 1 — Minor', color: '#D69E2E', bg: 'rgba(214,158,46,.1)' },
@@ -20,25 +17,56 @@ const tierConfig = {
 }
 
 export default function BehavioralManagement() {
-  const [incidents, setIncidents] = useState(INITIAL_INCIDENTS)
+  const [patients, setPatients] = useState([])
+  const [incidents, setIncidents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ patient: '', tier: '1', type: '', description: '', response: '' })
 
-  const handleSubmitIncident = () => {
+  const load = useCallback(async () => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    const [{ data: rows }, { data: incRows }] = await Promise.all([getPatients(), getIncidents()])
+    setPatients(activeBriefs(rows))
+    setIncidents((incRows || []).map(r => ({
+      id: r.id,
+      patientId: r.patient_id,
+      tier: r.tier || 1,
+      type: r.type || '',
+      date: (r.created_at || '').slice(0, 10),
+      response: r.response || '',
+      status: r.status || 'open',
+    })))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const initialsFor = (id) => patients.find(p => p.id === id)?.initials || '—'
+
+  const handleSubmitIncident = async () => {
     if (!form.patient || !form.tier || !form.type) return
-    const newIncident = {
-      id: Date.now(),
-      patient: form.patient,
+    setSaving(true)
+    const { error } = await addIncident({
+      patient_id: form.patient,
       tier: parseInt(form.tier),
       type: form.type,
-      date: new Date().toISOString().split('T')[0],
+      description: form.description || form.type,
       response: form.response || 'Pending review',
-      status: 'monitoring',
-      reportedBy: 'ST',
-    }
-    setIncidents(prev => [newIncident, ...prev])
+      status: 'open',
+    })
+    setSaving(false)
+    if (error) { alert(`Could not log incident: ${error.message}`); return }
     setForm({ patient: '', tier: '1', type: '', description: '', response: '' })
     setShowForm(false)
+    await load()
+  }
+
+  const handleRemove = async (id) => {
+    if (!confirm('Remove this incident?')) return
+    const { error } = await deleteIncident(id)
+    if (error) { alert(error.message); return }
+    await load()
   }
 
   return (
@@ -75,7 +103,7 @@ export default function BehavioralManagement() {
             <div className="fg"><label className="flabel">Patient *</label>
               <select className="fi" value={form.patient} onChange={e => setForm(p => ({ ...p, patient: e.target.value }))}>
                 <option value="">Select patient...</option>
-                <option value="CO">CO</option><option value="AN">AN</option><option value="KA">KA</option><option value="IM">IM</option>
+                {patients.map(p => <option key={p.id} value={p.id}>{p.initials}</option>)}
               </select>
             </div>
             <div className="fg"><label className="flabel">Tier *</label>
@@ -163,6 +191,10 @@ export default function BehavioralManagement() {
       )}
 
       {/* Incident log */}
+      {loading && <div className="card" style={{ padding: 20, color: 'var(--g500)', fontSize: '.88rem' }}>Loading…</div>}
+      {!loading && incidents.length === 0 && (
+        <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)', fontSize: '.88rem' }}>No incidents recorded yet.</div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {incidents.map(inc => {
           const cfg = tierConfig[inc.tier]
@@ -170,7 +202,7 @@ export default function BehavioralManagement() {
             <div key={inc.id} className="card" style={{ padding: '16px 20px', borderLeft: `4px solid ${cfg.color}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '.92rem' }}>{inc.patient}</div>
+                  <div style={{ fontWeight: 700, fontSize: '.92rem' }}>{initialsFor(inc.patientId)}</div>
                   <div style={{ fontSize: '.82rem', color: 'var(--g700)', marginTop: 2 }}>{inc.type}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -181,8 +213,8 @@ export default function BehavioralManagement() {
                 </div>
               </div>
               <div style={{ fontSize: '.82rem', color: 'var(--g500)', marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Response: {inc.response} · Reported by: {inc.reportedBy} · {inc.date}</span>
-                <button onClick={() => { if (confirm('Remove this incident?')) setIncidents(prev => prev.filter(i => i.id !== inc.id)) }}
+                <span>Response: {inc.response} · {inc.date}</span>
+                <button onClick={() => handleRemove(inc.id)}
                   style={{ background: 'none', border: 'none', color: '#E53E3E', cursor: 'pointer', fontSize: '.78rem', fontWeight: 600, padding: '2px 8px' }}>Remove</button>
               </div>
             </div>

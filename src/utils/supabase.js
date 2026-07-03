@@ -303,6 +303,69 @@ export const getAssessments = (patientId, type) => {
 }
 export const addAssessment = (row) => insertRow('assessments', row)
 
+// ── Residential domain (Wave 3) ───────────────────────────
+// Passes
+export const getPasses = () => listBy('passes', null, null)
+export const addPass = (row) => insertRow('passes', row)
+export const updatePass = (id, updates) => updateRow('passes', id, updates)
+export const deletePass = (id) => deleteRow('passes', id)
+
+// Behavioural incidents (existing `incidents` table)
+export const getIncidents = () => listBy('incidents', null, null)
+export const getIncident = async (id) => {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase.from('incidents').select('*').eq('id', id).single()
+  return { data, error }
+}
+export const addIncident = (row) => insertRow('incidents', row)
+export const updateIncident = (id, updates) => updateRow('incidents', id, updates)
+export const deleteIncident = (id) => deleteRow('incidents', id)
+
+// MDT meetings
+export const getMdtReviews = () => listBy('mdt_reviews', null, null, 'meeting_date', false)
+export const addMdtReview = (row) => insertRow('mdt_reviews', row)
+export const updateMdtReview = (id, updates) => updateRow('mdt_reviews', id, updates)
+
+// Inventory
+export const getInventoryItems = () => listBy('inventory_items', null, null, 'name', true)
+export const addInventoryItem = (row) => insertRow('inventory_items', row)
+export const updateInventoryItem = (id, updates) => updateRow('inventory_items', id, updates)
+export const getInventoryOrders = () => listBy('inventory_orders', null, null)
+export const addInventoryOrder = (row) => insertRow('inventory_orders', row)
+
+// Shifts (one JSONB doc per week_start)
+export async function getShiftWeek(weekStart) {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase.from('shifts').select('*').eq('week_start', weekStart).maybeSingle()
+  return { data, error }
+}
+export async function upsertShiftWeek(weekStart, fields, updatedByCode) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase
+    .from('shifts')
+    .upsert({ week_start: weekStart, ...fields, updated_by_code: updatedByCode || null, updated_at: new Date().toISOString() }, { onConflict: 'week_start' })
+    .select()
+    .single()
+  return { data, error }
+}
+
+// Daily schedule attendance
+export async function getScheduleAttendance(dateStr) {
+  if (!supabase) return { data: [], error: null }
+  const { data, error } = await supabase.from('schedule_attendance').select('*').eq('attend_date', dateStr)
+  return { data: data || [], error }
+}
+export async function setScheduleAttendance(row) {
+  // row: { attend_date, patient_id, slot, status, recorded_by_code }
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase
+    .from('schedule_attendance')
+    .upsert(row, { onConflict: 'attend_date,patient_id,slot' })
+    .select()
+    .single()
+  return { data, error }
+}
+
 // ── Visitation requests ───────────────────────────────────
 export async function requestVisitation(visitData) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }

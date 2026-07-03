@@ -1,19 +1,13 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect } from 'react'
+import { isSupabaseReady, getPatients, getScheduleAttendance, setScheduleAttendance } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   Daily Schedule — SOP Chapter 4.2
   Full 5:30 AM – 11:00 PM schedule as interactive timeline.
   Modified schedule for Weeks 1-2 (detox) and Sundays.
-  HIPAA: initials only.
+  HIPAA: initials only. Attendance is live from Supabase.
 */
-
-const PATIENTS = [
-  { initials: 'CO', day: 23 },
-  { initials: 'AN', day: 45 },
-  { initials: 'KA', day: 74 },
-  { initials: 'IM', day: 8 },
-]
 
 const typeColors = {
   spiritual: '#805AD5',
@@ -74,35 +68,16 @@ const SUNDAY_SCHEDULE = [
   { time: '10:00 PM', activity: 'Lights Out', responsible: 'Night Supervisor', type: 'routine' },
 ]
 
-const DETOX_NOTE = 'Modified schedule: Weeks 1–2 patients (IM) follow a reduced activity load. Medical monitoring every 4 hours. Group therapy attendance is optional — replaced with rest and individual check-ins.'
 const SUNDAY_NOTE = 'Sunday schedule: Shortened programme. Visitation 12:00–6:00 PM. No group therapy sessions.'
 
-// Generate mock attendance seeded by date
-function getAttendance(dateStr) {
-  const seed = dateStr.split('-').join('')
-  const hash = (s, i) => ((parseInt(s.slice(-4)) * 7 + i * 13) % 10)
-  return WEEKDAY_SCHEDULE.map((_, si) => {
-    const row = {}
-    PATIENTS.forEach((p, pi) => {
-      const v = hash(seed + si, pi + si)
-      // IM (detox, day 8) has many dashes for therapy activities
-      if (p.initials === 'IM' && ['therapy', 'activity'].includes(WEEKDAY_SCHEDULE[si]?.type)) {
-        row[p.initials] = v > 3 ? 'dash' : v > 1 ? 'check' : 'x'
-      } else {
-        row[p.initials] = v > 2 ? 'check' : v > 0 ? 'x' : 'dash'
-      }
-    })
-    return row
-  })
-}
-
-function formatDate(d) {
-  return d.toISOString().slice(0, 10)
-}
+const STATUS_CYCLE = { dash: 'check', check: 'x', x: 'dash' }
 
 export default function DailySchedule() {
-  const { user } = useAuth()
   const [selectedDate, setSelectedDate] = useState('2026-03-31')
+  const [patients, setPatients] = useState([]) // [{ id, initials, full_name }]
+  const [patientsLoading, setPatientsLoading] = useState(true)
+  const [attendance, setAttendance] = useState({}) // `${patient_id}-${slot}` -> status
+  const [attendanceLoading, setAttendanceLoading] = useState(true)
 
   const dateObj = new Date(selectedDate + 'T12:00:00')
   const dayOfWeek = dateObj.getDay()
@@ -110,10 +85,52 @@ export default function DailySchedule() {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
   const schedule = isSunday ? SUNDAY_SCHEDULE : WEEKDAY_SCHEDULE
-  const attendance = getAttendance(selectedDate)
 
-  // Check if any patient is in detox
-  const hasDetoxPatient = PATIENTS.some(p => p.day <= 14)
+  // Load active patients once.
+  useEffect(() => {
+    let alive = true
+    if (!isSupabaseReady()) { setPatients([]); setPatientsLoading(false); return }
+    setPatientsLoading(true)
+    getPatients().then(({ data }) => {
+      if (!alive) return
+      setPatients(activeBriefs(data))
+      setPatientsLoading(false)
+    })
+    return () => { alive = false }
+  }, [])
+
+  // Load attendance whenever the selected date changes.
+  useEffect(() => {
+    let alive = true
+    if (!isSupabaseReady()) { setAttendance({}); setAttendanceLoading(false); return }
+    setAttendanceLoading(true)
+    getScheduleAttendance(selectedDate).then(({ data }) => {
+      if (!alive) return
+      const map = {}
+      ;(data || []).forEach(r => { map[`${r.patient_id}-${r.slot}`] = r.status })
+      setAttendance(map)
+      setAttendanceLoading(false)
+    })
+    return () => { alive = false }
+  }, [selectedDate])
+
+  const statusFor = (patientId, slot) => attendance[`${patientId}-${slot}`] || 'dash'
+
+  const cycleCell = async (patientId, slot) => {
+    if (!isSupabaseReady()) return
+    const key = `${patientId}-${slot}`
+    const next = STATUS_CYCLE[statusFor(patientId, slot)]
+    const { error } = await setScheduleAttendance({
+      attend_date: selectedDate,
+      patient_id: patientId,
+      slot,
+      status: next,
+      recorded_by_code: 'BO',
+    })
+    if (!error) setAttendance(prev => ({ ...prev, [key]: next }))
+  }
+
+  const loading = patientsLoading || attendanceLoading
 
   const icons = {
     check: { symbol: '\u2713', color: '#1A7A4A' },
@@ -141,12 +158,21 @@ export default function DailySchedule() {
           <div style={{ fontSize: '.82rem', color: '#2B6CB0', fontWeight: 600 }}>{SUNDAY_NOTE}</div>
         </div>
       )}
-      {hasDetoxPatient && !isSunday && (
-        <div className="card" style={{ padding: 14, marginBottom: 16, background: '#FFF5F5', borderLeft: '4px solid #E53E3E' }}>
-          <div style={{ fontSize: '.82rem', color: '#E53E3E', fontWeight: 600 }}>{DETOX_NOTE}</div>
+
+      {loading && (
+        <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)', fontSize: '.86rem' }}>
+          Loading schedule…
         </div>
       )}
 
+      {!loading && patients.length === 0 && (
+        <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)', fontSize: '.86rem' }}>
+          No active patients on record yet.
+        </div>
+      )}
+
+      {!loading && patients.length > 0 && (
+        <>
       {/* Legend */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
         {Object.entries(typeColors).map(([key, color]) => (
@@ -171,8 +197,8 @@ export default function DailySchedule() {
               <th style={{ padding: '10px 12px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)' }}>Activity</th>
               <th style={{ padding: '10px 12px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)', whiteSpace: 'nowrap' }}>Responsible</th>
               <th style={{ padding: '10px 12px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)', width: 70, textAlign: 'center' }}>Type</th>
-              {PATIENTS.map(p => (
-                <th key={p.initials} style={{ padding: '10px 8px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)', width: 44, textAlign: 'center' }}>
+              {patients.map(p => (
+                <th key={p.id} title={p.full_name} style={{ padding: '10px 8px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)', width: 44, textAlign: 'center' }}>
                   {p.initials}
                 </th>
               ))}
@@ -189,11 +215,11 @@ export default function DailySchedule() {
                     {typeLabels[item.type]}
                   </span>
                 </td>
-                {PATIENTS.map(p => {
-                  const att = attendance[idx]?.[p.initials] || 'dash'
+                {patients.map(p => {
+                  const att = statusFor(p.id, idx)
                   const icon = icons[att]
                   return (
-                    <td key={p.initials} style={{ padding: '10px 8px', textAlign: 'center' }}>
+                    <td key={p.id} onClick={() => cycleCell(p.id, idx)} title="Click to change attendance" style={{ padding: '10px 8px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>
                       <span style={{ color: icon.color, fontWeight: 700, fontSize: '1rem' }}>{icon.symbol}</span>
                     </td>
                   )
@@ -206,21 +232,24 @@ export default function DailySchedule() {
 
       {/* Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10, marginTop: 20 }}>
-        {PATIENTS.map(p => {
-          const total = attendance.length
-          const present = attendance.filter(a => a[p.initials] === 'check').length
-          const pct = total > 0 ? Math.round((present / total) * 100) : 0
+        {patients.map(p => {
+          const total = schedule.length
+          const present = schedule.reduce((n, _, idx) => n + (statusFor(p.id, idx) === 'check' ? 1 : 0), 0)
+          const marked = schedule.reduce((n, _, idx) => n + (statusFor(p.id, idx) !== 'dash' ? 1 : 0), 0)
+          const pct = marked > 0 ? Math.round((present / marked) * 100) : 0
           return (
-            <div className="card" key={p.initials} style={{ padding: 14, textAlign: 'center' }}>
+            <div className="card" key={p.id} style={{ padding: 14, textAlign: 'center' }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '.82rem', margin: '0 auto 8px' }}>
                 {p.initials}
               </div>
               <div style={{ fontFamily: 'var(--fd)', fontSize: '1.3rem', fontWeight: 700, color: pct >= 80 ? '#1A7A4A' : pct >= 50 ? '#DD6B20' : '#E53E3E' }}>{pct}%</div>
-              <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>Attendance · Day {p.day}</div>
+              <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>Present · {present}/{total}</div>
             </div>
           )
         })}
       </div>
+        </>
+      )}
     </div>
   )
 }

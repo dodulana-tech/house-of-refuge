@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { isSupabaseReady, getShiftWeek, upsertShiftWeek } from '../../utils/supabase'
 
 /*
   Shift Scheduler — 24/7 Coverage per HR Manual
@@ -8,6 +9,15 @@ import React, { useState } from 'react'
 */
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+// ISO date (YYYY-MM-DD) for the Monday of the current week
+const getWeekStart = () => {
+  const now = new Date()
+  const day = now.getDay() // 0=Sun, 1=Mon, ...
+  const diff = day === 0 ? -6 : 1 - day // shift back to Monday
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff)
+  return monday.toISOString().slice(0, 10)
+}
 
 const STAFF = [
   { id: 'BO', name: 'Blessing Okafor', role: 'Head Nurse' },
@@ -85,6 +95,34 @@ export default function ShiftScheduler() {
   const [handoverNotes, setHandoverNotes] = useState(initHandoverNotes)
   const [selectedDay, setSelectedDay] = useState('Mon')
   const [editCell, setEditCell] = useState(null)
+  const [weekStart] = useState(getWeekStart)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!isSupabaseReady()) return
+    let active = true
+    getShiftWeek(weekStart).then(({ data, error }) => {
+      if (!active || error || !data) return
+      if (data.schedule && Object.keys(data.schedule).length > 0) {
+        setSchedule(data.schedule)
+        if (data.handovers && Object.keys(data.handovers).length > 0) {
+          setHandoverNotes(data.handovers)
+        }
+      }
+    })
+    return () => { active = false }
+  }, [weekStart])
+
+  const handleSave = async () => {
+    if (!isSupabaseReady()) {
+      alert('Supabase is not configured — cannot save roster.')
+      return
+    }
+    setSaving(true)
+    const { error } = await upsertShiftWeek(weekStart, { schedule, handovers: handoverNotes }, 'BO')
+    setSaving(false)
+    alert(error ? `Failed to save roster: ${error.message}` : 'Roster saved successfully.')
+  }
 
   const handleAssign = (day, shiftKey, staffId) => {
     setSchedule(prev => ({
@@ -115,9 +153,17 @@ export default function ShiftScheduler() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Shift Scheduler</h1>
-        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>24/7 coverage roster — Nursing, House Master, Security</p>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Shift Scheduler</h1>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>24/7 coverage roster — Nursing, House Master, Security</p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '.78rem', color: 'var(--g500)', marginBottom: 6 }}>Week of {weekStart}</div>
+          <button className="btn btn--primary" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save Roster'}
+          </button>
+        </div>
       </div>
 
       {/* Legend */}

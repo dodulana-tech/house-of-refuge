@@ -1,18 +1,24 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  isSupabaseReady,
+  getPatients,
+  getCheckins,
+  getClinicalNotes,
+  getUdsTests,
+  getMedications,
+  getLabTests,
+  getDetoxRecords,
+  getAssessments,
+  getIncidents,
+  getVisitations,
+} from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   Patient Timeline — unified chronological view of all events for a patient.
   Single-pane-of-glass view across all disciplines. Initials only (HIPAA).
-  All fields are structured selects/checkboxes — zero free text.
+  Aggregated live from the clinical/residential domain tables. Read-only.
 */
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
 
 const ENTRY_TYPES = [
   'Admission',
@@ -42,380 +48,6 @@ const TYPE_COLORS = {
   'Discharge': '#4A5568',
 }
 
-const TIMELINE_DATA = {
-  CO: [
-    {
-      id: 1,
-      date: '2026-03-08',
-      time: '09:00',
-      type: 'Admission',
-      author: 'FA',
-      fields: {
-        pathway: 'Pathway A',
-        primarySubstance: 'Alcohol',
-        secondarySubstance: 'Cannabis',
-        ciwaScore: '18',
-        ciwaLevel: 'Severe',
-        admissionType: 'Voluntary',
-        bedAssignment: 'A1',
-      },
-    },
-    {
-      id: 2,
-      date: '2026-03-08',
-      time: '10:30',
-      type: 'Medication',
-      author: 'FA',
-      fields: {
-        action: 'Started',
-        medication1: 'Diazepam 10mg',
-        route1: 'Oral',
-        frequency1: 'TDS (3x daily)',
-        medication2: 'Thiamine 100mg',
-        route2: 'Oral',
-        frequency2: 'OD (once daily)',
-        protocol: 'CIWA-based detox',
-      },
-    },
-    {
-      id: 3,
-      date: '2026-03-09',
-      time: '07:00',
-      type: 'Clinical Note',
-      author: 'FA',
-      fields: {
-        noteType: 'Nursing Assessment',
-        category: 'CIWA Assessment',
-        ciwaScore: '14',
-        ciwaLevel: 'Moderate',
-        vitalsBP: '132/84',
-        vitalsPulse: '86',
-        tremor: 'Mild',
-        diaphoresis: 'Present',
-        orientation: 'Oriented x3',
-      },
-    },
-    {
-      id: 4,
-      date: '2026-03-10',
-      time: '07:00',
-      type: 'Clinical Note',
-      author: 'FA',
-      fields: {
-        noteType: 'Nursing Assessment',
-        category: 'CIWA Assessment',
-        ciwaScore: '8',
-        ciwaLevel: 'Mild',
-        vitalsBP: '126/80',
-        vitalsPulse: '78',
-        tremor: 'None',
-        diaphoresis: 'Resolved',
-        orientation: 'Oriented x3',
-      },
-    },
-    {
-      id: 5,
-      date: '2026-03-12',
-      time: '14:00',
-      type: 'Clinical Note',
-      author: 'AI',
-      fields: {
-        noteType: 'Individual CBT',
-        sessionNumber: '1',
-        engagement: 'Good',
-        stageOfChange: 'Contemplation',
-        topicsCovered: 'Triggers identification',
-        homeworkAssigned: 'Thought record',
-        nextSessionDate: '2026-03-14',
-      },
-    },
-    {
-      id: 6,
-      date: '2026-03-14',
-      time: '08:00',
-      type: 'Clinical Note',
-      author: 'FA',
-      fields: {
-        noteType: 'Nursing Review',
-        category: 'Week 1 Review',
-        vitalsBP: '122/78',
-        vitalsPulse: '74',
-        vitalsTemp: '36.6',
-        weight: '73kg',
-        vitalsStatus: 'Stable',
-        appetiteStatus: 'Improving',
-        sleepQuality: 'Fair',
-      },
-    },
-    {
-      id: 7,
-      date: '2026-03-15',
-      time: '19:45',
-      type: 'Behavioral Incident',
-      author: 'MO',
-      fields: {
-        tier: 'Tier 1',
-        category: 'Dormitory cleanliness',
-        location: 'Dormitory A',
-        response: 'Verbal reminder',
-        escalated: 'No',
-        patientResponse: 'Compliant',
-        followUp: 'Counsellor notification',
-      },
-    },
-    {
-      id: 8,
-      date: '2026-03-17',
-      time: '06:30',
-      type: 'Spiritual Note',
-      author: 'PK',
-      fields: {
-        activity: 'Morning prayer',
-        engagement: 'Active participation',
-        spiritualInterest: 'Asked faith questions',
-        devotionAttendance: 'Present',
-        bibleStudy: 'Not yet started',
-        chaplainFollowUp: 'Scheduled',
-      },
-    },
-    {
-      id: 9,
-      date: '2026-03-19',
-      time: '10:00',
-      type: 'Check-in',
-      author: 'AI',
-      fields: {
-        mood: '3/5',
-        cravings: '3/5',
-        sleep: 'Fair',
-        appetite: 'Good',
-        programmeEngagement: 'Moderate',
-        peerRelationships: 'Developing',
-        concerns: 'Family contact',
-      },
-    },
-    {
-      id: 10,
-      date: '2026-03-21',
-      time: '09:00',
-      type: 'Clinical Note',
-      author: 'FA',
-      fields: {
-        noteType: 'Nursing Assessment',
-        category: 'Phase Transition',
-        detoxStatus: 'Complete',
-        ciwaScore: '2',
-        ciwaLevel: 'Negligible',
-        medicationChange: 'Diazepam tapered off',
-        newPhase: 'Phase 2 — Active Treatment',
-        vitalsBP: '120/76',
-      },
-    },
-    {
-      id: 11,
-      date: '2026-03-22',
-      time: '11:00',
-      type: 'Clinical Note',
-      author: 'AI',
-      fields: {
-        noteType: 'Treatment Planning',
-        model: 'Columbia Model',
-        planDuration: '72hrs initial',
-        goalsSet: '3',
-        primaryGoal: 'Alcohol abstinence maintenance',
-        secondaryGoal: 'Trigger management',
-        tertiaryGoal: 'Family relationship repair',
-      },
-    },
-    {
-      id: 12,
-      date: '2026-03-24',
-      time: '14:00',
-      type: 'Clinical Note',
-      author: 'AI',
-      fields: {
-        noteType: 'Group CBT',
-        sessionTopic: 'Cognitive distortions',
-        participation: 'Active',
-        peerInteraction: 'Supportive',
-        skillDemonstrated: 'Identifying distortions',
-        groupRole: 'Contributor',
-      },
-    },
-    {
-      id: 13,
-      date: '2026-03-25',
-      time: '14:00',
-      type: 'Family Session',
-      author: 'SN',
-      fields: {
-        sessionNumber: '1',
-        pathway: 'Pathway A',
-        pfspPresent: 'Yes',
-        pfspInitials: 'AO',
-        pfspRelationship: 'Mother',
-        focusArea: 'Initial assessment & expectations',
-        familyEngagement: 'Cooperative',
-        nextSessionPlanned: 'Yes',
-      },
-    },
-    {
-      id: 14,
-      date: '2026-03-27',
-      time: '10:00',
-      type: 'Check-in',
-      author: 'AI',
-      fields: {
-        mood: '4/5',
-        cravings: '2/5',
-        sleep: 'Good',
-        appetite: 'Good',
-        programmeEngagement: 'High',
-        peerRelationships: 'Good',
-        concerns: 'None reported',
-      },
-    },
-    {
-      id: 15,
-      date: '2026-03-29',
-      time: '09:00',
-      type: 'MDT Review',
-      author: 'AI',
-      fields: {
-        reviewType: 'Week 3 Approaching',
-        attendees: 'AI, FA, PK, SN, MO',
-        overallProgress: 'On track',
-        phaseStatus: 'Phase 2 — Active Treatment',
-        riskLevel: 'Low',
-        treatmentPlanAdherence: 'Good',
-        nextReviewDate: '2026-04-05',
-      },
-    },
-    {
-      id: 16,
-      date: '2026-03-30',
-      time: '10:00',
-      type: 'Check-in',
-      author: 'AI',
-      fields: {
-        mood: '4/5',
-        cravings: '2/5',
-        sleep: 'Good',
-        appetite: 'Good',
-        programmeEngagement: 'High',
-        peerRelationships: 'Strong',
-        concerns: 'Bible study "powerful"',
-      },
-    },
-  ],
-  AN: [
-    {
-      id: 101,
-      date: '2026-02-20',
-      time: '10:00',
-      type: 'Admission',
-      author: 'FA',
-      fields: {
-        pathway: 'Pathway A',
-        primarySubstance: 'Tramadol',
-        secondarySubstance: 'Codeine',
-        ciwaScore: 'N/A — Opioid protocol',
-        admissionType: 'Voluntary',
-        bedAssignment: 'A3',
-      },
-    },
-    {
-      id: 102,
-      date: '2026-03-15',
-      time: '14:00',
-      type: 'Clinical Note',
-      author: 'AI',
-      fields: {
-        noteType: 'Individual CBT',
-        sessionNumber: '4',
-        engagement: 'Good',
-        stageOfChange: 'Preparation',
-        topicsCovered: 'Relapse prevention',
-      },
-    },
-    {
-      id: 103,
-      date: '2026-03-28',
-      time: '10:00',
-      type: 'Check-in',
-      author: 'FA',
-      fields: {
-        mood: '4/5',
-        cravings: '1/5',
-        sleep: 'Good',
-        appetite: 'Good',
-        programmeEngagement: 'High',
-      },
-    },
-  ],
-  KA: [
-    {
-      id: 201,
-      date: '2026-01-15',
-      time: '09:00',
-      type: 'Admission',
-      author: 'FA',
-      fields: {
-        pathway: 'Pathway B',
-        primarySubstance: 'Cannabis',
-        secondarySubstance: 'None',
-        admissionType: 'Community referral',
-        bedAssignment: 'B2',
-      },
-    },
-    {
-      id: 202,
-      date: '2026-03-20',
-      time: '11:00',
-      type: 'Clinical Note',
-      author: 'AI',
-      fields: {
-        noteType: 'Life Skills',
-        category: 'Vocational assessment',
-        skillArea: 'Carpentry',
-        aptitude: 'Strong',
-        recommendation: 'Community placement',
-      },
-    },
-  ],
-  IM: [
-    {
-      id: 301,
-      date: '2026-03-23',
-      time: '08:00',
-      type: 'Admission',
-      author: 'FA',
-      fields: {
-        pathway: 'Pathway A',
-        primarySubstance: 'Heroin',
-        secondarySubstance: 'Benzodiazepines',
-        admissionType: 'Voluntary',
-        bedAssignment: 'A4',
-      },
-    },
-    {
-      id: 302,
-      date: '2026-03-28',
-      time: '07:00',
-      type: 'Clinical Note',
-      author: 'FA',
-      fields: {
-        noteType: 'Nursing Assessment',
-        category: 'Withdrawal monitoring',
-        vitalsBP: '134/88',
-        vitalsPulse: '92',
-        withdrawalPhase: 'Active',
-        symptoms: 'Muscle aches, insomnia',
-      },
-    },
-  ],
-}
-
 const badgeStyle = (type) => ({
   display: 'inline-block',
   padding: '2px 10px',
@@ -428,25 +60,277 @@ const badgeStyle = (type) => ({
   whiteSpace: 'nowrap',
 })
 
+// Split a timestamptz / date string into { date: 'YYYY-MM-DD', time: 'HH:MM' }.
+const splitDateTime = (ts) => {
+  if (!ts) return { date: '', time: '' }
+  const s = String(ts)
+  const date = s.slice(0, 10)
+  const clock = s.slice(11, 16)
+  return { date, time: /^\d{2}:\d{2}$/.test(clock) ? clock : '' }
+}
+
+// Drop null/undefined/'' values so renderFields only shows populated fields.
+const compact = (obj) =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== null && v !== undefined && v !== '')
+  )
+
+// Normalise every live source into the timeline event shape the JSX renders:
+// { id, date, time, type, author, fields }. Never fabricates rows.
+function normaliseEvents({
+  checkins,
+  notes,
+  uds,
+  meds,
+  labs,
+  detox,
+  assessments,
+  incidents,
+  visits,
+}) {
+  const events = []
+
+  for (const c of checkins || []) {
+    const { date, time } = splitDateTime(c.created_at)
+    events.push({
+      id: `checkin-${c.id}`,
+      date,
+      time,
+      type: 'Check-in',
+      author: 'Resident',
+      fields: compact({
+        mood: c.mood != null ? `${c.mood}/5` : '',
+        cravings: c.cravings != null ? `${c.cravings}/5` : '',
+        anxiety: c.anxiety != null ? `${c.anxiety}/5` : '',
+      }),
+    })
+  }
+
+  for (const n of notes || []) {
+    const { date, time } = splitDateTime(n.created_at)
+    events.push({
+      id: `note-${n.id}`,
+      date,
+      time,
+      type: 'Clinical Note',
+      author: n.author_code || '—',
+      fields: compact({
+        noteType: n.type,
+        subjective: n.subjective,
+        objective: n.objective,
+        assessment: n.assessment,
+        plan: n.plan,
+      }),
+    })
+  }
+
+  for (const u of uds || []) {
+    const { date, time } = splitDateTime(u.test_date)
+    const substances =
+      u.substances && typeof u.substances === 'object' ? u.substances : {}
+    events.push({
+      id: `uds-${u.id}`,
+      date,
+      time,
+      type: 'Clinical Note',
+      author: u.ordered_by_code || '—',
+      fields: compact({ test: 'Urine Drug Screen', reason: u.reason, ...substances }),
+    })
+  }
+
+  for (const m of meds || []) {
+    const { date, time } = splitDateTime(m.start_date)
+    events.push({
+      id: `med-${m.id}`,
+      date,
+      time,
+      type: 'Medication',
+      author: m.prescriber_code || '—',
+      fields: compact({
+        medication: m.name,
+        dose: m.dose,
+        route: m.route,
+        frequency: m.frequency,
+        status: m.status,
+      }),
+    })
+  }
+
+  for (const l of labs || []) {
+    const { date, time } = splitDateTime(l.ordered_date)
+    events.push({
+      id: `lab-${l.id}`,
+      date,
+      time,
+      type: 'Medication',
+      author: l.ordered_by_code || '—',
+      fields: compact({ labPanel: l.panel, status: l.status }),
+    })
+  }
+
+  for (const d of detox || []) {
+    const { date, time } = splitDateTime(d.created_at)
+    events.push({
+      id: `detox-${d.id}`,
+      date,
+      time,
+      type: 'Medication',
+      author: d.recorded_by_code || '—',
+      fields: compact({
+        detoxScale: d.scale,
+        score: d.score != null ? String(d.score) : '',
+        day: d.day != null ? String(d.day) : '',
+        medsGiven: d.meds_given,
+      }),
+    })
+  }
+
+  for (const a of assessments || []) {
+    const { date, time } = splitDateTime(a.created_at)
+    events.push({
+      id: `assessment-${a.id}`,
+      date,
+      time,
+      type: 'Clinical Note',
+      author: a.assessed_by_code || '—',
+      fields: compact({
+        assessment: a.type,
+        score: a.score != null ? String(a.score) : '',
+        level: a.level,
+      }),
+    })
+  }
+
+  for (const i of incidents || []) {
+    const { date, time } = splitDateTime(i.created_at)
+    events.push({
+      id: `incident-${i.id}`,
+      date,
+      time,
+      type: 'Behavioral Incident',
+      author: '—',
+      fields: compact({
+        tier: i.tier != null ? `Tier ${i.tier}` : '',
+        category: i.type,
+        description: i.description,
+        response: i.response,
+        status: i.status,
+      }),
+    })
+  }
+
+  for (const v of visits || []) {
+    const { date, time } = splitDateTime(v.visit_date)
+    events.push({
+      id: `visit-${v.id}`,
+      date,
+      time: time || v.visit_time || '',
+      type: 'Visitation',
+      author: v.requested_by_name || '—',
+      fields: compact({
+        visitors: v.visitors,
+        status: v.status,
+        notes: v.notes,
+      }),
+    })
+  }
+
+  return events.sort((a, b) => {
+    const dateComp = (b.date || '').localeCompare(a.date || '')
+    if (dateComp !== 0) return dateComp
+    return (b.time || '').localeCompare(a.time || '')
+  })
+}
+
 export default function PatientTimeline() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
+  const [patients, setPatients] = useState([])
+  const [selectedPatient, setSelectedPatient] = useState('')
+  const [events, setEvents] = useState([])
+  const [loadingPatients, setLoadingPatients] = useState(true)
+  const [loadingEvents, setLoadingEvents] = useState(false)
   const [visibleTypes, setVisibleTypes] = useState(
     ENTRY_TYPES.reduce((acc, t) => ({ ...acc, [t]: true }), {})
   )
 
-  const entries = (TIMELINE_DATA[selectedPatient] || [])
-    .filter((e) => visibleTypes[e.type])
-    .sort((a, b) => {
-      const dateComp = b.date.localeCompare(a.date)
-      if (dateComp !== 0) return dateComp
-      return b.time.localeCompare(a.time)
+  const initialsById = Object.fromEntries(patients.map((p) => [p.id, p.initials]))
+
+  // Load the active-resident roster for the selector.
+  useEffect(() => {
+    let cancelled = false
+    const loadRoster = async () => {
+      if (!isSupabaseReady()) {
+        if (!cancelled) setLoadingPatients(false)
+        return
+      }
+      setLoadingPatients(true)
+      const { data: rows } = await getPatients()
+      if (cancelled) return
+      const briefs = activeBriefs(rows)
+      setPatients(briefs)
+      setSelectedPatient((prev) => prev || (briefs[0]?.id ?? ''))
+      setLoadingPatients(false)
+    }
+    loadRoster()
+    return () => { cancelled = true }
+  }, [])
+
+  // Aggregate the timeline for the selected resident across all live sources.
+  const loadTimeline = useCallback(async (patientId) => {
+    if (!patientId || !isSupabaseReady()) {
+      setEvents([])
+      return
+    }
+    setLoadingEvents(true)
+    const [
+      checkins,
+      notes,
+      uds,
+      meds,
+      labs,
+      detox,
+      assessments,
+      incidents,
+      visits,
+    ] = await Promise.all([
+      getCheckins(patientId),
+      getClinicalNotes(),
+      getUdsTests(patientId),
+      getMedications(patientId),
+      getLabTests(patientId),
+      getDetoxRecords(patientId),
+      getAssessments(patientId),
+      getIncidents(),
+      getVisitations(patientId),
+    ])
+    setEvents(
+      normaliseEvents({
+        checkins: checkins.data,
+        notes: (notes.data || []).filter((n) => n.patient_id === patientId),
+        uds: uds.data,
+        meds: meds.data,
+        labs: labs.data,
+        detox: detox.data,
+        assessments: assessments.data,
+        incidents: (incidents.data || []).filter((i) => i.patient_id === patientId),
+        visits: visits.data,
+      })
+    )
+    setLoadingEvents(false)
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    if (!selectedPatient) return
+    loadTimeline(selectedPatient).catch(() => {
+      if (!cancelled) setLoadingEvents(false)
     })
+    return () => { cancelled = true }
+  }, [selectedPatient, loadTimeline])
 
-  const toggleType = (type) => {
+  const entries = events.filter((e) => visibleTypes[e.type])
+
+  const toggleType = (type) =>
     setVisibleTypes((prev) => ({ ...prev, [type]: !prev[type] }))
-  }
-
   const selectAll = () =>
     setVisibleTypes(ENTRY_TYPES.reduce((acc, t) => ({ ...acc, [t]: true }), {}))
   const selectNone = () =>
@@ -467,19 +351,21 @@ export default function PatientTimeline() {
         <span style={{ fontWeight: 600, color: '#2D3748', textTransform: 'capitalize' }}>
           {key.replace(/([A-Z])/g, ' $1').trim()}:
         </span>{' '}
-        {value}
+        {String(value)}
       </span>
     ))
 
   const getDayLabel = (dateStr) => {
-    const allDates = (TIMELINE_DATA[selectedPatient] || []).map((e) => e.date).sort()
-    if (allDates.length === 0) return ''
+    const allDates = events.map((e) => e.date).filter(Boolean).sort()
+    if (allDates.length === 0 || !dateStr) return ''
     const admissionDate = allDates[0]
     const diff = Math.floor(
       (new Date(dateStr) - new Date(admissionDate)) / (1000 * 60 * 60 * 24)
     )
     return `Day ${diff + 1}`
   }
+
+  const selectedInitials = initialsById[selectedPatient] || '—'
 
   return (
     <div style={{ padding: 24 }}>
@@ -497,6 +383,7 @@ export default function PatientTimeline() {
           <select
             value={selectedPatient}
             onChange={(e) => setSelectedPatient(e.target.value)}
+            disabled={loadingPatients || patients.length === 0}
             style={{
               padding: '8px 12px',
               borderRadius: 8,
@@ -506,14 +393,32 @@ export default function PatientTimeline() {
               background: '#fff',
             }}
           >
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>
+            {patients.length === 0 && <option value="">—</option>}
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>
                 {p.initials}
               </option>
             ))}
           </select>
         </div>
       </div>
+
+      {!isSupabaseReady() && (
+        <div
+          className="card"
+          style={{
+            padding: 16,
+            marginBottom: 20,
+            borderRadius: 12,
+            border: '1px solid #FEB2B2',
+            background: '#FFF5F5',
+            color: '#C53030',
+            fontSize: 14,
+          }}
+        >
+          Live data is unavailable — Supabase is not configured.
+        </div>
+      )}
 
       {/* Type Filters */}
       <div
@@ -588,8 +493,8 @@ export default function PatientTimeline() {
 
       {/* Summary */}
       <div style={{ marginBottom: 16, fontSize: 13, color: '#718096' }}>
-        Showing {entries.length} of {(TIMELINE_DATA[selectedPatient] || []).length} entries for{' '}
-        <strong>{selectedPatient}</strong>
+        Showing {entries.length} of {events.length} entries for{' '}
+        <strong>{selectedInitials}</strong>
       </div>
 
       {/* Timeline */}
@@ -607,7 +512,39 @@ export default function PatientTimeline() {
           }}
         />
 
-        {entries.length === 0 && (
+        {loadingEvents && (
+          <div
+            className="card"
+            style={{
+              padding: 32,
+              textAlign: 'center',
+              color: '#A0AEC0',
+              borderRadius: 12,
+              border: '1px solid #E2E8F0',
+              background: '#fff',
+            }}
+          >
+            Loading timeline…
+          </div>
+        )}
+
+        {!loadingEvents && events.length === 0 && (
+          <div
+            className="card"
+            style={{
+              padding: 32,
+              textAlign: 'center',
+              color: '#A0AEC0',
+              borderRadius: 12,
+              border: '1px solid #E2E8F0',
+              background: '#fff',
+            }}
+          >
+            No events recorded yet for this resident.
+          </div>
+        )}
+
+        {!loadingEvents && events.length > 0 && entries.length === 0 && (
           <div
             className="card"
             style={{
@@ -623,76 +560,74 @@ export default function PatientTimeline() {
           </div>
         )}
 
-        {entries.map((entry) => (
-          <div
-            key={entry.id}
-            style={{ position: 'relative', marginBottom: 12 }}
-          >
-            {/* Timeline dot */}
-            <div
-              style={{
-                position: 'absolute',
-                left: -22,
-                top: 16,
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                background: TYPE_COLORS[entry.type] || '#718096',
-                border: '2px solid #fff',
-                boxShadow: '0 0 0 2px ' + (TYPE_COLORS[entry.type] || '#718096'),
-              }}
-            />
-
-            <div
-              className="card"
-              style={{
-                padding: '14px 18px',
-                borderRadius: 10,
-                border: '1px solid #E2E8F0',
-                background: '#fff',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              }}
-            >
+        {!loadingEvents &&
+          entries.map((entry) => (
+            <div key={entry.id} style={{ position: 'relative', marginBottom: 12 }}>
+              {/* Timeline dot */}
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  marginBottom: 8,
-                  flexWrap: 'wrap',
+                  position: 'absolute',
+                  left: -22,
+                  top: 16,
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  background: TYPE_COLORS[entry.type] || '#718096',
+                  border: '2px solid #fff',
+                  boxShadow: '0 0 0 2px ' + (TYPE_COLORS[entry.type] || '#718096'),
+                }}
+              />
+
+              <div
+                className="card"
+                style={{
+                  padding: '14px 18px',
+                  borderRadius: 10,
+                  border: '1px solid #E2E8F0',
+                  background: '#fff',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 }}
               >
-                <span
+                <div
                   style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: '#2D3748',
-                    minWidth: 65,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    marginBottom: 8,
+                    flexWrap: 'wrap',
                   }}
                 >
-                  {getDayLabel(entry.date)}
-                </span>
-                <span style={{ fontSize: 12, color: '#718096' }}>
-                  {entry.date} {entry.time}
-                </span>
-                <span style={badgeStyle(entry.type)}>{entry.type}</span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: '#4A5568',
-                    background: '#EDF2F7',
-                    padding: '2px 8px',
-                    borderRadius: 6,
-                  }}
-                >
-                  {entry.author}
-                </span>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#2D3748',
+                      minWidth: 65,
+                    }}
+                  >
+                    {getDayLabel(entry.date)}
+                  </span>
+                  <span style={{ fontSize: 12, color: '#718096' }}>
+                    {entry.date} {entry.time}
+                  </span>
+                  <span style={badgeStyle(entry.type)}>{entry.type}</span>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: '#4A5568',
+                      background: '#EDF2F7',
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                    }}
+                  >
+                    {entry.author}
+                  </span>
+                </div>
+                <div style={{ lineHeight: 1.7 }}>{renderFields(entry.fields)}</div>
               </div>
-              <div style={{ lineHeight: 1.7 }}>{renderFields(entry.fields)}</div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   )
