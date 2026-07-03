@@ -1,4 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import {
+  isSupabaseReady,
+  getIncidents,
+  getStaff,
+  getStaffTraining,
+  addIncident,
+  updateIncident,
+} from '../../utils/supabase'
 
 /*
   Safeguarding Dashboard — per HR Manual Section 6
@@ -6,6 +14,7 @@ import React, { useState } from 'react'
   Golden Rules: "No client is turned away empty-handed" / "Every client leaves with a safety plan"
 */
 
+// ── Static reference taxonomy (KEEP) ──────────────────────
 const INCIDENT_TYPES = [
   'Physical Abuse',
   'Emotional Abuse',
@@ -15,6 +24,7 @@ const INCIDENT_TYPES = [
   'Spiritual Abuse',
 ]
 
+// Static reference: designated lead contact (policy content, not per-record data)
 const DSL_INFO = {
   name: 'Dr. Amina Ibrahim',
   role: 'Head of Clinical Services / Designated Safeguarding Lead',
@@ -23,45 +33,73 @@ const DSL_INFO = {
   deputy: 'Folake Adebayo (Program Manager)',
 }
 
-const STAFF_TRAINING = [
-  { initials: 'BO', role: 'Head Nurse', safeguardingTrained: true, expiryDate: '2026-06-20' },
-  { initials: 'AB', role: 'Day Nurse', safeguardingTrained: true, expiryDate: '2026-08-15' },
-  { initials: 'CE', role: 'Night Nurse', safeguardingTrained: false, expiryDate: null },
-  { initials: 'DO', role: 'House Master', safeguardingTrained: true, expiryDate: '2026-09-01' },
-  { initials: 'FA', role: 'Program Manager', safeguardingTrained: true, expiryDate: '2026-04-10' },
-  { initials: 'EN', role: 'Chaplain', safeguardingTrained: true, expiryDate: '2026-07-15' },
-  { initials: 'TA', role: 'Psychologist', safeguardingTrained: false, expiryDate: null },
-]
+// Which training modules count toward safeguarding / child-protection compliance
+const SAFEGUARDING_MODULE_RE = /safe\s*guard|child\s*protection/i
 
-const initIncidents = () => [
-  { id: 1, date: '2026-03-20', type: 'Emotional Abuse', reporter: 'BO', description: 'Client reported feeling bullied by another client during group activities.', action: 'Separated clients immediately. Individual counselling session arranged. Incident documented.', status: 'investigating' },
-  { id: 2, date: '2026-03-05', type: 'Neglect', reporter: 'DO', description: 'Observed client not receiving prescribed medication on night shift.', action: 'Medication protocol reviewed with night nurse. Additional checks implemented.', status: 'resolved' },
-  { id: 3, date: '2026-02-15', type: 'Financial Exploitation', reporter: 'FA', description: 'Family member attempting to access client personal funds without consent.', action: 'Family meeting arranged with social worker. Client funds secured. Legal advice sought.', status: 'resolved' },
-]
+const initialsFrom = (name = '') =>
+  name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join('') || '—'
 
-const AUDIT_RESULTS = [
-  { date: '2026-03-01', area: 'Staff DBS/Background Checks', score: 100, notes: 'All staff background checks current.' },
-  { date: '2026-03-01', area: 'Safeguarding Training Compliance', score: 71, notes: '5 of 7 staff completed training. 2 overdue.' },
-  { date: '2026-03-01', area: 'Incident Response Time', score: 95, notes: 'Average response time: 15 minutes. Target: 30 minutes.' },
-  { date: '2026-03-01', area: 'Client Safety Plans', score: 100, notes: 'All current clients have documented safety plans.' },
-  { date: '2026-03-01', area: 'Professional Boundaries', score: 90, notes: 'One minor concern addressed via supervision.' },
-]
-
-const BOUNDARY_CONCERNS = [
-  { date: '2026-02-28', staff: 'CE', concern: 'Observed exchanging personal phone numbers with a client.', action: 'Discussed in supervision. Policy reiterated. No further issues.' },
-]
+// Derive per-staff safeguarding training status from live staff + training rows.
+// status comes from the real training row; "not started" when no matching row exists.
+function deriveTraining(staff, training) {
+  return staff.map(s => {
+    const rows = training.filter(
+      t => t.staff_id === s.id && SAFEGUARDING_MODULE_RE.test(t.module || '')
+    )
+    const completed = rows.find(r => /complete/i.test(r.status || ''))
+    const chosen = completed || rows[0] || null
+    const status = chosen ? (chosen.status || 'in progress') : 'not started'
+    const trained = /complete/i.test(status)
+    return {
+      id: s.id,
+      initials: initialsFrom(s.full_name || s.name || ''),
+      role: s.role || s.title || '—',
+      status,
+      trained,
+      expiryDate: chosen?.expiry_date || null,
+    }
+  })
+}
 
 export default function SafeguardingDashboard() {
-  const [incidents, setIncidents] = useState(initIncidents)
+  const ready = isSupabaseReady()
+  const [loading, setLoading] = useState(true)
+  const [incidents, setIncidents] = useState([])
+  const [staffTraining, setStaffTraining] = useState([])
   const [showIncidentForm, setShowIncidentForm] = useState(false)
   const [incidentForm, setIncidentForm] = useState({ type: '', reporter: '', location: '', incidentDate: '', incidentTime: '', personsInvolved: [], witnesses: '', description: '', actions: [] })
 
-  const trainedCount = STAFF_TRAINING.filter(s => s.safeguardingTrained).length
-  const compliancePct = Math.round((trainedCount / STAFF_TRAINING.length) * 100)
-  const openIncidents = incidents.filter(i => i.status !== 'resolved').length
-  const avgAuditScore = Math.round(AUDIT_RESULTS.reduce((s, a) => s + a.score, 0) / AUDIT_RESULTS.length)
+  const load = async () => {
+    if (!ready) { setLoading(false); return }
+    setLoading(true)
+    const [incRes, staffRes, trainRes] = await Promise.all([
+      getIncidents(),
+      getStaff(),
+      getStaffTraining(),
+    ])
+    setIncidents(incRes.data || [])
+    setStaffTraining(deriveTraining(staffRes.data || [], trainRes.data || []))
+    setLoading(false)
+  }
 
-  const handleSubmitIncident = e => {
+  useEffect(() => { load() /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [])
+
+  const trainedCount = staffTraining.filter(s => s.trained).length
+  const compliancePct = staffTraining.length ? Math.round((trainedCount / staffTraining.length) * 100) : 0
+  const openIncidents = incidents.filter(i => (i.status || '').toLowerCase() !== 'resolved').length
+
+  // AUDIT_RESULTS and BOUNDARY_CONCERNS previously held mock per-record data with no
+  // backing table. Rather than fabricate, they render as empty states below.
+  const audits = []
+  const boundaryConcerns = []
+
+  const handleSubmitIncident = async e => {
     e.preventDefault()
     if (!incidentForm.type || !incidentForm.reporter || !incidentForm.location) return
     const descParts = [
@@ -72,17 +110,32 @@ export default function SafeguardingDashboard() {
       `Witnesses: ${incidentForm.witnesses || 'Not specified'}`,
     ].filter(Boolean).join('. ')
     const actionText = incidentForm.actions.length ? incidentForm.actions.join('; ') : 'Pending review by DSL'
-    setIncidents(prev => [{
-      id: Date.now(),
-      date: new Date().toISOString().split('T')[0],
+    const row = {
       type: incidentForm.type,
-      reporter: incidentForm.reporter,
-      description: descParts,
-      action: actionText,
+      description: `${descParts}. Actions: ${actionText}. Reported by: ${incidentForm.reporter}`,
       status: 'investigating',
-    }, ...prev])
+    }
+    const { error } = await addIncident(row)
+    if (error) { alert(`Could not save incident: ${error.message}`); return }
     setIncidentForm({ type: '', reporter: '', location: '', incidentDate: '', incidentTime: '', personsInvolved: [], witnesses: '', description: '', actions: [] })
     setShowIncidentForm(false)
+    load()
+  }
+
+  const setIncidentStatus = async (id, status) => {
+    setIncidents(prev => prev.map(i => i.id === id ? { ...i, status } : i))
+    await updateIncident(id, { status })
+  }
+
+  if (!ready) {
+    return (
+      <div>
+        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 8 }}>Safeguarding Dashboard</h1>
+        <div className="card" style={{ padding: 20, color: 'var(--g500)', fontSize: '.9rem' }}>
+          Live data is unavailable — Supabase is not configured for this environment.
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -101,14 +154,19 @@ export default function SafeguardingDashboard() {
         </div>
       </div>
 
+      {loading ? (
+        <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)', fontSize: '.9rem' }}>
+          Loading safeguarding data…
+        </div>
+      ) : (
+      <>
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
         {[
           { label: 'Training Compliance', value: `${compliancePct}%`, color: compliancePct >= 80 ? '#1A7A4A' : '#E53E3E' },
+          { label: 'Staff Trained', value: `${trainedCount}/${staffTraining.length}`, color: 'var(--blue)' },
           { label: 'Open Incidents', value: openIncidents, color: openIncidents > 0 ? '#E53E3E' : '#1A7A4A' },
-          { label: 'Boundary Concerns', value: BOUNDARY_CONCERNS.length, color: BOUNDARY_CONCERNS.length > 0 ? '#DD6B20' : '#1A7A4A' },
-          { label: 'Avg Audit Score', value: `${avgAuditScore}%`, color: avgAuditScore >= 80 ? '#1A7A4A' : '#E53E3E' },
-          { label: 'Total Incidents (YTD)', value: incidents.length, color: 'var(--blue)' },
+          { label: 'Total Incidents', value: incidents.length, color: 'var(--blue)' },
         ].map(kpi => (
           <div key={kpi.label} className="card" style={{ textAlign: 'center', padding: 14 }}>
             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
@@ -133,15 +191,18 @@ export default function SafeguardingDashboard() {
       {/* Staff Training Compliance */}
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 12 }}>Staff Safeguarding Training Status</h3>
+        {staffTraining.length === 0 ? (
+          <div style={{ fontSize: '.85rem', color: 'var(--g500)' }}>No staff records found.</div>
+        ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {STAFF_TRAINING.map(s => (
-            <div key={s.initials} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: 6, background: s.safeguardingTrained ? '#C6F6D522' : '#FED7D722' }}>
+          {staffTraining.map(s => (
+            <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: 6, background: s.trained ? '#C6F6D522' : '#FED7D722' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{
                   width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontWeight: 700, fontSize: '.75rem',
-                  background: s.safeguardingTrained ? '#C6F6D5' : '#FED7D7',
-                  color: s.safeguardingTrained ? '#22543D' : '#742A2A',
+                  background: s.trained ? '#C6F6D5' : '#FED7D7',
+                  color: s.trained ? '#22543D' : '#742A2A',
                 }}>{s.initials}</span>
                 <span style={{ fontSize: '.82rem' }}>
                   <strong>{s.initials}</strong> <span style={{ color: 'var(--g500)' }}>({s.role})</span>
@@ -151,55 +212,33 @@ export default function SafeguardingDashboard() {
                 {s.expiryDate && <span style={{ fontSize: '.72rem', color: 'var(--g400)' }}>Expires: {s.expiryDate}</span>}
                 <span style={{
                   padding: '3px 10px', borderRadius: 12, fontSize: '.7rem', fontWeight: 700,
-                  background: s.safeguardingTrained ? '#C6F6D5' : '#FED7D7',
-                  color: s.safeguardingTrained ? '#22543D' : '#742A2A',
+                  background: s.trained ? '#C6F6D5' : '#FED7D7',
+                  color: s.trained ? '#22543D' : '#742A2A',
                 }}>
-                  {s.safeguardingTrained ? 'Trained' : 'OVERDUE'}
+                  {s.trained ? 'Trained' : s.status === 'not started' ? 'NOT STARTED' : s.status.toUpperCase()}
                 </span>
               </div>
             </div>
           ))}
         </div>
+        )}
       </div>
 
-      {/* Audit Results */}
+      {/* Audit Results — no backing table; empty state instead of mock records */}
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
-        <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 12 }}>Recent Safeguarding Audit — {AUDIT_RESULTS[0]?.date}</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {AUDIT_RESULTS.map((a, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ flex: 1, fontSize: '.82rem', fontWeight: 600 }}>{a.area}</div>
-              <div style={{ width: 120, height: 8, borderRadius: 4, background: 'var(--g100)', overflow: 'hidden' }}>
-                <div style={{
-                  width: `${a.score}%`, height: '100%', borderRadius: 4,
-                  background: a.score >= 90 ? '#1A7A4A' : a.score >= 70 ? '#D69E2E' : '#E53E3E',
-                }} />
-              </div>
-              <span style={{ fontSize: '.78rem', fontWeight: 700, minWidth: 36, textAlign: 'right', color: a.score >= 90 ? '#1A7A4A' : a.score >= 70 ? '#D69E2E' : '#E53E3E' }}>
-                {a.score}%
-              </span>
-              <span style={{ fontSize: '.72rem', color: 'var(--g500)', flex: 1 }}>{a.notes}</span>
-            </div>
-          ))}
-        </div>
+        <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 12 }}>Safeguarding Audits</h3>
+        {audits.length === 0 ? (
+          <div style={{ fontSize: '.85rem', color: 'var(--g500)' }}>No audits recorded yet.</div>
+        ) : null}
       </div>
 
-      {/* Professional Boundary Concerns */}
-      {BOUNDARY_CONCERNS.length > 0 && (
-        <div className="card" style={{ padding: 18, marginBottom: 16, borderLeft: '4px solid #DD6B20' }}>
-          <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 10 }}>Professional Boundary Concerns</h3>
-          {BOUNDARY_CONCERNS.map((b, i) => (
-            <div key={i} style={{ fontSize: '.82rem', padding: '8px 0', borderTop: i > 0 ? '1px solid var(--g100)' : 'none' }}>
-              <div style={{ display: 'flex', gap: 12, marginBottom: 4 }}>
-                <span style={{ color: 'var(--g400)' }}>{b.date}</span>
-                <span style={{ fontWeight: 700 }}>Staff: {b.staff}</span>
-              </div>
-              <div style={{ color: 'var(--g600)' }}>{b.concern}</div>
-              <div style={{ color: '#1A7A4A', marginTop: 4 }}>Action: {b.action}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Professional Boundary Concerns — no backing table; empty state instead of mock records */}
+      <div className="card" style={{ padding: 18, marginBottom: 16, borderLeft: '4px solid #DD6B20' }}>
+        <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 10 }}>Professional Boundary Concerns</h3>
+        {boundaryConcerns.length === 0 ? (
+          <div style={{ fontSize: '.85rem', color: 'var(--g500)' }}>No boundary concerns logged.</div>
+        ) : null}
+      </div>
 
       {/* Incident Reporting */}
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
@@ -228,8 +267,8 @@ export default function SafeguardingDashboard() {
                 <select value={incidentForm.reporter} onChange={e => setIncidentForm(p => ({ ...p, reporter: e.target.value }))}
                   style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }}>
                   <option value="">Select reporter</option>
-                  {['EA (Program Director)', 'AI (Clinical Lead)', 'BO (Head Nurse)', 'EN (Chaplain)', 'FA (Program Manager)', 'DO (House Master)', 'AB (Nurse)', 'CE (Nurse)', 'TA (Psychologist)', 'MO (Social Worker)'].map(s => (
-                    <option key={s} value={s.split(' ')[0]}>{s}</option>
+                  {staffTraining.map(s => (
+                    <option key={s.id} value={s.initials}>{s.initials} ({s.role})</option>
                   ))}
                 </select>
               </div>
@@ -262,12 +301,7 @@ export default function SafeguardingDashboard() {
                 <label style={{ fontSize: '.75rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Persons Involved</label>
                 <select multiple value={incidentForm.personsInvolved} onChange={e => setIncidentForm(p => ({ ...p, personsInvolved: Array.from(e.target.selectedOptions, o => o.value) }))}
                   style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem', minHeight: 80 }}>
-                  <optgroup label="Patients">
-                    {['CO', 'AN', 'KA', 'IM'].map(pt => <option key={pt} value={`Patient ${pt}`}>Patient {pt}</option>)}
-                  </optgroup>
-                  <optgroup label="Staff">
-                    {['EA', 'AI', 'BO', 'EN', 'FA', 'DO', 'AB', 'CE', 'TA', 'MO'].map(st => <option key={st} value={`Staff ${st}`}>Staff {st}</option>)}
-                  </optgroup>
+                  {staffTraining.map(s => <option key={s.id} value={`Staff ${s.initials}`}>Staff {s.initials}</option>)}
                 </select>
                 <div style={{ fontSize: '.68rem', color: 'var(--g400)', marginTop: 2 }}>Hold Ctrl/Cmd to select multiple</div>
               </div>
@@ -309,32 +343,42 @@ export default function SafeguardingDashboard() {
         )}
 
         {/* Incident List */}
+        {incidents.length === 0 ? (
+          <div style={{ fontSize: '.85rem', color: 'var(--g500)' }}>No incidents recorded yet.</div>
+        ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {incidents.map(inc => (
-            <div key={inc.id} style={{ padding: 12, borderRadius: 8, border: '1px solid var(--g100)', borderLeft: `4px solid ${inc.status === 'resolved' ? '#1A7A4A' : '#E53E3E'}` }}>
+          {incidents.map(inc => {
+            const status = (inc.status || 'investigating').toLowerCase()
+            const dateStr = (inc.created_at || '').split('T')[0]
+            return (
+            <div key={inc.id} style={{ padding: 12, borderRadius: 8, border: '1px solid var(--g100)', borderLeft: `4px solid ${status === 'resolved' ? '#1A7A4A' : '#E53E3E'}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontWeight: 700, fontSize: '.85rem' }}>{inc.type}</span>
+                  <span style={{ fontWeight: 700, fontSize: '.85rem' }}>{inc.type || 'Incident'}</span>
+                  {inc.tier && (
+                    <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: '.66rem', fontWeight: 700, background: 'var(--g100)', color: 'var(--g600)' }}>
+                      Tier {inc.tier}
+                    </span>
+                  )}
                   <span style={{
                     padding: '2px 8px', borderRadius: 12, fontSize: '.66rem', fontWeight: 700,
-                    background: inc.status === 'resolved' ? '#C6F6D5' : inc.status === 'escalated' ? '#FEF3C7' : '#FED7D7',
-                    color: inc.status === 'resolved' ? '#22543D' : inc.status === 'escalated' ? '#92400E' : '#742A2A',
+                    background: status === 'resolved' ? '#C6F6D5' : status === 'escalated' ? '#FEF3C7' : '#FED7D7',
+                    color: status === 'resolved' ? '#22543D' : status === 'escalated' ? '#92400E' : '#742A2A',
                   }}>
-                    {inc.status === 'resolved' ? 'Resolved' : inc.status === 'escalated' ? 'Escalated' : 'Investigating'}
+                    {status === 'resolved' ? 'Resolved' : status === 'escalated' ? 'Escalated' : 'Investigating'}
                   </span>
                 </div>
-                <span style={{ fontSize: '.75rem', color: 'var(--g400)' }}>{inc.date}</span>
+                <span style={{ fontSize: '.75rem', color: 'var(--g400)' }}>{dateStr}</span>
               </div>
               <div style={{ fontSize: '.8rem', color: 'var(--g600)', marginBottom: 4 }}>{inc.description}</div>
-              <div style={{ fontSize: '.78rem', color: 'var(--g500)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <span><strong>Action:</strong> {inc.action} &middot; <em>Reported by: {inc.reporter}</em></span>
-                {inc.status !== 'resolved' && (
+              <div style={{ fontSize: '.78rem', color: 'var(--g500)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                {status !== 'resolved' && (
                   <span style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => setIncidents(prev => prev.map(i => i.id === inc.id ? { ...i, status: 'resolved' } : i))}
+                    <button onClick={() => setIncidentStatus(inc.id, 'resolved')}
                       style={{ padding: '3px 10px', borderRadius: 6, border: 'none', background: '#C6F6D5', color: '#22543D', cursor: 'pointer', fontSize: '.72rem', fontWeight: 700 }}>
                       Resolve
                     </button>
-                    <button onClick={() => setIncidents(prev => prev.map(i => i.id === inc.id ? { ...i, status: 'escalated' } : i))}
+                    <button onClick={() => setIncidentStatus(inc.id, 'escalated')}
                       style={{ padding: '3px 10px', borderRadius: 6, border: 'none', background: '#FED7D7', color: '#742A2A', cursor: 'pointer', fontSize: '.72rem', fontWeight: 700 }}>
                       Escalate
                     </button>
@@ -342,9 +386,12 @@ export default function SafeguardingDashboard() {
                 )}
               </div>
             </div>
-          ))}
+          )})}
         </div>
+        )}
       </div>
+      </>
+      )}
     </div>
   )
 }

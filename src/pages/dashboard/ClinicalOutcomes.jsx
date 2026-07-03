@@ -1,19 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { isSupabaseReady, getPatients, getAssessments, addAssessment } from '../../utils/supabase'
+import { activeBriefs, initialsFromName } from '../../utils/patients'
 
 /*
-  Clinical Outcomes — Validated clinical instruments for admission vs discharge comparison.
-  AUDIT, DAST-10, PHQ-9, GAD-7.
-  REPLACES OutcomeTracking.jsx with proper clinical measurement.
+  Clinical Outcomes — Validated clinical instruments, tracked over time per patient.
+  AUDIT, DAST-10, PHQ-9, GAD-7 — persisted to the `assessments` table (one type per instrument).
+  Baseline (oldest row) vs Current (newest row) comparison.
   HIPAA: initials only. ALL fields are selects — ZERO free text.
 */
-
-const PATIENTS = [
-  { initials: 'CO', id: 'P001', day: 23, phase: 'foundation' },
-  { initials: 'AN', id: 'P002', day: 45, phase: 'deepening' },
-  { initials: 'KA', id: 'P003', day: 74, phase: 'reintegration' },
-  { initials: 'IM', id: 'P004', day: 8, phase: 'stabilization' },
-]
 
 /* ───── AUDIT (Alcohol Use Disorders Identification Test) ───── */
 const AUDIT_QUESTIONS = [
@@ -98,33 +93,37 @@ const gad7Risk = (score) => {
   return { label: 'Severe', color: '#742A2A' }
 }
 
-/* ───── Mock data ───── */
-const buildInitial = () => ({
-  CO: {
-    audit: { adm: [4,3,3,3,2,2,3,2,2,4], cur: [1,1,1,1,0,0,1,0,0,0] },
-    dast:  { adm: [1,1,0,1,1,1,1,0,1,1], cur: [0,0,0,0,0,0,0,0,0,0] },
-    phq9:  { adm: [2,3,2,2,1,2,2,1,1], cur: [1,1,1,1,0,1,1,0,0] },
-    gad7:  { adm: [2,2,3,2,1,2,2], cur: [1,1,1,1,0,1,0] },
+/* ───── Instrument registry ─────
+   Each instrument persists to `assessments` under its own `type`.
+   `options(idx)` returns the { label, value } choices for a given question. */
+const INSTRUMENTS = [
+  {
+    key: 'audit', type: 'audit', label: 'AUDIT', full: 'Alcohol Use Disorders Identification Test',
+    max: 40, riskFn: auditRisk, count: AUDIT_QUESTIONS.length,
+    questionText: (i) => AUDIT_QUESTIONS[i].q,
+    options: (i) => AUDIT_QUESTIONS[i].opts.map((o, v) => ({ label: o, value: v })).filter(o => o.label !== ''),
   },
-  AN: {
-    audit: { adm: [4,4,4,4,3,3,4,3,4,4], cur: [0,0,0,0,0,0,0,0,0,0] },
-    dast:  { adm: [1,1,1,1,1,1,1,1,1,1], cur: [0,0,0,0,0,0,0,0,0,0] },
-    phq9:  { adm: [3,3,3,3,2,3,2,2,2], cur: [1,1,0,1,0,0,0,0,0] },
-    gad7:  { adm: [3,3,3,2,2,3,3], cur: [0,1,0,0,0,0,0] },
+  {
+    key: 'dast', type: 'dast', label: 'DAST-10', full: 'Drug Abuse Screening Test',
+    max: 10, riskFn: dastRisk, count: DAST_QUESTIONS.length,
+    questionText: (i) => DAST_QUESTIONS[i],
+    options: () => [{ label: 'No', value: 0 }, { label: 'Yes', value: 1 }],
   },
-  KA: {
-    audit: { adm: [3,3,3,2,2,2,3,2,2,2], cur: [0,0,0,0,0,0,0,0,0,0] },
-    dast:  { adm: [0,0,0,0,0,0,0,0,0,0], cur: [0,0,0,0,0,0,0,0,0,0] },
-    phq9:  { adm: [2,2,2,2,1,2,1,1,0], cur: [0,0,0,0,0,0,0,0,0] },
-    gad7:  { adm: [2,2,2,1,1,2,1], cur: [0,0,0,0,0,0,0] },
+  {
+    key: 'phq9', type: 'phq9', label: 'PHQ-9', full: 'Patient Health Questionnaire — Depression',
+    max: 27, riskFn: phq9Risk, count: PHQ9_QUESTIONS.length,
+    questionText: (i) => PHQ9_QUESTIONS[i],
+    options: () => PHQ_OPTS.map((o, v) => ({ label: o, value: v })),
   },
-  IM: {
-    audit: { adm: [4,4,4,4,4,4,4,4,4,4], cur: [4,4,4,4,3,3,4,3,4,4] },
-    dast:  { adm: [1,1,1,1,1,1,1,1,1,1], cur: [1,1,1,1,1,1,1,0,1,1] },
-    phq9:  { adm: [3,3,3,3,3,3,3,3,3], cur: [3,3,3,2,2,3,2,2,2] },
-    gad7:  { adm: [3,3,3,3,3,3,3], cur: [3,3,2,2,2,3,2] },
+  {
+    key: 'gad7', type: 'gad7', label: 'GAD-7', full: 'Generalised Anxiety Disorder',
+    max: 21, riskFn: gad7Risk, count: GAD7_QUESTIONS.length,
+    questionText: (i) => GAD7_QUESTIONS[i],
+    options: () => PHQ_OPTS.map((o, v) => ({ label: o, value: v })),
   },
-})
+]
+
+const emptyDraft = () => Object.fromEntries(INSTRUMENTS.map(i => [i.key, Array(i.count).fill(0)]))
 
 const selectS = { padding: '6px 8px', borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.78rem', width: '100%' }
 const labelS = { fontSize: '.72rem', fontWeight: 600, color: 'var(--g500)', display: 'block', marginBottom: 2 }
@@ -154,208 +153,260 @@ function ImprovementBadge({ admScore, curScore }) {
 
 export default function ClinicalOutcomes() {
   const { user } = useAuth()
-  const [data, setData] = useState(buildInitial)
-  const [selected, setSelected] = useState('CO')
+  const [patients, setPatients] = useState([])
+  const [selected, setSelected] = useState('') // patient_id
+  const [results, setResults] = useState({}) // keyed by instrument key
+  const [draft, setDraft] = useState(emptyDraft) // new-assessment answers, keyed by instrument key
   const [expandedInstrument, setExpandedInstrument] = useState('audit')
+  const [loading, setLoading] = useState(true)
+  const [loadingResults, setLoadingResults] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  const d = data[selected]
+  const selectedInitials = patients.find(p => p.id === selected)?.initials || ''
 
-  const updateScore = (instrument, timing, idx, val) => {
-    setData(prev => {
-      const copy = { ...prev }
-      const patientCopy = { ...copy[selected] }
-      const instCopy = { ...patientCopy[instrument] }
-      const arrCopy = [...instCopy[timing]]
-      arrCopy[idx] = parseInt(val)
-      instCopy[timing] = arrCopy
-      patientCopy[instrument] = instCopy
-      copy[selected] = patientCopy
-      return copy
+  // Load the active-resident roster once.
+  const loadPatients = useCallback(async () => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    setLoading(true)
+    const { data: rows } = await getPatients()
+    const briefs = activeBriefs(rows)
+    setPatients(briefs)
+    setSelected(prev => prev || briefs[0]?.id || '')
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { loadPatients() }, [loadPatients])
+
+  // Load every instrument's assessment history for the selected patient.
+  // getAssessments returns rows newest-first: newest = Current, oldest = Baseline.
+  const loadResults = useCallback(async (pid) => {
+    if (!pid || !isSupabaseReady()) { setResults({}); return }
+    setLoadingResults(true)
+    const entries = await Promise.all(INSTRUMENTS.map(async (inst) => {
+      const { data } = await getAssessments(pid, inst.type)
+      const rows = data || []
+      const cur = rows[0] || null
+      const adm = rows.length ? rows[rows.length - 1] : null
+      return [inst.key, {
+        assessed: rows.length > 0,
+        count: rows.length,
+        admScore: adm?.score ?? 0,
+        curScore: cur?.score ?? 0,
+        admResponses: adm?.responses || null,
+        curResponses: cur?.responses || null,
+        curAt: cur?.created_at || null,
+        curBy: cur?.assessed_by_code || null,
+      }]
+    }))
+    setResults(Object.fromEntries(entries))
+    setDraft(emptyDraft())
+    setLoadingResults(false)
+  }, [])
+
+  useEffect(() => { if (selected) loadResults(selected) }, [selected, loadResults])
+
+  const updateDraft = (instKey, idx, val) => {
+    setDraft(prev => {
+      const arr = [...prev[instKey]]
+      arr[idx] = parseInt(val)
+      return { ...prev, [instKey]: arr }
     })
   }
 
-  const auditAdm = sumArr(d.audit.adm)
-  const auditCur = sumArr(d.audit.cur)
-  const dastAdm = sumArr(d.dast.adm)
-  const dastCur = sumArr(d.dast.cur)
-  const phq9Adm = sumArr(d.phq9.adm)
-  const phq9Cur = sumArr(d.phq9.cur)
-  const gad7Adm = sumArr(d.gad7.adm)
-  const gad7Cur = sumArr(d.gad7.cur)
-
-  const instruments = [
-    { key: 'audit', label: 'AUDIT', full: 'Alcohol Use Disorders Identification Test', admScore: auditAdm, curScore: auditCur, max: 40, riskFn: auditRisk },
-    { key: 'dast', label: 'DAST-10', full: 'Drug Abuse Screening Test', admScore: dastAdm, curScore: dastCur, max: 10, riskFn: dastRisk },
-    { key: 'phq9', label: 'PHQ-9', full: 'Patient Health Questionnaire — Depression', admScore: phq9Adm, curScore: phq9Cur, max: 27, riskFn: phq9Risk },
-    { key: 'gad7', label: 'GAD-7', full: 'Generalised Anxiety Disorder', admScore: gad7Adm, curScore: gad7Cur, max: 21, riskFn: gad7Risk },
-  ]
-
-  const renderQuestions = (instKey) => {
-    if (instKey === 'audit') {
-      return AUDIT_QUESTIONS.map((q, idx) => {
-        const validOpts = q.opts.map((o, i) => ({ label: o, value: i })).filter(o => o.label !== '')
-        return (
-          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 170px 170px', gap: 8, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--g100)' }}>
-            <div style={{ fontSize: '.8rem', color: 'var(--g700)' }}><strong>Q{idx + 1}:</strong> {q.q}</div>
-            <div>
-              <label style={labelS}>Admission</label>
-              <select value={d.audit.adm[idx]} onChange={e => updateScore('audit', 'adm', idx, e.target.value)} style={selectS}>
-                {validOpts.map(o => <option key={o.value} value={o.value}>{o.label} ({o.value})</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={labelS}>Current</label>
-              <select value={d.audit.cur[idx]} onChange={e => updateScore('audit', 'cur', idx, e.target.value)} style={selectS}>
-                {validOpts.map(o => <option key={o.value} value={o.value}>{o.label} ({o.value})</option>)}
-              </select>
-            </div>
-          </div>
-        )
-      })
-    }
-    if (instKey === 'dast') {
-      return DAST_QUESTIONS.map((q, idx) => (
-        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 170px 170px', gap: 8, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--g100)' }}>
-          <div style={{ fontSize: '.8rem', color: 'var(--g700)' }}><strong>Q{idx + 1}:</strong> {q}</div>
-          <div>
-            <label style={labelS}>Admission</label>
-            <select value={d.dast.adm[idx]} onChange={e => updateScore('dast', 'adm', idx, e.target.value)} style={selectS}>
-              <option value={0}>No (0)</option>
-              <option value={1}>Yes (1)</option>
-            </select>
-          </div>
-          <div>
-            <label style={labelS}>Current</label>
-            <select value={d.dast.cur[idx]} onChange={e => updateScore('dast', 'cur', idx, e.target.value)} style={selectS}>
-              <option value={0}>No (0)</option>
-              <option value={1}>Yes (1)</option>
-            </select>
-          </div>
-        </div>
-      ))
-    }
-    if (instKey === 'phq9') {
-      return PHQ9_QUESTIONS.map((q, idx) => (
-        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 170px 170px', gap: 8, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--g100)' }}>
-          <div style={{ fontSize: '.8rem', color: 'var(--g700)' }}><strong>Q{idx + 1}:</strong> {q}</div>
-          <div>
-            <label style={labelS}>Admission</label>
-            <select value={d.phq9.adm[idx]} onChange={e => updateScore('phq9', 'adm', idx, e.target.value)} style={selectS}>
-              {PHQ_OPTS.map((o, i) => <option key={i} value={i}>{o} ({i})</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={labelS}>Current</label>
-            <select value={d.phq9.cur[idx]} onChange={e => updateScore('phq9', 'cur', idx, e.target.value)} style={selectS}>
-              {PHQ_OPTS.map((o, i) => <option key={i} value={i}>{o} ({i})</option>)}
-            </select>
-          </div>
-        </div>
-      ))
-    }
-    if (instKey === 'gad7') {
-      return GAD7_QUESTIONS.map((q, idx) => (
-        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 170px 170px', gap: 8, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--g100)' }}>
-          <div style={{ fontSize: '.8rem', color: 'var(--g700)' }}><strong>Q{idx + 1}:</strong> {q}</div>
-          <div>
-            <label style={labelS}>Admission</label>
-            <select value={d.gad7.adm[idx]} onChange={e => updateScore('gad7', 'adm', idx, e.target.value)} style={selectS}>
-              {PHQ_OPTS.map((o, i) => <option key={i} value={i}>{o} ({i})</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={labelS}>Current</label>
-            <select value={d.gad7.cur[idx]} onChange={e => updateScore('gad7', 'cur', idx, e.target.value)} style={selectS}>
-              {PHQ_OPTS.map((o, i) => <option key={i} value={i}>{o} ({i})</option>)}
-            </select>
-          </div>
-        </div>
-      ))
-    }
-    return null
+  const handleSubmit = async (inst) => {
+    if (!selected || saving) return
+    const answers = draft[inst.key]
+    const score = sumArr(answers)
+    const level = inst.riskFn(score).label
+    const code = user?.name ? initialsFromName(user.name) : 'ST'
+    setSaving(true)
+    const { error } = await addAssessment({
+      patient_id: selected,
+      type: inst.type,
+      score,
+      level,
+      responses: answers,
+      assessed_by_code: code,
+    })
+    setSaving(false)
+    if (error) { alert(`Could not save ${inst.label}: ${error.message}`); return }
+    await loadResults(selected)
   }
+
+  const inst = INSTRUMENTS.find(i => i.key === expandedInstrument)
+  const detail = results[expandedInstrument] || {}
+  const draftScore = sumArr(draft[expandedInstrument] || [])
+  const draftRisk = inst.riskFn(draftScore)
 
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Clinical Outcomes</h1>
-        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Validated clinical instruments — Admission vs Current/Discharge comparison</p>
+        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Validated clinical instruments — Baseline vs Current comparison, tracked over time</p>
       </div>
 
-      {/* Patient Selector */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        {PATIENTS.map(pt => (
-          <button key={pt.initials} onClick={() => setSelected(pt.initials)}
-            style={{
-              padding: '10px 20px', borderRadius: 8, border: selected === pt.initials ? '2px solid var(--blue)' : '1px solid var(--g200)',
-              background: selected === pt.initials ? 'var(--blue)' : '#fff', color: selected === pt.initials ? '#fff' : 'var(--g700)',
-              cursor: 'pointer', fontWeight: 600, fontSize: '.9rem',
-            }}>
-            {pt.initials} <span style={{ fontSize: '.75rem', opacity: .8 }}>Day {PATIENTS.find(p => p.initials === pt.initials).day}</span>
-          </button>
-        ))}
-      </div>
+      {!isSupabaseReady() && (
+        <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+          <p style={{ fontSize: '.85rem', color: 'var(--g500)' }}>Supabase is not configured — clinical outcomes are unavailable.</p>
+        </div>
+      )}
 
-      {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, marginBottom: 24 }}>
-        {instruments.map(inst => (
-          <div className="card" key={inst.key} style={{ padding: 16, cursor: 'pointer', border: expandedInstrument === inst.key ? '2px solid var(--blue)' : '1px solid var(--g200)' }}
-            onClick={() => setExpandedInstrument(inst.key)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1rem' }}>{inst.label}</h4>
-              <ImprovementBadge admScore={inst.admScore} curScore={inst.curScore} />
+      {isSupabaseReady() && loading && (
+        <div className="card" style={{ padding: 20 }}>
+          <p style={{ fontSize: '.85rem', color: 'var(--g500)' }}>Loading residents…</p>
+        </div>
+      )}
+
+      {isSupabaseReady() && !loading && patients.length === 0 && (
+        <div className="card" style={{ padding: 20 }}>
+          <p style={{ fontSize: '.85rem', color: 'var(--g500)' }}>No active residents to assess.</p>
+        </div>
+      )}
+
+      {isSupabaseReady() && !loading && patients.length > 0 && (
+        <>
+          {/* Patient Selector */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+            {patients.map(pt => (
+              <button key={pt.id} onClick={() => setSelected(pt.id)}
+                style={{
+                  padding: '10px 20px', borderRadius: 8, border: selected === pt.id ? '2px solid var(--blue)' : '1px solid var(--g200)',
+                  background: selected === pt.id ? 'var(--blue)' : '#fff', color: selected === pt.id ? '#fff' : 'var(--g700)',
+                  cursor: 'pointer', fontWeight: 600, fontSize: '.9rem',
+                }}>
+                {pt.initials}
+              </button>
+            ))}
+          </div>
+
+          {loadingResults && (
+            <div className="card" style={{ padding: 20, marginBottom: 24 }}>
+              <p style={{ fontSize: '.85rem', color: 'var(--g500)' }}>Loading assessments…</p>
             </div>
-            <p style={{ fontSize: '.72rem', color: 'var(--g500)', marginBottom: 10 }}>{inst.full}</p>
-            <div style={{ marginBottom: 6 }}>
-              <label style={{ fontSize: '.7rem', color: 'var(--g400)' }}>Admission ({inst.admScore}/{inst.max})</label>
-              <ScoreBar score={inst.admScore} max={inst.max} riskFn={inst.riskFn} />
-            </div>
-            <div>
-              <label style={{ fontSize: '.7rem', color: 'var(--g400)' }}>Current ({inst.curScore}/{inst.max})</label>
-              <ScoreBar score={inst.curScore} max={inst.max} riskFn={inst.riskFn} />
+          )}
+
+          {/* Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, marginBottom: 24 }}>
+            {INSTRUMENTS.map(i => {
+              const r = results[i.key] || {}
+              return (
+                <div className="card" key={i.key} style={{ padding: 16, cursor: 'pointer', border: expandedInstrument === i.key ? '2px solid var(--blue)' : '1px solid var(--g200)' }}
+                  onClick={() => setExpandedInstrument(i.key)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1rem' }}>{i.label}</h4>
+                    {r.assessed && r.count > 1 && <ImprovementBadge admScore={r.admScore} curScore={r.curScore} />}
+                  </div>
+                  <p style={{ fontSize: '.72rem', color: 'var(--g500)', marginBottom: 10 }}>{i.full}</p>
+                  {!r.assessed ? (
+                    <p style={{ fontSize: '.78rem', color: 'var(--g400)', fontStyle: 'italic' }}>Not assessed</p>
+                  ) : (
+                    <>
+                      {r.count > 1 && (
+                        <div style={{ marginBottom: 6 }}>
+                          <label style={{ fontSize: '.7rem', color: 'var(--g400)' }}>Baseline ({r.admScore}/{i.max})</label>
+                          <ScoreBar score={r.admScore} max={i.max} riskFn={i.riskFn} />
+                        </div>
+                      )}
+                      <div>
+                        <label style={{ fontSize: '.7rem', color: 'var(--g400)' }}>{r.count > 1 ? 'Current' : 'Latest'} ({r.curScore}/{i.max})</label>
+                        <ScoreBar score={r.curScore} max={i.max} riskFn={i.riskFn} />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Clinical Outcomes Summary */}
+          <div className="card" style={{ padding: 20, marginBottom: 24, background: '#F7FAFC' }}>
+            <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', marginBottom: 12 }}>Clinical Outcomes Summary — {selectedInitials}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+              {INSTRUMENTS.map(i => {
+                const r = results[i.key] || {}
+                if (!r.assessed) {
+                  return (
+                    <div key={i.key} style={{ padding: 12, borderRadius: 8, background: '#fff', border: '1px solid var(--g200)' }}>
+                      <div style={{ fontSize: '.82rem', fontWeight: 700, marginBottom: 6 }}>{i.label}</div>
+                      <div style={{ fontSize: '.78rem', color: 'var(--g400)', fontStyle: 'italic' }}>Not assessed</div>
+                    </div>
+                  )
+                }
+                const admRisk = i.riskFn(r.admScore)
+                const curRisk = i.riskFn(r.curScore)
+                const improved = r.admScore > r.curScore
+                return (
+                  <div key={i.key} style={{ padding: 12, borderRadius: 8, background: '#fff', border: '1px solid var(--g200)' }}>
+                    <div style={{ fontSize: '.82rem', fontWeight: 700, marginBottom: 6 }}>{i.label}</div>
+                    {r.count > 1 && (
+                      <div style={{ fontSize: '.78rem', color: 'var(--g600)', marginBottom: 4 }}>
+                        Baseline: <span style={{ color: admRisk.color, fontWeight: 600 }}>{admRisk.label} ({r.admScore})</span>
+                      </div>
+                    )}
+                    <div style={{ fontSize: '.78rem', color: 'var(--g600)', marginBottom: 4 }}>
+                      {r.count > 1 ? 'Current' : 'Latest'}: <span style={{ color: curRisk.color, fontWeight: 600 }}>{curRisk.label} ({r.curScore})</span>
+                    </div>
+                    {r.count > 1 && (
+                      <div style={{ fontSize: '.78rem', color: improved ? '#1A7A4A' : '#E53E3E', fontWeight: 600 }}>
+                        {improved ? 'Improved' : r.admScore === r.curScore ? 'No change' : 'Worsened'}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* Clinical Outcomes Summary */}
-      <div className="card" style={{ padding: 20, marginBottom: 24, background: '#F7FAFC' }}>
-        <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', marginBottom: 12 }}>Clinical Outcomes Summary — {selected}</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-          {instruments.map(inst => {
-            const admRisk = inst.riskFn(inst.admScore)
-            const curRisk = inst.riskFn(inst.curScore)
-            const improved = inst.admScore > inst.curScore
-            return (
-              <div key={inst.key} style={{ padding: 12, borderRadius: 8, background: '#fff', border: '1px solid var(--g200)' }}>
-                <div style={{ fontSize: '.82rem', fontWeight: 700, marginBottom: 6 }}>{inst.label}</div>
-                <div style={{ fontSize: '.78rem', color: 'var(--g600)', marginBottom: 4 }}>
-                  Admission: <span style={{ color: admRisk.color, fontWeight: 600 }}>{admRisk.label} ({inst.admScore})</span>
-                </div>
-                <div style={{ fontSize: '.78rem', color: 'var(--g600)', marginBottom: 4 }}>
-                  Current: <span style={{ color: curRisk.color, fontWeight: 600 }}>{curRisk.label} ({inst.curScore})</span>
-                </div>
-                <div style={{ fontSize: '.78rem', color: improved ? '#1A7A4A' : '#E53E3E', fontWeight: 600 }}>
-                  {improved ? 'Improved' : inst.admScore === inst.curScore ? 'No change' : 'Worsened'}
-                </div>
+          {/* Expanded Instrument — record a new assessment */}
+          <div className="card" style={{ padding: 20 }}>
+            <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', marginBottom: 4 }}>
+              {inst.label} — Record Assessment
+            </h3>
+            <p style={{ fontSize: '.8rem', color: 'var(--g500)', marginBottom: 16 }}>
+              {inst.full}
+              {detail.assessed
+                ? ` · Latest recorded ${detail.curAt ? detail.curAt.slice(0, 10) : ''}${detail.curBy ? ` by ${detail.curBy}` : ''}`
+                : ' · Not yet assessed'}
+            </p>
+            <div style={{ overflowX: 'auto' }}>
+              {Array.from({ length: inst.count }).map((_, idx) => {
+                const opts = inst.options(idx)
+                const latestVal = detail.curResponses ? detail.curResponses[idx] : null
+                const latestLabel = latestVal != null ? (opts.find(o => o.value === latestVal)?.label ?? '—') : '—'
+                return (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 170px 170px', gap: 8, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--g100)' }}>
+                    <div style={{ fontSize: '.8rem', color: 'var(--g700)' }}><strong>Q{idx + 1}:</strong> {inst.questionText(idx)}</div>
+                    <div>
+                      <label style={labelS}>Latest recorded</label>
+                      <div style={{ ...selectS, background: 'var(--g100)', color: 'var(--g600)' }}>{latestLabel}</div>
+                    </div>
+                    <div>
+                      <label style={labelS}>New entry</label>
+                      <select value={draft[inst.key][idx]} onChange={e => updateDraft(inst.key, idx, e.target.value)} style={selectS}>
+                        {opts.map(o => <option key={o.value} value={o.value}>{o.label} ({o.value})</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '.82rem' }}>
+                New entry score: <span style={{ fontWeight: 700, color: draftRisk.color }}>{draftScore}/{inst.max}</span>
+                <span style={{ fontSize: '.72rem', padding: '2px 8px', borderRadius: 10, marginLeft: 8, background: draftRisk.color + '18', color: draftRisk.color, fontWeight: 600 }}>{draftRisk.label}</span>
               </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Expanded Instrument Detail */}
-      <div className="card" style={{ padding: 20 }}>
-        <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', marginBottom: 4 }}>
-          {instruments.find(i => i.key === expandedInstrument)?.label} — Question-by-Question
-        </h3>
-        <p style={{ fontSize: '.8rem', color: 'var(--g500)', marginBottom: 16 }}>
-          {instruments.find(i => i.key === expandedInstrument)?.full}
-        </p>
-        <div style={{ overflowX: 'auto' }}>
-          {renderQuestions(expandedInstrument)}
-        </div>
-      </div>
+              <button onClick={() => handleSubmit(inst)} disabled={saving || !selected}
+                style={{
+                  padding: '10px 20px', borderRadius: 8, border: 'none',
+                  background: saving ? 'var(--g300)' : 'var(--blue)', color: '#fff',
+                  cursor: saving ? 'default' : 'pointer', fontWeight: 600, fontSize: '.85rem',
+                }}>
+                {saving ? 'Saving…' : `Record ${inst.label}`}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
