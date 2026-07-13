@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { isSupabaseReady, getStaffMember, updateStaff } from '../../utils/supabase'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { isSupabaseReady, getStaffMember, updateStaff, deleteStaff } from '../../utils/supabase'
 
 const deptColors = {
   Leadership: 'var(--blue)',
@@ -17,6 +17,7 @@ const STATUS_OPTIONS = ['active', 'on_leave', 'suspended', 'inactive']
 
 export default function StaffDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [staff, setStaff] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -68,6 +69,15 @@ export default function StaffDetail() {
     setNoteText('')
   }
 
+  async function handleDelete() {
+    if (!window.confirm(`Remove ${staff?.full_name || 'this staff member'} from the directory? This cannot be undone.`)) return
+    setSaving(true)
+    const { error } = await deleteStaff(id)
+    setSaving(false)
+    if (error) { alert('Failed to remove staff: ' + error.message); return }
+    navigate('/dashboard/staff')
+  }
+
   if (loading) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--g500)', fontSize: '.88rem' }}>Loading staff member…</div>
   }
@@ -91,10 +101,16 @@ export default function StaffDetail() {
 
   return (
     <div>
-      {/* Back link */}
-      <Link to="/dashboard/staff" style={{ color: 'var(--blue)', fontWeight: 600, fontSize: '.84rem', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>
-        &larr; Back to Staff Directory
-      </Link>
+      {/* Back link + delete */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Link to="/dashboard/staff" style={{ color: 'var(--blue)', fontWeight: 600, fontSize: '.84rem', textDecoration: 'none' }}>
+          &larr; Back to Staff Directory
+        </Link>
+        <button onClick={handleDelete} disabled={saving}
+          style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #FED7D7', background: '#fff', color: '#E53E3E', cursor: saving ? 'default' : 'pointer', fontSize: '.78rem', fontWeight: 700 }}>
+          Delete Staff Member
+        </button>
+      </div>
 
       {/* Staff Info Card */}
       <div className="card" style={{ padding: 24, marginBottom: 20 }}>

@@ -485,6 +485,7 @@ export async function getStaffMember(id) {
 }
 export const addStaff = (row) => insertRow('staff', row)
 export const updateStaff = (id, updates) => updateRow('staff', id, updates)
+export const deleteStaff = (id) => deleteRow('staff', id)
 
 // Staff training
 export const getStaffTraining = () => listBy('staff_training', null, null, 'created_at', false)
@@ -501,6 +502,17 @@ export async function getDonor(id) {
 }
 export const addDonor = (row) => insertRow('donors', row)
 export const updateDonor = (id, updates) => updateRow('donors', id, updates)
+
+// Programme KPIs (quarterly board metrics)
+export async function getProgrammeKpis(year, quarter) {
+  if (!supabase) return { data: [], error: null }
+  const { data, error } = await supabase
+    .from('programme_kpis')
+    .select('*')
+    .eq('year', year)
+    .eq('quarter', quarter)
+  return { data: data || [], error }
+}
 
 // ── Meal orders ───────────────────────────────────────────
 export async function submitMealOrder(patientId, orderData) {

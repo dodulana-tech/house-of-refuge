@@ -1,62 +1,82 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { fmt } from '../../utils/paystack'
+import { isSupabaseReady, getDonors, addDonor, updateDonor } from '../../utils/supabase'
 
 /*
   Donor CRM — per SOP Chapter 12
   5 Income Streams: Individual Donors, Corporate Sponsorship, Grants, Client Fees, Revenue Ventures
+  Live data: `donors` table (communications & frequency stored in the `data` JSONB column).
 */
 
 const DONOR_TYPES = ['individual', 'corporate', 'church']
 const COMM_TYPES = ['email', 'call', 'visit', 'letter']
 
-const initDonors = () => [
-  { id: 1, name: 'Mrs. Adeyemi Olufunmi', type: 'individual', totalGiven: 750000, lastGift: '2026-03-15', frequency: 'monthly',
-    comms: [{ date: '2026-03-15', type: 'call', notes: 'Thanked for recurring donation. Expressed interest in sponsoring a client.' }] },
-  { id: 2, name: 'Zenith Bank Foundation', type: 'corporate', totalGiven: 5000000, lastGift: '2026-01-10', frequency: 'annual',
-    comms: [{ date: '2026-01-10', type: 'email', notes: 'CSR grant disbursed for Q1 2026.' }] },
-  { id: 3, name: 'RCCG Abuja Parish 4', type: 'church', totalGiven: 1200000, lastGift: '2026-02-28', frequency: 'quarterly',
-    comms: [{ date: '2026-02-28', type: 'visit', notes: 'Pastor visited facility. Committed to quarterly support.' }] },
-  { id: 4, name: 'Chief Emeka Okafor', type: 'individual', totalGiven: 2000000, lastGift: '2025-12-20', frequency: 'one-time',
-    comms: [{ date: '2025-12-20', type: 'letter', notes: 'Christmas donation. Sent thank-you letter and impact report.' }] },
-  { id: 5, name: 'Dangote Foundation', type: 'corporate', totalGiven: 10000000, lastGift: '2025-11-01', frequency: 'annual',
-    comms: [{ date: '2025-11-01', type: 'email', notes: 'Equipment sponsorship agreement signed for 2026.' }] },
-  { id: 6, name: 'Dr. Nnamdi Azikiwe', type: 'individual', totalGiven: 350000, lastGift: '2026-03-01', frequency: 'bi-monthly',
-    comms: [{ date: '2026-03-01', type: 'call', notes: 'Regular check-in. Will increase giving from April.' }] },
-]
-
 export default function DonorCRM() {
-  const [donors, setDonors] = useState(initDonors)
+  const [donors, setDonors] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [notReady, setNotReady] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [showCommForm, setShowCommForm] = useState(null)
+  const [saving, setSaving] = useState(false)
   const [donorForm, setDonorForm] = useState({ name: '', type: 'individual', totalGiven: '', frequency: 'one-time' })
   const [commForm, setCommForm] = useState({ date: '', type: 'email', notes: '' })
   const [filter, setFilter] = useState('all')
 
-  const totalRaised = donors.reduce((s, d) => s + d.totalGiven, 0)
+  useEffect(() => {
+    let active = true
+    if (!isSupabaseReady()) {
+      setNotReady(true)
+      setLoading(false)
+      return
+    }
+    getDonors().then(({ data, error }) => {
+      if (!active) return
+      if (error) console.error(error)
+      setDonors(data || [])
+      setLoading(false)
+    })
+    return () => { active = false }
+  }, [])
+
+  const totalRaised = donors.reduce((s, d) => s + (Number(d.total_given) || 0), 0)
   const filtered = filter === 'all' ? donors : donors.filter(d => d.type === filter)
 
-  const handleAddDonor = e => {
+  const handleAddDonor = async e => {
     e.preventDefault()
-    if (!donorForm.name) return
-    setDonors(prev => [...prev, {
-      id: Date.now(),
+    if (!donorForm.name || saving) return
+    setSaving(true)
+    const row = {
       name: donorForm.name,
       type: donorForm.type,
-      totalGiven: Number(donorForm.totalGiven) || 0,
-      lastGift: new Date().toISOString().split('T')[0],
-      frequency: donorForm.frequency,
-      comms: [],
-    }])
+      status: 'active',
+      total_given: Number(donorForm.totalGiven) || 0,
+      data: {
+        frequency: donorForm.frequency,
+        last_gift: Number(donorForm.totalGiven) > 0 ? new Date().toISOString().split('T')[0] : null,
+        communications: [],
+      },
+    }
+    const { data, error } = await addDonor(row)
+    setSaving(false)
+    if (error) { alert(error.message || 'Failed to add donor.'); return }
+    if (data) setDonors(prev => [data, ...prev])
     setDonorForm({ name: '', type: 'individual', totalGiven: '', frequency: 'one-time' })
     setShowAddForm(false)
   }
 
-  const handleLogComm = (donorId) => {
-    if (!commForm.date || !commForm.notes) return
-    setDonors(prev => prev.map(d =>
-      d.id === donorId ? { ...d, comms: [{ ...commForm }, ...d.comms] } : d
-    ))
+  const handleLogComm = async (donor) => {
+    if (!commForm.date || !commForm.notes || saving) return
+    setSaving(true)
+    const data = donor.data || {}
+    const comms = Array.isArray(data.communications) ? data.communications : []
+    const entry = { date: commForm.date, type: commForm.type, notes: commForm.notes }
+    const { data: updated, error } = await updateDonor(donor.id, {
+      data: { ...data, communications: [entry, ...comms] },
+    })
+    setSaving(false)
+    if (error) { alert(error.message || 'Failed to log communication.'); return }
+    setDonors(prev => prev.map(d => (d.id === donor.id ? (updated || { ...d, data: { ...data, communications: [entry, ...comms] } }) : d)))
     setCommForm({ date: '', type: 'email', notes: '' })
     setShowCommForm(null)
   }
@@ -141,18 +161,42 @@ export default function DonorCRM() {
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button type="submit" style={{ padding: '8px 24px', borderRadius: 6, border: 'none', background: '#1A7A4A', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: '.82rem' }}>
-                Save Donor
+              <button type="submit" disabled={saving} style={{ padding: '8px 24px', borderRadius: 6, border: 'none', background: '#1A7A4A', color: '#fff', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1, fontWeight: 700, fontSize: '.82rem' }}>
+                {saving ? 'Saving…' : 'Save Donor'}
               </button>
             </div>
           </form>
         </div>
       )}
 
+      {/* States */}
+      {loading && (
+        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Loading donors…</p>
+        </div>
+      )}
+      {!loading && notReady && (
+        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Donor records are unavailable — the database is not configured.</p>
+        </div>
+      )}
+      {!loading && !notReady && donors.length === 0 && (
+        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)', margin: 0 }}>No donors yet. Use <strong>+ Add Donor</strong> to record your first supporter.</p>
+        </div>
+      )}
+      {!loading && !notReady && donors.length > 0 && filtered.length === 0 && (
+        <div className="card" style={{ padding: 24, textAlign: 'center' }}>
+          <p style={{ fontSize: '.84rem', color: 'var(--g500)', margin: 0 }}>No {filter} donors.</p>
+        </div>
+      )}
+
       {/* Donor List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {filtered.map(d => {
-          const tc = typeColors[d.type]
+          const tc = typeColors[d.type] || { bg: '#E2E8F0', color: '#4A5568' }
+          const ddata = d.data || {}
+          const comms = Array.isArray(ddata.communications) ? ddata.communications : []
           return (
             <div key={d.id} className="card" style={{ padding: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
@@ -164,9 +208,9 @@ export default function DonorCRM() {
                     </span>
                   </div>
                   <div style={{ fontSize: '.8rem', color: 'var(--g500)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    <span>Total: <strong style={{ color: '#1A7A4A' }}>{fmt(d.totalGiven)}</strong></span>
-                    <span>Last Gift: {d.lastGift}</span>
-                    <span>Frequency: {d.frequency}</span>
+                    <span>Total: <strong style={{ color: '#1A7A4A' }}>{fmt(Number(d.total_given) || 0)}</strong></span>
+                    <span>Last Gift: {ddata.last_gift || '—'}</span>
+                    <span>Frequency: {ddata.frequency || '—'}</span>
                   </div>
                 </div>
                 <button onClick={() => setShowCommForm(showCommForm === d.id ? null : d.id)}
@@ -198,18 +242,18 @@ export default function DonorCRM() {
                         style={{ width: '100%', padding: 6, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.8rem', resize: 'vertical' }} />
                     </div>
                   </div>
-                  <button onClick={() => handleLogComm(d.id)}
-                    style={{ marginTop: 8, padding: '6px 18px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: '.78rem' }}>
-                    Save Entry
+                  <button onClick={() => handleLogComm(d)} disabled={saving}
+                    style={{ marginTop: 8, padding: '6px 18px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1, fontWeight: 700, fontSize: '.78rem' }}>
+                    {saving ? 'Saving…' : 'Save Entry'}
                   </button>
                 </div>
               )}
 
               {/* Communication Log */}
-              {d.comms.length > 0 && (
+              {comms.length > 0 && (
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', marginBottom: 4 }}>Communication Log</div>
-                  {d.comms.slice(0, 3).map((c, i) => (
+                  {comms.slice(0, 3).map((c, i) => (
                     <div key={i} style={{ fontSize: '.78rem', padding: '4px 0', borderTop: '1px solid var(--g100)', display: 'flex', gap: 10 }}>
                       <span style={{ color: 'var(--g400)', minWidth: 80 }}>{c.date}</span>
                       <span style={{ fontWeight: 600, minWidth: 44, textTransform: 'capitalize' }}>{c.type}</span>

@@ -26,13 +26,10 @@ import OutpatientBooked from './pages/OutpatientBooked'
 import OutpatientPay from './pages/OutpatientPay'
 
 // Lazy load portal/admin/family pages (legacy routes — redirect to /dashboard)
-const Dashboard = lazy(() => import('./pages/portal/Dashboard'))
 const Checkin = lazy(() => import('./pages/portal/Checkin'))
 const Treatment = lazy(() => import('./pages/portal/Treatment'))
 const Meals = lazy(() => import('./pages/portal/Meals'))
 const Payments = lazy(() => import('./pages/portal/Payments'))
-const FamilyDashboard = lazy(() => import('./pages/family/FamilyDashboard'))
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 
 // Unified HMIS dashboard — 7 pillars
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'))

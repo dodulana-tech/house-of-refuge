@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { isSupabaseReady, getStaff, addStaff } from '../../utils/supabase'
+import { isSupabaseReady, getStaff, addStaff, deleteStaff } from '../../utils/supabase'
 
 /*
   Staff Directory — per HOR Organogram
@@ -69,6 +69,16 @@ export default function StaffDirectory() {
     setForm(emptyForm)
     setShowAdd(false)
     load()
+  }
+
+  async function handleDelete(s) {
+    if (!window.confirm(`Remove ${s.full_name || 'this staff member'} from the directory? This cannot be undone.`)) return
+    const { error } = await deleteStaff(s.id)
+    if (error) {
+      alert('Failed to remove staff: ' + error.message)
+      return
+    }
+    setStaff(prev => prev.filter(x => x.id !== s.id))
   }
 
   return (
@@ -168,10 +178,16 @@ export default function StaffDirectory() {
                       <div style={{ fontSize: '.76rem', color: 'var(--g500)' }}>{[s.role, s.department].filter(Boolean).join(' · ')}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: '.76rem', color: 'var(--g500)', textAlign: 'right' }}>
-                    {s.email && <div>{s.email}</div>}
-                    {s.phone && <div>{s.phone}</div>}
-                    {s.data?.reports && <div style={{ fontSize: '.68rem', marginTop: 2 }}>Reports to: {s.data.reports}</div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ fontSize: '.76rem', color: 'var(--g500)', textAlign: 'right' }}>
+                      {s.email && <div>{s.email}</div>}
+                      {s.phone && <div>{s.phone}</div>}
+                      {s.data?.reports && <div style={{ fontSize: '.68rem', marginTop: 2 }}>Reports to: {s.data.reports}</div>}
+                    </div>
+                    <button onClick={() => handleDelete(s)} title="Remove staff member"
+                      style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #FED7D7', background: '#fff', color: '#E53E3E', cursor: 'pointer', fontSize: '.72rem', fontWeight: 700, flexShrink: 0 }}>
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
