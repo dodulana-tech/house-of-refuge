@@ -10,7 +10,7 @@ export default function FinancialAssistance() {
     <>
       <Helmet>
         <title>Financial Assistance | House of Refuge</title>
-        <meta name="description" content="Need-based admission to House of Refuge. Two donor-funded beds reviewed independently by Freedom Foundation. Apply for financial assistance for residential drug rehabilitation in Lekki, Lagos." />
+        <meta name="description" content="Need-based admission to House of Refuge. A limited number of donor-funded places, offered as funding allows and reviewed independently by Freedom Foundation. Apply for financial assistance for residential drug rehabilitation in Lekki, Lagos." />
       </Helmet>
 
       <section className={styles.hero}>
@@ -18,7 +18,7 @@ export default function FinancialAssistance() {
           <div className={styles.eyebrow}>Need-based admission · A Freedom Foundation Programme</div>
           <h1 className={styles.title}>When recovery should not depend on <em>means.</em></h1>
           <p className={styles.sub}>
-            Need-based admission is fully donor-funded and reserved for families experiencing genuine financial hardship — independently reviewed by the Freedom Foundation Financial Assistance Committee. <strong>The clinical standard does not change.</strong> Placements operate on a separate waitlist with unpredictable wait times; capacity is extremely limited and dependent on funding availability.
+            Need-based admission is fully donor-funded and reserved for families experiencing genuine financial hardship — independently reviewed by the Freedom Foundation Financial Assistance Committee. <strong>The clinical standard does not change.</strong> Places are limited and depend on funding, so wait times can be hard to predict — but if your family meets the three conditions below, <strong>we encourage you to apply.</strong>
           </p>
           <div className={styles.acts}>
             <button className="btn btn--gold" onClick={() => nav('/assistance/apply')}>Begin application</button>
@@ -101,7 +101,7 @@ export default function FinancialAssistance() {
           <div className={styles.flowList}>
             {[
               { n: 1, t: 'Begin online', m: 'Free · About 20 minutes', d: 'Start the Financial Support Form. No deposit required at this stage.' },
-              { n: 2, t: 'Submit form + documents', m: 'Income, household, pastoral referral letter', d: 'Routed directly to Freedom Foundation. HOR clinical does not see financial details.' },
+              { n: 2, t: 'Submit form + documents', m: 'Income, household, pastoral referral letter', d: 'Routed directly to Freedom Foundation. HOR clinical does not see financial details. If you cannot gather every document, send what you have — the Foundation team will help you complete your file.' },
               { n: 3, t: 'Foundation review', m: 'Quarterly cycle', d: 'Independent committee. Notification within 30 days of cycle close, by phone and email.' },
               { n: 4, t: 'Clinical assessment', m: 'If financially approved', d: 'The same clinical pathway as paying admissions begins. Psychiatrist consult and decision in writing.' },
               { n: 5, t: 'Pastoral interview', m: 'an assigned pastor from the HOR chaplaincy team · Patient and family', d: 'A mandatory discernment conversation with an assigned pastor from the HOR chaplaincy team. Patient and family attend together. Booked by admissions; required for every admission regardless of pathway.' },
@@ -120,7 +120,31 @@ export default function FinancialAssistance() {
 
           <div className={styles.confidBox}>
             <div className={styles.confidLbl}>Confidentiality</div>
-            <p>Financial Support Forms are reviewed <strong>only by Freedom Foundation</strong>. HOR's clinical team does not have access to financial details. Sponsored residents are <strong>not identifiable</strong> to other residents or staff outside the admissions process. The clinical relationship begins on equal footing with every paying admission.</p>
+            <p>Financial Support Forms are reviewed <strong>only by Freedom Foundation</strong>. HOR's clinical team does not have access to financial details. Sponsored residents are <strong>not identifiable</strong> to other residents or staff outside the admissions process. The clinical relationship begins on equal footing with every paying admission. Assistance is assessed on need and clinical fit alone — <strong>never on background, connections, or ability to pay.</strong></p>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section--alt">
+        <div className="container">
+          <div className="sh" style={{ textAlign: 'left', marginBottom: 28 }}>
+            <div className="sh__lbl">Section Four · Common questions</div>
+            <h2 style={{ maxWidth: 640 }}>Questions families ask.</h2>
+            <div className="dv" />
+          </div>
+          <div className={styles.faqList}>
+            {[
+              { q: 'How long does a decision take?', a: 'The Freedom Foundation committee reviews applications on a quarterly cycle. You will be notified within 30 days of the cycle closing, by phone and email — whether or not a place is offered.' },
+              { q: 'What documents do I need?', a: 'Evidence of your household income and context, and a referral letter from a pastor, NGO, or recognised community body. If you cannot gather everything, send what you have — the Foundation team will help you complete your file.' },
+              { q: 'Does applying for assistance affect the clinical decision?', a: 'No. Financial review (by Freedom Foundation) and clinical assessment (by HOR’s psychiatrist) are entirely separate. Neither team sees the other’s notes, so asking for help never counts against your loved one.' },
+              { q: 'Is the care different from paying admissions?', a: 'The medicine is identical — same psychiatrist, same protocols, same nursing and detox. What differs is amenity and the rhythm of one-to-one contact, never the clinical standard.' },
+              { q: 'What if we are not approved, or no place opens?', a: 'We will be honest with you about capacity, and where we can, point you toward other options — including our outpatient pathway. You are welcome to reapply in a future cycle.' },
+            ].map(item => (
+              <div key={item.q} className={styles.faqItem}>
+                <div className={styles.faqQ}>{item.q}</div>
+                <p className={styles.faqA}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { getPatients, getAllVisitations, addVisitation } from '../../utils/supabase'
+import { activeBriefs, initialsFromName } from '../../utils/patients'
 
 /*
   Family Visit Requests — SOP Section 5.4.2
@@ -46,19 +48,17 @@ function getNextSundays(count) {
 
 const NEXT_SUNDAYS = getNextSundays(6)
 
-const INITIAL_REQUESTS = [
-  { id: 1, date: NEXT_SUNDAYS[0], timeSlot: '1:00 PM', visitors: '3', children: '1', requirements: ['None'], status: 'approved', submittedDate: '2026-03-28' },
-  { id: 2, date: '2026-03-22', timeSlot: '12:00 PM', visitors: '2', children: 'None', requirements: ['None'], status: 'completed', submittedDate: '2026-03-18' },
-  { id: 3, date: '2026-03-15', timeSlot: '2:00 PM', visitors: '4', children: '2', requirements: ['Items for inspection'], status: 'completed', submittedDate: '2026-03-10' },
-]
-
-const statusColors = { pending: '#DD6B20', approved: '#1A7A4A', completed: 'var(--g500)', declined: '#E53E3E' }
+const statusColors = { pending: '#DD6B20', approved: '#1A7A4A', completed: 'var(--g500)', declined: '#E53E3E', cancelled: 'var(--g400)' }
 
 export default function FamilyVisitRequests() {
   const { user } = useAuth()
-  const [requests, setRequests] = useState(INITIAL_REQUESTS)
+  const [patients, setPatients] = useState([])
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
+    patient: '',
     date: NEXT_SUNDAYS[0] || '',
     timeSlot: '12:00 PM',
     visitors: '1',
@@ -67,6 +67,19 @@ export default function FamilyVisitRequests() {
   })
 
   const relationship = user?.relationship || 'Family Member'
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const [{ data: pats }, { data: visits }] = await Promise.all([getPatients(), getAllVisitations()])
+    setPatients(pats || [])
+    setRequests(visits || [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const activePatients = activeBriefs(patients)
+  const initialsFor = (pid) => initialsFromName(patients.find(p => p.id === pid)?.full_name)
 
   const handleRequirement = (req) => {
     if (req === 'None') {
@@ -81,23 +94,27 @@ export default function FamilyVisitRequests() {
     }))
   }
 
-  const handleSubmit = () => {
-    if (!form.date || !form.timeSlot) return
-    setRequests(prev => [
-      {
-        id: prev.length + 1,
-        date: form.date,
-        timeSlot: form.timeSlot,
-        visitors: form.visitors,
-        children: form.children,
-        requirements: form.requirements.length > 0 ? form.requirements : ['None'],
-        status: 'pending',
-        submittedDate: new Date().toISOString().slice(0, 10),
-      },
-      ...prev,
-    ])
-    setForm({ date: NEXT_SUNDAYS[0] || '', timeSlot: '12:00 PM', visitors: '1', children: 'None', requirements: [] })
+  const handleSubmit = async () => {
+    if (!form.patient || !form.date || !form.timeSlot) return
+    setSaving(true)
+    const notesParts = []
+    if (form.children && form.children !== 'None') notesParts.push(`Children: ${form.children}`)
+    const reqs = form.requirements.filter(r => r !== 'None')
+    if (reqs.length) notesParts.push(`Requirements: ${reqs.join(', ')}`)
+    const { error } = await addVisitation({
+      patient_id: form.patient,
+      visit_date: form.date,
+      visit_time: form.timeSlot,
+      visitors: form.visitors,
+      notes: notesParts.join(' | ') || null,
+      requested_by_name: user?.name || relationship,
+      status: 'pending',
+    })
+    setSaving(false)
+    if (error) { alert(error.message || 'Could not submit visit request'); return }
+    setForm({ patient: '', date: NEXT_SUNDAYS[0] || '', timeSlot: '12:00 PM', visitors: '1', children: 'None', requirements: [] })
     setShowForm(false)
+    load()
   }
 
   const pending = requests.filter(r => r.status === 'pending').length
@@ -157,6 +174,14 @@ export default function FamilyVisitRequests() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 16 }}>
             <div>
+              <label style={{ fontSize: '.78rem', color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Resident</label>
+              <select value={form.patient} onChange={e => setForm(p => ({ ...p, patient: e.target.value }))}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--g200)', fontSize: '.84rem' }}>
+                <option value="">Select resident</option>
+                {activePatients.map(p => <option key={p.id} value={p.id}>{p.initials}</option>)}
+              </select>
+            </div>
+            <div>
               <label style={{ fontSize: '.78rem', color: 'var(--g500)', display: 'block', marginBottom: 4 }}>Preferred Sunday</label>
               <select value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
                 style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--g200)', fontSize: '.84rem' }}>
@@ -199,11 +224,11 @@ export default function FamilyVisitRequests() {
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={handleSubmit}
-              style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: 'var(--blue)', color: '#fff', fontSize: '.86rem', fontWeight: 600, cursor: 'pointer' }}>
-              Submit Request
+            <button onClick={handleSubmit} disabled={saving}
+              style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: 'var(--blue)', color: '#fff', fontSize: '.86rem', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Submitting…' : 'Submit Request'}
             </button>
-            <button onClick={() => setShowForm(false)}
+            <button onClick={() => setShowForm(false)} disabled={saving}
               style={{ padding: '10px 24px', borderRadius: 8, border: '1px solid var(--g200)', background: '#fff', color: 'var(--g600)', fontSize: '.86rem', fontWeight: 600, cursor: 'pointer' }}>
               Cancel
             </button>
@@ -214,17 +239,22 @@ export default function FamilyVisitRequests() {
       {/* My Requests */}
       <div className="card">
         <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 14 }}>My Requests</h3>
-        {requests.length === 0 ? (
+        {loading ? (
+          <p style={{ fontSize: '.84rem', color: 'var(--g500)' }}>Loading…</p>
+        ) : requests.length === 0 ? (
           <p style={{ fontSize: '.84rem', color: 'var(--g500)' }}>No visit requests yet.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {requests.map((r, i) => (
               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < requests.length - 1 ? '1px solid var(--g100)' : 'none', flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <div style={{ fontSize: '.88rem', fontWeight: 600 }}>{r.date} at {r.timeSlot}</div>
-                  <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>{r.visitors} visitor(s) | Children: {r.children} | Submitted: {r.submittedDate}</div>
-                  {r.requirements.filter(rq => rq !== 'None').length > 0 && (
-                    <div style={{ fontSize: '.72rem', color: 'var(--g500)', marginTop: 2 }}>Requirements: {r.requirements.join(', ')}</div>
+                  <div style={{ fontSize: '.88rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ background: 'var(--blue)', color: '#fff', padding: '2px 6px', borderRadius: 4, fontSize: '.72rem' }}>{initialsFor(r.patient_id)}</span>
+                    {r.visit_date} at {r.visit_time}
+                  </div>
+                  <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>{r.visitors} visitor(s) | Submitted: {r.created_at?.slice(0, 10) || '—'}</div>
+                  {r.notes && (
+                    <div style={{ fontSize: '.72rem', color: 'var(--g500)', marginTop: 2 }}>{r.notes}</div>
                   )}
                 </div>
                 <span style={{ fontSize: '.72rem', padding: '3px 12px', borderRadius: 12, background: (statusColors[r.status] || 'var(--g400)') + '18', color: statusColors[r.status], fontWeight: 600, textTransform: 'capitalize' }}>

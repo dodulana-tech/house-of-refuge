@@ -1,18 +1,12 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { getPatients, getTherapySessions, addTherapySession, updateTherapySession, deleteTherapySession } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   Therapy Session Attendance Tracker — per Treatment Protocol Section 6.4
   (Weekly Therapy Schedule). Tracks compliance across 11 modalities.
   Initials only (HIPAA). All fields are selects/checkboxes — zero free text.
 */
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
 
 const STAFF_OPTIONS = [
   { value: 'AI', label: 'AI — Clinical Lead' },
@@ -44,104 +38,12 @@ const MODALITIES = [
 
 const WEEKS = Array.from({ length: 12 }, (_, i) => i + 1)
 
-// Build initial attendance data: { patientInitials: { week: { modalityId: { day: status } } } }
-function buildInitialData() {
-  const data = {}
-
-  // CO — Week 6 demo data (~90% compliance)
-  data.CO = {}
-  data.CO[6] = {
-    individual_cbt: { Wed: 'Present' },
-    group_cbt: { Mon: 'Present', Wed: 'Present', Fri: 'Present' },
-    psychoeducation: { Tue: 'Present', Thu: 'Present' },
-    life_skills: { Mon: 'Present', Wed: 'Absent', Fri: 'Present' },
-    spiritual_formation: { Mon: 'Present', Tue: 'Present', Wed: 'Present', Thu: 'Present', Fri: 'Present' },
-    sunday_chapel: { Sun: 'Present' },
-    evening_bible: { Mon: 'Present', Tue: 'Present', Wed: 'Present', Thu: 'Present', Fri: 'Present', Sat: 'Present', Sun: 'Absent' },
-    family_therapy: {},
-    peer_recovery: { Mon: 'Present', Tue: 'Present', Wed: 'Present', Thu: 'Absent', Fri: 'Present', Sat: 'Absent', Sun: 'Present' },
-    relaxation: { Fri: 'Present' },
-    medical_review: { Mon: 'Present', Tue: 'Present', Wed: 'Present', Thu: 'Present', Fri: 'Present', Sat: 'Present', Sun: 'Present' },
-  }
-
-  // AN — Week 9 demo data (~75% compliance)
-  data.AN = {}
-  data.AN[9] = {
-    individual_cbt: { Wed: 'Present' },
-    group_cbt: { Mon: 'Present', Wed: 'Absent', Fri: 'Present' },
-    psychoeducation: { Tue: 'Present', Thu: 'Absent' },
-    life_skills: { Mon: 'Absent', Wed: 'Present', Fri: 'Present' },
-    spiritual_formation: { Mon: 'Present', Tue: 'Present', Wed: 'Absent', Thu: 'Present', Fri: 'Present' },
-    sunday_chapel: { Sun: 'Present' },
-    evening_bible: { Mon: 'Present', Tue: 'Absent', Wed: 'Present', Thu: 'Present', Fri: 'Absent', Sat: 'Present', Sun: 'Present' },
-    family_therapy: { Sat: 'Present' },
-    peer_recovery: { Mon: 'Present', Tue: 'Present', Wed: 'Absent', Thu: 'Present', Fri: 'Present', Sat: 'Absent', Sun: 'Absent' },
-    relaxation: { Fri: 'Present' },
-    medical_review: { Mon: 'Present', Tue: 'Present', Wed: 'Present', Thu: 'Present', Fri: 'Present', Sat: 'Present', Sun: 'Present' },
-  }
-
-  // KA — Week 3 demo data (~60% compliance)
-  data.KA = {}
-  data.KA[3] = {
-    individual_cbt: { Wed: 'Absent' },
-    group_cbt: { Mon: 'Present', Wed: 'Absent', Fri: 'Present' },
-    psychoeducation: { Tue: 'Absent', Thu: 'Present' },
-    life_skills: { Mon: 'Present', Wed: 'Absent', Fri: 'Absent' },
-    spiritual_formation: { Mon: 'Present', Tue: 'Absent', Wed: 'Present', Thu: 'Absent', Fri: 'Present' },
-    sunday_chapel: { Sun: 'Absent' },
-    evening_bible: { Mon: 'Present', Tue: 'Present', Wed: 'Absent', Thu: 'Absent', Fri: 'Present', Sat: 'Absent', Sun: 'Absent' },
-    family_therapy: {},
-    peer_recovery: { Mon: 'Present', Tue: 'Absent', Wed: 'Absent', Thu: 'Present', Fri: 'Present', Sat: 'Absent', Sun: 'Absent' },
-    relaxation: { Fri: 'Absent' },
-    medical_review: { Mon: 'Present', Tue: 'Present', Wed: 'Present', Thu: 'Present', Fri: 'Present', Sat: 'Medical', Sun: 'Excused' },
-  }
-
-  // IM — Week 2 demo data (~50% compliance)
-  data.IM = {}
-  data.IM[2] = {
-    individual_cbt: { Wed: 'Absent' },
-    group_cbt: { Mon: 'Absent', Wed: 'Present', Fri: 'Absent' },
-    psychoeducation: { Tue: 'Medical', Thu: 'Medical' },
-    life_skills: { Mon: 'Absent', Wed: 'Absent', Fri: 'Present' },
-    spiritual_formation: { Mon: 'Present', Tue: 'Absent', Wed: 'Present', Thu: 'Absent', Fri: 'Absent' },
-    sunday_chapel: { Sun: 'Absent' },
-    evening_bible: { Mon: 'Present', Tue: 'Absent', Wed: 'Absent', Thu: 'Present', Fri: 'Absent', Sat: 'Absent', Sun: 'Absent' },
-    family_therapy: {},
-    peer_recovery: { Mon: 'Absent', Tue: 'Present', Wed: 'Absent', Thu: 'Absent', Fri: 'Present', Sat: 'Absent', Sun: 'Absent' },
-    relaxation: { Fri: 'Absent' },
-    medical_review: { Mon: 'Present', Tue: 'Present', Wed: 'Medical', Thu: 'Present', Fri: 'Present', Sat: 'Present', Sun: 'Present' },
-  }
-
-  return data
-}
-
-// Session log entries
-function buildInitialLogs() {
-  return {
-    CO: {
-      6: [
-        { id: 1, date: '2026-03-09', modality: 'group_cbt', duration: 90, facilitator: 'TA', status: 'Present' },
-        { id: 2, date: '2026-03-09', modality: 'life_skills', duration: 60, facilitator: 'SN', status: 'Present' },
-        { id: 3, date: '2026-03-09', modality: 'spiritual_formation', duration: 120, facilitator: 'PK', status: 'Present' },
-        { id: 4, date: '2026-03-10', modality: 'psychoeducation', duration: 60, facilitator: 'TA', status: 'Present' },
-        { id: 5, date: '2026-03-10', modality: 'spiritual_formation', duration: 120, facilitator: 'PK', status: 'Present' },
-        { id: 6, date: '2026-03-11', modality: 'individual_cbt', duration: 60, facilitator: 'AI', status: 'Present' },
-        { id: 7, date: '2026-03-11', modality: 'group_cbt', duration: 90, facilitator: 'TA', status: 'Present' },
-        { id: 8, date: '2026-03-11', modality: 'life_skills', duration: 60, facilitator: 'SN', status: 'Absent' },
-        { id: 9, date: '2026-03-12', modality: 'psychoeducation', duration: 60, facilitator: 'TA', status: 'Present' },
-        { id: 10, date: '2026-03-13', modality: 'group_cbt', duration: 90, facilitator: 'TA', status: 'Present' },
-        { id: 11, date: '2026-03-13', modality: 'relaxation', duration: 60, facilitator: 'SN', status: 'Present' },
-      ],
-    },
-    AN: { 9: [] },
-    KA: { 3: [] },
-    IM: { 2: [] },
-  }
-}
-
-function getDefaultWeek(patient) {
-  const weekMap = { CO: 6, AN: 9, KA: 3, IM: 2 }
-  return weekMap[patient] || 1
+// Map a YYYY-MM-DD date to a short weekday label used by the attendance grid.
+function weekdayFromDate(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(`${dateStr}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return ''
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()]
 }
 
 function complianceColor(pct) {
@@ -178,11 +80,12 @@ function calculateModalityCompliance(attended, expected) {
 }
 
 export default function TherapySessions() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
-  const [selectedWeek, setSelectedWeek] = useState(6)
-  const [attendanceData, setAttendanceData] = useState(buildInitialData)
-  const [sessionLogs, setSessionLogs] = useState(buildInitialLogs)
+  const [patients, setPatients] = useState([])
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [selectedPatient, setSelectedPatient] = useState('')
+  const [selectedWeek, setSelectedWeek] = useState(1)
   const [showLogForm, setShowLogForm] = useState(false)
   const [logForm, setLogForm] = useState({
     modality: '',
@@ -190,6 +93,55 @@ export default function TherapySessions() {
     facilitator: '',
     status: '',
   })
+
+  const reloadSessions = useCallback(async () => {
+    const { data } = await getTherapySessions('individual')
+    setSessions(data || [])
+  }, [])
+
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    const [{ data: pRows }, { data: sRows }] = await Promise.all([
+      getPatients(),
+      getTherapySessions('individual'),
+    ])
+    const briefs = activeBriefs(pRows)
+    setPatients(briefs)
+    setSessions(sRows || [])
+    setSelectedPatient((prev) => prev || briefs[0]?.id || '')
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { loadData() }, [loadData])
+
+  // Fold the flat individual-session rows into the nested shapes the JSX reads:
+  //   attendanceData[patientId][week][modalityId][day] = status
+  //   sessionLogs[patientId][week] = [{ id, date, modality, duration, facilitator, status }]
+  // Rich per-session fields (week, weekday, duration) live in row.data (JSONB).
+  const { attendanceData, sessionLogs } = useMemo(() => {
+    const att = {}
+    const logs = {}
+    for (const row of sessions) {
+      const pid = row.patient_id
+      const week = Number(row.data?.week) || 1
+      const day = row.data?.day || weekdayFromDate(row.session_date)
+      if (!att[pid]) att[pid] = {}
+      if (!att[pid][week]) att[pid][week] = {}
+      if (!att[pid][week][row.modality]) att[pid][week][row.modality] = {}
+      if (day) att[pid][week][row.modality][day] = row.status
+      if (!logs[pid]) logs[pid] = {}
+      if (!logs[pid][week]) logs[pid][week] = []
+      logs[pid][week].push({
+        id: row.id,
+        date: row.session_date,
+        modality: row.modality,
+        duration: row.data?.duration ?? (MODALITIES.find((m) => m.id === row.modality)?.durationMin ?? 60),
+        facilitator: row.therapist_code,
+        status: row.status,
+      })
+    }
+    return { attendanceData: att, sessionLogs: logs }
+  }, [sessions])
 
   const weekData = (attendanceData[selectedPatient] && attendanceData[selectedPatient][selectedWeek]) || {}
 
@@ -208,65 +160,92 @@ export default function TherapySessions() {
   const overallPct = totalExpected > 0 ? Math.round((totalAttended / totalExpected) * 100) : null
 
   const patientLogs = (sessionLogs[selectedPatient] && sessionLogs[selectedPatient][selectedWeek]) || []
+  const patientHasSessions = !!sessionLogs[selectedPatient]
+  const selectedInitials = patients.find((p) => p.id === selectedPatient)?.initials || '—'
 
-  const handlePatientChange = (initials) => {
-    setSelectedPatient(initials)
-    setSelectedWeek(getDefaultWeek(initials))
+  const handlePatientChange = (id) => {
+    setSelectedPatient(id)
+    const weeks = Object.keys(sessionLogs[id] || {}).map(Number)
+    setSelectedWeek(weeks.length ? Math.max(...weeks) : 1)
     setShowLogForm(false)
   }
 
-  const toggleDayAttendance = (modalityId, day) => {
-    setAttendanceData((prev) => {
-      const patientData = { ...prev }
-      if (!patientData[selectedPatient]) patientData[selectedPatient] = {}
-      if (!patientData[selectedPatient][selectedWeek]) patientData[selectedPatient][selectedWeek] = {}
-      const weekCopy = { ...patientData[selectedPatient][selectedWeek] }
-      const modCopy = { ...weekCopy[modalityId] }
-
-      if (modCopy[day]) {
-        // Cycle: Present -> Absent -> Excused -> Medical -> clear
+  // Grid cell click: cycle the matching session's status, or create/delete its row.
+  const toggleDayAttendance = async (modalityId, day) => {
+    if (saving || !selectedPatient) return
+    const existing = sessions.find((r) =>
+      r.patient_id === selectedPatient &&
+      (Number(r.data?.week) || 1) === selectedWeek &&
+      r.modality === modalityId &&
+      (r.data?.day || weekdayFromDate(r.session_date)) === day
+    )
+    setSaving(true)
+    try {
+      if (existing) {
+        // Cycle: Present -> Absent -> Excused -> Medical -> clear (delete)
         const cycle = ['Present', 'Absent', 'Excused', 'Medical']
-        const idx = cycle.indexOf(modCopy[day])
+        const idx = cycle.indexOf(existing.status)
         if (idx >= 0 && idx < cycle.length - 1) {
-          modCopy[day] = cycle[idx + 1]
+          const { error } = await updateTherapySession(existing.id, { status: cycle[idx + 1] })
+          if (error) { alert(`Could not update session: ${error.message}`); return }
         } else {
-          delete modCopy[day]
+          const { error } = await deleteTherapySession(existing.id)
+          if (error) { alert(`Could not delete session: ${error.message}`); return }
         }
       } else {
-        modCopy[day] = 'Present'
+        const mod = MODALITIES.find((m) => m.id === modalityId)
+        const { error } = await addTherapySession({
+          patient_id: selectedPatient,
+          type: 'individual',
+          session_date: new Date().toISOString().slice(0, 10),
+          session_time: '',
+          therapist_code: '',
+          modality: modalityId,
+          status: 'Present',
+          attendees: null,
+          data: { week: selectedWeek, day, duration: mod ? mod.durationMin : 60 },
+        })
+        if (error) { alert(`Could not record session: ${error.message}`); return }
       }
-
-      weekCopy[modalityId] = modCopy
-      patientData[selectedPatient] = { ...patientData[selectedPatient], [selectedWeek]: weekCopy }
-      return patientData
-    })
+      await reloadSessions()
+    } finally {
+      setSaving(false)
+    }
   }
 
   const updateLogForm = (field, value) => setLogForm((prev) => ({ ...prev, [field]: value }))
 
-  const handleLogSubmit = () => {
-    if (!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status) return
+  const handleLogSubmit = async () => {
+    if (!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status || !selectedPatient) return
     const mod = MODALITIES.find((m) => m.id === logForm.modality)
-    const newLog = {
-      id: Date.now(),
-      date: logForm.date,
-      modality: logForm.modality,
-      duration: mod ? mod.durationMin : 60,
-      facilitator: logForm.facilitator,
-      status: logForm.status,
+    setSaving(true)
+    try {
+      const { error } = await addTherapySession({
+        patient_id: selectedPatient,
+        type: 'individual',
+        session_date: logForm.date,
+        session_time: '',
+        therapist_code: logForm.facilitator,
+        modality: logForm.modality,
+        status: logForm.status,
+        attendees: null,
+        data: { week: selectedWeek, day: weekdayFromDate(logForm.date), duration: mod ? mod.durationMin : 60 },
+      })
+      if (error) { alert(`Could not log session: ${error.message}`); return }
+      setShowLogForm(false)
+      setLogForm({ modality: '', date: '', facilitator: '', status: '' })
+      await reloadSessions()
+    } finally {
+      setSaving(false)
     }
-    setSessionLogs((prev) => {
-      const copy = { ...prev }
-      if (!copy[selectedPatient]) copy[selectedPatient] = {}
-      if (!copy[selectedPatient][selectedWeek]) copy[selectedPatient][selectedWeek] = []
-      copy[selectedPatient] = {
-        ...copy[selectedPatient],
-        [selectedWeek]: [...copy[selectedPatient][selectedWeek], newLog],
-      }
-      return copy
-    })
-    setShowLogForm(false)
-    setLogForm({ modality: '', date: '', facilitator: '', status: '' })
+  }
+
+  if (loading) {
+    return (
+      <div style={{ padding: 24 }}>
+        <p style={{ color: '#718096', fontSize: 14 }}>Loading therapy sessions…</p>
+      </div>
+    )
   }
 
   return (
@@ -295,8 +274,8 @@ export default function TherapySessions() {
               background: '#fff',
             }}
           >
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>{p.initials}</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
           </select>
           <label style={{ fontWeight: 600, fontSize: 14, color: '#4A5568' }}>Week:</label>
@@ -332,7 +311,7 @@ export default function TherapySessions() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-            Weekly Compliance Summary — {selectedPatient} (Week {selectedWeek})
+            Weekly Compliance Summary — {selectedInitials} (Week {selectedWeek})
           </h2>
           <span style={complianceBadgeStyle(overallPct)}>
             {overallPct !== null ? `${overallPct}%` : 'No Data'}
@@ -518,7 +497,9 @@ export default function TherapySessions() {
         </div>
 
         {patientLogs.length === 0 && !showLogForm && (
-          <p style={{ color: '#A0AEC0', fontSize: 14 }}>No session logs recorded for this week.</p>
+          <p style={{ color: '#A0AEC0', fontSize: 14 }}>
+            {patientHasSessions ? 'No session logs recorded for this week.' : 'No therapy sessions recorded yet.'}
+          </p>
         )}
 
         {patientLogs.length > 0 && (
@@ -579,7 +560,7 @@ export default function TherapySessions() {
           }}
         >
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: '0 0 8px' }}>
-            Quick Log — {selectedPatient} (Week {selectedWeek})
+            Quick Log — {selectedInitials} (Week {selectedWeek})
           </h2>
           <p style={{ fontSize: 13, color: '#718096', margin: '0 0 20px' }}>
             Log an individual session attendance record.
@@ -684,19 +665,19 @@ export default function TherapySessions() {
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={handleLogSubmit}
-              disabled={!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status}
+              disabled={!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status || saving || !selectedPatient}
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,
                 border: 'none',
-                background: (!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status) ? '#CBD5E0' : '#2B6CB0',
+                background: (!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status || saving || !selectedPatient) ? '#CBD5E0' : '#2B6CB0',
                 color: '#fff',
                 fontWeight: 600,
                 fontSize: 14,
-                cursor: (!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status) ? 'not-allowed' : 'pointer',
+                cursor: (!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status || saving || !selectedPatient) ? 'not-allowed' : 'pointer',
               }}
             >
-              Log Session
+              {saving ? 'Saving…' : 'Log Session'}
             </button>
             <button
               onClick={() => { setShowLogForm(false); setLogForm({ modality: '', date: '', facilitator: '', status: '' }) }}

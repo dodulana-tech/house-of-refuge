@@ -1,121 +1,48 @@
-import React, { useState, useMemo } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useMemo, useEffect } from 'react'
+import { getPatients, getAssessments } from '../../utils/supabase'
+import { mapPatientRow } from '../../utils/patients'
 
 /*
   Clinical Assessment Schedule — Treatment Protocol Section 5.5 / Appendix B.
   Automated "assessments due" tracker. Calculates next-due dates based on
   admission date, frequency rules, and last-completed dates. Initials only (HIPAA).
+
+  Live data: active patients (getPatients) + their recorded assessment results
+  (getAssessments). The schedule template below (which assessments exist and how
+  often) stays static config; each patient's "last completed" per assessment is
+  derived from the newest matching assessment row's created_at.
 */
 
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
+const TODAY = new Date().toISOString().split('T')[0]
 
-const STAFF_OPTIONS = [
-  { value: 'AI', label: 'AI — Clinical Lead' },
-  { value: 'FA', label: 'FA — Nurse' },
-  { value: 'PK', label: 'PK — Chaplain' },
-  { value: 'SN', label: 'SN — Social Worker' },
-  { value: 'MO', label: 'MO — Support Staff' },
-  { value: 'TA', label: 'TA — Counsellor' },
-  { value: 'HM', label: 'HM — Nurse' },
-]
+const ACTIVE_STATUSES = ['admitted', 'on-pass', 'suspended']
 
-const TODAY = '2026-04-06'
-
-// Assessment schedule per Appendix B
+// Assessment schedule per Appendix B. `type` is the value stored in the
+// `assessments` table's `type` column (defaults to `id` when the same).
 const ASSESSMENTS = [
-  { id: 'cssrs',    name: 'C-SSRS',          admission: true, weekly: true,      fortnightly: false, monthly: false, discharge: true,  asNeeded: false },
+  { id: 'cssrs',    type: 'risk', name: 'C-SSRS',          admission: true, weekly: true,      fortnightly: false, monthly: false, discharge: true,  asNeeded: false },
   { id: 'ciwa',     name: 'CIWA-Ar (Alcohol)', admission: true, weekly: false,   fortnightly: false, monthly: false, discharge: false, asNeeded: true },
   { id: 'cows',     name: 'COWS (Opioid)',    admission: true, weekly: false,     fortnightly: false, monthly: false, discharge: false, asNeeded: true },
   { id: 'audit',    name: 'AUDIT',            admission: true, weekly: false,     fortnightly: false, monthly: false, discharge: true,  asNeeded: false },
   { id: 'dast10',   name: 'DAST-10',          admission: true, weekly: false,     fortnightly: false, monthly: false, discharge: true,  asNeeded: false },
   { id: 'phq9',     name: 'PHQ-9',            admission: true, weekly: false,     fortnightly: false, monthly: true,  discharge: true,  asNeeded: false },
   { id: 'gad7',     name: 'GAD-7',            admission: true, weekly: false,     fortnightly: false, monthly: true,  discharge: true,  asNeeded: false },
-  { id: 'urica',    name: 'URICA',            admission: true, weekly: false,     fortnightly: true,  monthly: false, discharge: true,  asNeeded: false },
-  { id: 'ace',      name: 'ACE (Trauma)',     admission: true, weekly: false,     fortnightly: false, monthly: false, discharge: false, asNeeded: false },
+  { id: 'urica',    type: 'urica', name: 'URICA',            admission: true, weekly: false,     fortnightly: true,  monthly: false, discharge: true,  asNeeded: false },
+  { id: 'ace',      type: 'ace', name: 'ACE (Trauma)',     admission: true, weekly: false,     fortnightly: false, monthly: false, discharge: false, asNeeded: false },
   { id: 'vitals',   name: 'Vitals',           admission: true, weekly: true,      fortnightly: false, monthly: false, discharge: true,  asNeeded: false },
   { id: 'uds',      name: 'UDS',              admission: true, weekly: false,     fortnightly: false, monthly: true,  discharge: true,  asNeeded: false },
   { id: 'weightbmi', name: 'Weight/BMI',      admission: true, weekly: false,     fortnightly: false, monthly: true,  discharge: true,  asNeeded: false },
 ]
 
-// Patient data with admission dates and last-completed dates for each assessment
-const PATIENT_DATA = {
-  CO: {
-    admissionDate: '2026-03-06',
-    dischargeDate: null,
-    lastCompleted: {
-      cssrs:    '2026-03-30',
-      ciwa:     '2026-03-06',
-      cows:     null,
-      audit:    '2026-03-06',
-      dast10:   '2026-03-06',
-      phq9:     '2026-03-06',
-      gad7:     '2026-03-30',
-      urica:    '2026-03-20',
-      ace:      '2026-03-06',
-      vitals:   '2026-03-30',
-      uds:      '2026-03-06',
-      weightbmi:'2026-03-06',
-    },
-  },
-  AN: {
-    admissionDate: '2026-02-18',
-    dischargeDate: null,
-    lastCompleted: {
-      cssrs:    '2026-03-18',
-      ciwa:     '2026-02-18',
-      cows:     null,
-      audit:    '2026-02-18',
-      dast10:   '2026-02-18',
-      phq9:     '2026-03-18',
-      gad7:     '2026-03-01',
-      urica:    '2026-03-04',
-      ace:      '2026-02-18',
-      vitals:   '2026-03-18',
-      uds:      '2026-03-18',
-      weightbmi:'2026-03-18',
-    },
-  },
-  KA: {
-    admissionDate: '2026-01-15',
-    dischargeDate: null,
-    lastCompleted: {
-      cssrs:    '2026-03-30',
-      ciwa:     '2026-01-15',
-      cows:     null,
-      audit:    '2026-01-15',
-      dast10:   '2026-01-15',
-      phq9:     '2026-03-15',
-      gad7:     '2026-03-15',
-      urica:    '2026-03-19',
-      ace:      '2026-01-15',
-      vitals:   '2026-03-30',
-      uds:      '2026-03-15',
-      weightbmi:'2026-03-15',
-    },
-  },
-  IM: {
-    admissionDate: '2026-03-21',
-    dischargeDate: null,
-    lastCompleted: {
-      cssrs:    '2026-03-28',
-      ciwa:     '2026-03-21',
-      cows:     '2026-03-21',
-      audit:    '2026-03-21',
-      dast10:   '2026-03-21',
-      phq9:     '2026-03-21',
-      gad7:     '2026-03-21',
-      urica:    '2026-03-21',
-      ace:      '2026-03-21',
-      vitals:   '2026-03-28',
-      uds:      '2026-03-21',
-      weightbmi:'2026-03-21',
-    },
-  },
+// The DB `type` for an assessment row that satisfies this schedule item.
+const assessmentType = (assessment) => assessment.type || assessment.id
+
+// Newest matching assessment row's date (YYYY-MM-DD), or null. Rows arrive
+// newest-first, so the first row of a given type is the most recent.
+function lastCompletedFor(rows, type) {
+  const match = (rows || []).find((r) => r.type === type)
+  if (!match || !match.created_at) return null
+  return String(match.created_at).split('T')[0]
 }
 
 function daysBetween(dateA, dateB) {
@@ -246,14 +173,48 @@ function statusBadge(status) {
 }
 
 export default function AssessmentSchedule() {
-  const { user } = useAuth()
   const [selectedPatient, setSelectedPatient] = useState('ALL')
-  const [patientData, setPatientData] = useState(PATIENT_DATA)
+  // Live roster: [{ id, initials, admissionDate, lastCompleted: { [assessmentId]: date|null } }]
+  const [patients, setPatients] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Calculate assessment statuses for a single patient
-  const getPatientAssessments = (initials) => {
-    const data = patientData[initials]
-    if (!data) return []
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      const { data: rows } = await getPatients()
+      const active = (rows || []).filter((r) => ACTIVE_STATUSES.includes(r.status))
+
+      const derived = await Promise.all(
+        active.map(async (row) => {
+          const mapped = mapPatientRow(row)
+          const { data: assessmentRows } = await getAssessments(mapped.id)
+          const lastCompleted = {}
+          ASSESSMENTS.forEach((a) => {
+            lastCompleted[a.id] = lastCompletedFor(assessmentRows, assessmentType(a))
+          })
+          return {
+            id: mapped.id,
+            initials: mapped.initials,
+            admissionDate: mapped.admittedAt ? String(mapped.admittedAt).split('T')[0] : null,
+            lastCompleted,
+          }
+        })
+      )
+
+      if (!cancelled) {
+        setPatients(derived)
+        setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  // Calculate assessment statuses for a single patient (by id)
+  const getPatientAssessments = (id) => {
+    const data = patients.find((p) => p.id === id)
+    if (!data || !data.admissionDate) return []
     return ASSESSMENTS.map((assessment) => {
       const { nextDue, status } = calculateNextDue(assessment, data, TODAY)
       return {
@@ -272,8 +233,8 @@ export default function AssessmentSchedule() {
     let upcomingThisWeek = 0
     const patientSummaries = []
 
-    PATIENTS.forEach((p) => {
-      const assessments = getPatientAssessments(p.initials)
+    patients.forEach((p) => {
+      const assessments = getPatientAssessments(p.id)
       let patientOverdue = 0
       let patientDueToday = 0
       let patientCompleted = 0
@@ -289,9 +250,10 @@ export default function AssessmentSchedule() {
       const compliance = total > 0 ? Math.round(((patientCompleted + assessments.filter((a) => a.status === 'Not Yet Due').length) / total) * 100) : 0
 
       patientSummaries.push({
+        id: p.id,
         initials: p.initials,
-        admissionDate: patientData[p.initials].admissionDate,
-        week: getWeekNumber(patientData[p.initials].admissionDate, TODAY),
+        admissionDate: p.admissionDate,
+        week: p.admissionDate ? getWeekNumber(p.admissionDate, TODAY) : '—',
         overdueCount: patientOverdue,
         dueTodayCount: patientDueToday,
         compliance,
@@ -299,11 +261,38 @@ export default function AssessmentSchedule() {
     })
 
     return { dueToday, overdue, upcomingThisWeek, patientSummaries }
-  }, [patientData])
+  }, [patients])
 
-  const selectedAssessments = selectedPatient !== 'ALL' ? getPatientAssessments(selectedPatient) : []
-  const selectedData = selectedPatient !== 'ALL' ? patientData[selectedPatient] : null
-  const selectedWeek = selectedData ? getWeekNumber(selectedData.admissionDate, TODAY) : null
+  const selectedData = selectedPatient !== 'ALL' ? patients.find((p) => p.id === selectedPatient) : null
+  const selectedAssessments = selectedData ? getPatientAssessments(selectedData.id) : []
+  const selectedWeek = selectedData && selectedData.admissionDate ? getWeekNumber(selectedData.admissionDate, TODAY) : null
+
+  if (loading) {
+    return (
+      <div style={{ padding: 24 }}>
+        <p style={{ color: '#718096', fontSize: 14 }}>Loading assessment schedule…</p>
+      </div>
+    )
+  }
+
+  if (patients.length === 0) {
+    return (
+      <div style={{ padding: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1A202C', margin: 0 }}>
+          Assessment Schedule
+        </h1>
+        <p style={{ color: '#718096', fontSize: 14, margin: '4px 0 0' }}>
+          Clinical Assessment Tracker (Protocol Section 5.5 / Appendix B)
+        </p>
+        <div
+          className="card"
+          style={{ padding: 40, marginTop: 20, borderRadius: 12, border: '1px solid #E2E8F0', background: '#fff', textAlign: 'center', color: '#718096' }}
+        >
+          No active patients on record yet.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ padding: 24 }}>
@@ -331,8 +320,8 @@ export default function AssessmentSchedule() {
             }}
           >
             <option value="ALL">All Patients</option>
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>{p.initials}</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
           </select>
         </div>
@@ -453,9 +442,9 @@ export default function AssessmentSchedule() {
               </thead>
               <tbody>
                 {summaryStats.patientSummaries.map((ps) => (
-                  <tr key={ps.initials} style={{ borderBottom: '1px solid #EDF2F7' }}>
+                  <tr key={ps.id} style={{ borderBottom: '1px solid #EDF2F7' }}>
                     <td style={{ padding: '10px 10px', fontWeight: 700, fontSize: 15 }}>{ps.initials}</td>
-                    <td style={{ padding: '10px 10px' }}>{ps.admissionDate}</td>
+                    <td style={{ padding: '10px 10px' }}>{ps.admissionDate || '—'}</td>
                     <td style={{ padding: '10px 10px', textAlign: 'center', fontWeight: 600 }}>
                       {ps.week} / 12
                     </td>
@@ -500,7 +489,7 @@ export default function AssessmentSchedule() {
                     </td>
                     <td style={{ padding: '10px 10px', textAlign: 'center' }}>
                       <button
-                        onClick={() => setSelectedPatient(ps.initials)}
+                        onClick={() => setSelectedPatient(ps.id)}
                         style={{
                           padding: '4px 14px',
                           borderRadius: 6,
@@ -539,7 +528,7 @@ export default function AssessmentSchedule() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-                {selectedPatient} — Programme Week {selectedWeek} of 12
+                {selectedData.initials} — Programme Week {selectedWeek ?? '—'} of 12
               </h2>
               <button
                 onClick={() => setSelectedPatient('ALL')}
@@ -558,11 +547,15 @@ export default function AssessmentSchedule() {
               </button>
             </div>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, color: '#4A5568', marginTop: 12 }}>
-              <span><strong>Admission Date:</strong> {selectedData.admissionDate}</span>
-              <span><strong>Expected Discharge:</strong> {addDays(selectedData.admissionDate, 84)}</span>
-              <span><strong>Days in Programme:</strong> {daysBetween(selectedData.admissionDate, TODAY)}</span>
-              {isNearDischarge(selectedData.admissionDate, TODAY) && (
-                <span style={{ color: '#D69E2E', fontWeight: 700 }}>Near Discharge — Discharge assessments becoming due</span>
+              <span><strong>Admission Date:</strong> {selectedData.admissionDate || '—'}</span>
+              {selectedData.admissionDate && (
+                <>
+                  <span><strong>Expected Discharge:</strong> {addDays(selectedData.admissionDate, 84)}</span>
+                  <span><strong>Days in Programme:</strong> {daysBetween(selectedData.admissionDate, TODAY)}</span>
+                  {isNearDischarge(selectedData.admissionDate, TODAY) && (
+                    <span style={{ color: '#D69E2E', fontWeight: 700 }}>Near Discharge — Discharge assessments becoming due</span>
+                  )}
+                </>
               )}
             </div>
           </div>

@@ -187,6 +187,27 @@
   margin: 0;
 }
 
+.faqList { display: flex; flex-direction: column; gap: 14px; max-width: 820px; }
+.faqItem {
+  background: #fff;
+  border: 1px solid #E5E9EE;
+  border-left: 3px solid var(--gold);
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+.faqQ {
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+.faqA {
+  font-size: .92rem;
+  line-height: 1.7;
+  color: var(--g700);
+  margin: 0;
+}
+
 @media (max-width: 720px) {
   .coverGrid { grid-template-columns: 1fr; gap: 16px; padding: 22px; }
 }

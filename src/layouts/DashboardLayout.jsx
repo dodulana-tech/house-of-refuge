@@ -73,6 +73,7 @@ const MENU = {
     { icon: '💰', to: '/dashboard/finance', label: 'Financial Overview' },
     { icon: '💳', to: '/dashboard/payments', label: 'Payments & Deposits' },
     { icon: '❤️', to: '/dashboard/donors', label: 'Donors & CRM' },
+    { icon: '🎗️', to: '/dashboard/donations', label: 'Donations' },
     { icon: '🤝', to: '/dashboard/financial-assistance', label: 'Financial Assistance' },
 
     { section: 'Outpatient' },

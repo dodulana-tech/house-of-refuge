@@ -1,74 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fmt } from '../../utils/paystack'
+import { isSupabaseReady, getDonor, updateDonor } from '../../utils/supabase'
 
 const COMM_TYPES = ['email', 'call', 'visit', 'letter']
-
-const initDonors = () => [
-  { id: 1, name: 'Mrs. Adeyemi Olufunmi', type: 'individual', totalGiven: 750000, lastGift: '2026-03-15', frequency: 'monthly', engagementScore: 87, preferredComm: 'call',
-    comms: [
-      { date: '2026-03-15', type: 'call', notes: 'Thanked for recurring donation. Expressed interest in sponsoring a client.' },
-      { date: '2026-02-14', type: 'email', notes: 'Sent monthly impact newsletter. Opened and replied positively.' },
-      { date: '2026-01-20', type: 'call', notes: 'New year check-in. Confirmed continued monthly pledge.' },
-    ] },
-  { id: 2, name: 'Zenith Bank Foundation', type: 'corporate', totalGiven: 5000000, lastGift: '2026-01-10', frequency: 'annual', engagementScore: 72, preferredComm: 'email',
-    comms: [
-      { date: '2026-01-10', type: 'email', notes: 'CSR grant disbursed for Q1 2026.' },
-      { date: '2025-11-05', type: 'visit', notes: 'CSR team visited facility for due diligence.' },
-    ] },
-  { id: 3, name: 'RCCG Abuja Parish 4', type: 'church', totalGiven: 1200000, lastGift: '2026-02-28', frequency: 'quarterly', engagementScore: 91, preferredComm: 'visit',
-    comms: [
-      { date: '2026-02-28', type: 'visit', notes: 'Pastor visited facility. Committed to quarterly support.' },
-      { date: '2025-12-15', type: 'call', notes: 'Christmas season planning call. Arranged carol service at facility.' },
-    ] },
-  { id: 4, name: 'Chief Emeka Okafor', type: 'individual', totalGiven: 2000000, lastGift: '2025-12-20', frequency: 'one-time', engagementScore: 45, preferredComm: 'letter',
-    comms: [
-      { date: '2025-12-20', type: 'letter', notes: 'Christmas donation. Sent thank-you letter and impact report.' },
-    ] },
-  { id: 5, name: 'Dangote Foundation', type: 'corporate', totalGiven: 10000000, lastGift: '2025-11-01', frequency: 'annual', engagementScore: 68, preferredComm: 'email',
-    comms: [
-      { date: '2025-11-01', type: 'email', notes: 'Equipment sponsorship agreement signed for 2026.' },
-      { date: '2025-09-15', type: 'visit', notes: 'Foundation representatives toured facility.' },
-      { date: '2025-08-01', type: 'email', notes: 'Initial proposal submitted for equipment grant.' },
-    ] },
-  { id: 6, name: 'Dr. Nnamdi Azikiwe', type: 'individual', totalGiven: 350000, lastGift: '2026-03-01', frequency: 'bi-monthly', engagementScore: 79, preferredComm: 'call',
-    comms: [
-      { date: '2026-03-01', type: 'call', notes: 'Regular check-in. Will increase giving from April.' },
-      { date: '2026-01-05', type: 'email', notes: 'Shared annual report. Very impressed with outcomes.' },
-    ] },
-]
-
-const MOCK_DONATIONS = {
-  1: [
-    { date: '2026-03-15', amount: 150000, purpose: 'Monthly Pledge', ref: 'DON-2603-001' },
-    { date: '2026-02-15', amount: 150000, purpose: 'Monthly Pledge', ref: 'DON-2602-001' },
-    { date: '2026-01-15', amount: 150000, purpose: 'Monthly Pledge', ref: 'DON-2601-001' },
-    { date: '2025-12-15', amount: 150000, purpose: 'Monthly Pledge', ref: 'DON-2512-001' },
-    { date: '2025-11-15', amount: 150000, purpose: 'Monthly Pledge', ref: 'DON-2511-001' },
-  ],
-  2: [
-    { date: '2026-01-10', amount: 5000000, purpose: 'CSR Annual Grant — Q1 2026', ref: 'DON-ZBF-2601' },
-  ],
-  3: [
-    { date: '2026-02-28', amount: 400000, purpose: 'Quarterly Church Offering', ref: 'DON-RCCG-Q1' },
-    { date: '2025-11-30', amount: 400000, purpose: 'Quarterly Church Offering', ref: 'DON-RCCG-Q4' },
-    { date: '2025-08-31', amount: 400000, purpose: 'Quarterly Church Offering', ref: 'DON-RCCG-Q3' },
-  ],
-  4: [
-    { date: '2025-12-20', amount: 2000000, purpose: 'Christmas Gift — General Fund', ref: 'DON-CEO-2512' },
-  ],
-  5: [
-    { date: '2025-11-01', amount: 7000000, purpose: 'Equipment Sponsorship Grant', ref: 'DON-DGF-EQ01' },
-    { date: '2025-05-01', amount: 3000000, purpose: 'Facility Maintenance Grant', ref: 'DON-DGF-FM01' },
-  ],
-  6: [
-    { date: '2026-03-01', amount: 75000, purpose: 'Bi-monthly Pledge', ref: 'DON-NA-2603' },
-    { date: '2026-01-01', amount: 75000, purpose: 'Bi-monthly Pledge', ref: 'DON-NA-2601' },
-    { date: '2025-11-01', amount: 75000, purpose: 'Bi-monthly Pledge', ref: 'DON-NA-2511' },
-    { date: '2025-09-01', amount: 50000, purpose: 'Bi-monthly Pledge', ref: 'DON-NA-2509' },
-    { date: '2025-07-01', amount: 50000, purpose: 'Bi-monthly Pledge', ref: 'DON-NA-2507' },
-  ],
-}
+const STATUS_OPTIONS = ['active', 'lapsed', 'prospect', 'inactive']
 
 const typeColors = {
   individual: { bg: '#BEE3F8', color: '#2A4365' },
@@ -76,15 +12,50 @@ const typeColors = {
   church: { bg: '#FEFCBF', color: '#744210' },
 }
 
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
+
 export default function DonorDetail() {
   const { id } = useParams()
-  const donors = initDonors()
-  const donor = donors.find(d => String(d.id) === id)
+
+  const [donor, setDonor] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const [commForm, setCommForm] = useState({ date: '', type: 'email', notes: '' })
-  const [comms, setComms] = useState(donor ? [...donor.comms] : [])
 
-  if (!donor) {
+  useEffect(() => {
+    let active = true
+    if (!isSupabaseReady()) {
+      setLoading(false)
+      setNotFound(true)
+      return
+    }
+    setLoading(true)
+    getDonor(id).then(({ data, error }) => {
+      if (!active) return
+      if (error) {
+        if (error.code === 'PGRST116') setNotFound(true)
+        else { console.error(error); setNotFound(true) }
+      } else if (!data) {
+        setNotFound(true)
+      } else {
+        setDonor(data)
+      }
+      setLoading(false)
+    })
+    return () => { active = false }
+  }, [id])
+
+  if (loading) {
+    return (
+      <div style={{ padding: 40, textAlign: 'center' }}>
+        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Loading donor…</p>
+      </div>
+    )
+  }
+
+  if (notFound || !donor) {
     return (
       <div style={{ padding: 40, textAlign: 'center' }}>
         <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', marginBottom: 12 }}>Donor Not Found</h2>
@@ -94,17 +65,39 @@ export default function DonorDetail() {
     )
   }
 
+  const data = donor.data || {}
+  const comms = Array.isArray(data.communications) ? data.communications : []
+  const gifts = Array.isArray(data.gifts) ? data.gifts : []
   const tc = typeColors[donor.type] || { bg: '#E2E8F0', color: '#4A5568' }
-  const donations = MOCK_DONATIONS[donor.id] || []
 
-  const handleLogComm = (e) => {
-    e.preventDefault()
-    if (!commForm.date || !commForm.notes) return
-    setComms(prev => [{ ...commForm }, ...prev])
-    setCommForm({ date: '', type: 'email', notes: '' })
+  const persist = async (updates) => {
+    setSaving(true)
+    const { data: updated, error } = await updateDonor(donor.id, updates)
+    setSaving(false)
+    if (error) {
+      if (error.code === 'PGRST116') { setNotFound(true); return false }
+      alert(error.message || 'Failed to save changes.')
+      return false
+    }
+    if (updated) setDonor(updated)
+    else setDonor(prev => ({ ...prev, ...updates }))
+    return true
   }
 
-  const scoreColor = donor.engagementScore >= 80 ? '#1A7A4A' : donor.engagementScore >= 60 ? '#D69E2E' : '#E53E3E'
+  const handleLogComm = async (e) => {
+    e.preventDefault()
+    if (!commForm.date || !commForm.notes || saving) return
+    const entry = { date: commForm.date, type: commForm.type, notes: commForm.notes }
+    const nextComms = [entry, ...comms]
+    const ok = await persist({ data: { ...data, communications: nextComms } })
+    if (ok) setCommForm({ date: '', type: 'email', notes: '' })
+  }
+
+  const handleStatusChange = async (e) => {
+    const status = e.target.value
+    if (saving) return
+    await persist({ status })
+  }
 
   return (
     <div>
@@ -116,26 +109,34 @@ export default function DonorDetail() {
       {/* Donor Info Card */}
       <div className="card" style={{ padding: 24, marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
               <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.6rem', margin: 0 }}>{donor.name}</h1>
-              <span style={{ padding: '3px 12px', borderRadius: 12, fontSize: '.72rem', fontWeight: 700, background: tc.bg, color: tc.color }}>
-                {donor.type}
-              </span>
+              {donor.type && (
+                <span style={{ padding: '3px 12px', borderRadius: 12, fontSize: '.72rem', fontWeight: 700, background: tc.bg, color: tc.color, textTransform: 'capitalize' }}>
+                  {donor.type}
+                </span>
+              )}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
               {[
-                { label: 'Total Given', value: fmt(donor.totalGiven), color: '#1A7A4A' },
-                { label: 'Engagement Score', value: `${donor.engagementScore}/100`, color: scoreColor },
-                { label: 'Last Contact', value: donor.lastGift },
-                { label: 'Frequency', value: donor.frequency.charAt(0).toUpperCase() + donor.frequency.slice(1) },
-                { label: 'Preferred Communication', value: donor.preferredComm.charAt(0).toUpperCase() + donor.preferredComm.slice(1) },
+                { label: 'Total Given', value: fmt(donor.total_given || 0), color: '#1A7A4A' },
+                { label: 'Email', value: donor.email || '—' },
+                { label: 'Phone', value: donor.phone || '—' },
               ].map(item => (
                 <div key={item.label}>
                   <div style={{ fontSize: '.72rem', color: 'var(--g500)', marginBottom: 2 }}>{item.label}</div>
                   <div style={{ fontSize: '.95rem', fontWeight: 700, color: item.color || 'var(--charcoal)' }}>{item.value}</div>
                 </div>
               ))}
+              <div>
+                <div style={{ fontSize: '.72rem', color: 'var(--g500)', marginBottom: 2 }}>Status</div>
+                <select value={donor.status || ''} onChange={handleStatusChange} disabled={saving}
+                  style={{ width: '100%', padding: 6, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.85rem', fontWeight: 700 }}>
+                  {!donor.status && <option value="">—</option>}
+                  {STATUS_OPTIONS.map(s => <option key={s} value={s}>{cap(s)}</option>)}
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -145,7 +146,7 @@ export default function DonorDetail() {
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>
         <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', marginBottom: 14 }}>Communication History</h2>
         {comms.length === 0 ? (
-          <p style={{ fontSize: '.84rem', color: 'var(--g400)' }}>No communication logged yet.</p>
+          <p style={{ fontSize: '.84rem', color: 'var(--g400)' }}>No communications logged yet.</p>
         ) : (
           <div style={{ position: 'relative', paddingLeft: 20 }}>
             <div style={{ position: 'absolute', left: 6, top: 4, bottom: 4, width: 2, background: 'var(--g200)' }} />
@@ -166,11 +167,11 @@ export default function DonorDetail() {
         )}
       </div>
 
-      {/* Donations / Transactions Table */}
+      {/* Gifts / Transactions Table */}
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>
         <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', marginBottom: 14 }}>Donations &amp; Transactions</h2>
-        {donations.length === 0 ? (
-          <p style={{ fontSize: '.84rem', color: 'var(--g400)' }}>No transactions on record.</p>
+        {gifts.length === 0 ? (
+          <p style={{ fontSize: '.84rem', color: 'var(--g400)' }}>No gifts recorded yet.</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.82rem' }}>
@@ -182,12 +183,12 @@ export default function DonorDetail() {
                 </tr>
               </thead>
               <tbody>
-                {donations.map((d, i) => (
+                {gifts.map((g, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid var(--g100)' }}>
-                    <td style={{ padding: '8px 10px', color: 'var(--g500)' }}>{d.date}</td>
-                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#1A7A4A' }}>{fmt(d.amount)}</td>
-                    <td style={{ padding: '8px 10px' }}>{d.purpose}</td>
-                    <td style={{ padding: '8px 10px', color: 'var(--g400)', fontFamily: 'monospace', fontSize: '.76rem' }}>{d.ref}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--g500)' }}>{g.date || '—'}</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#1A7A4A' }}>{g.amount != null ? fmt(g.amount) : '—'}</td>
+                    <td style={{ padding: '8px 10px' }}>{g.purpose || '—'}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--g400)', fontFamily: 'monospace', fontSize: '.76rem' }}>{g.ref || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -209,7 +210,7 @@ export default function DonorDetail() {
             <label style={{ fontSize: '.72rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Type</label>
             <select value={commForm.type} onChange={e => setCommForm(p => ({ ...p, type: e.target.value }))}
               style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem' }}>
-              {COMM_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+              {COMM_TYPES.map(t => <option key={t} value={t}>{cap(t)}</option>)}
             </select>
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
@@ -219,8 +220,9 @@ export default function DonorDetail() {
               style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem', resize: 'vertical' }} />
           </div>
           <div>
-            <button type="submit" style={{ padding: '8px 24px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: '.82rem' }}>
-              Save Entry
+            <button type="submit" disabled={saving}
+              style={{ padding: '8px 24px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '.82rem', opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Saving…' : 'Save Entry'}
             </button>
           </div>
         </form>

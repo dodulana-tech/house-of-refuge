@@ -1,19 +1,14 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getDetoxRecords, addDetoxRecord, isSupabaseReady } from '../../utils/supabase'
+import { initialsFromName } from '../../utils/patients'
 
 /*
   Detox Tracker — Detoxification completion criteria per Treatment Protocol
   Sections 7.2-7.4 + Section 20 (Substance-Specific Clinical Pathways) + SOP-002.
-  Tracks consecutive hours below threshold for completion.
+  Live `detox_records` table backs the score log; substance/phase/checklist are
+  clinical working state seeded from the patient's primary substance.
   Initials only (HIPAA). All fields are selects — zero free text except notes.
 */
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
 
 const STAFF_OPTIONS = [
   { value: 'AI', label: 'AI — Clinical Lead' },
@@ -114,96 +109,15 @@ const COMPLETION_CRITERIA = {
   ],
 }
 
-// Demo data — score logs with timestamps
-const INITIAL_DETOX_DATA = {
-  CO: {
-    substance: 'Alcohol',
-    protocol: 'CIWA-Ar Guided',
-    startDate: '2026-03-01',
-    phase: 'Complete',
-    scores: [
-      { id: 1, datetime: '2026-03-01T08:00', score: 28, assessor: 'FA', vitals: 'Unstable', notes: '' },
-      { id: 2, datetime: '2026-03-01T14:00', score: 24, assessor: 'FA', vitals: 'Unstable', notes: '' },
-      { id: 3, datetime: '2026-03-01T20:00', score: 22, assessor: 'HM', vitals: 'Unstable', notes: '' },
-      { id: 4, datetime: '2026-03-02T08:00', score: 18, assessor: 'FA', vitals: 'Unstable', notes: '' },
-      { id: 5, datetime: '2026-03-02T14:00', score: 15, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 6, datetime: '2026-03-02T20:00', score: 12, assessor: 'HM', vitals: 'Stable', notes: '' },
-      { id: 7, datetime: '2026-03-03T08:00', score: 10, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 8, datetime: '2026-03-03T14:00', score: 8, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 9, datetime: '2026-03-03T20:00', score: 7, assessor: 'HM', vitals: 'Stable', notes: '' },
-      { id: 10, datetime: '2026-03-04T08:00', score: 5, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 11, datetime: '2026-03-04T14:00', score: 4, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 12, datetime: '2026-03-04T20:00', score: 3, assessor: 'HM', vitals: 'Stable', notes: '' },
-      { id: 13, datetime: '2026-03-05T08:00', score: 3, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 14, datetime: '2026-03-05T14:00', score: 2, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 15, datetime: '2026-03-05T20:00', score: 2, assessor: 'HM', vitals: 'Stable', notes: '' },
-    ],
-    checklist: {
-      'CIWA-Ar < 8 for 24 consecutive hours': true,
-      'Vital signs stable': true,
-      'No seizure risk': true,
-    },
-  },
-  AN: {
-    substance: 'Opioid',
-    protocol: 'COWS Guided',
-    startDate: '2026-03-02',
-    phase: 'Active Detox',
-    scores: [
-      { id: 16, datetime: '2026-03-02T08:00', score: 32, assessor: 'FA', vitals: 'Unstable', notes: '' },
-      { id: 17, datetime: '2026-03-02T14:00', score: 28, assessor: 'FA', vitals: 'Unstable', notes: '' },
-      { id: 18, datetime: '2026-03-02T20:00', score: 24, assessor: 'HM', vitals: 'Unstable', notes: '' },
-      { id: 19, datetime: '2026-03-03T08:00', score: 18, assessor: 'FA', vitals: 'Unstable', notes: '' },
-      { id: 20, datetime: '2026-03-03T14:00', score: 14, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 21, datetime: '2026-03-03T20:00', score: 10, assessor: 'HM', vitals: 'Stable', notes: '' },
-      { id: 22, datetime: '2026-03-04T08:00', score: 7, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 23, datetime: '2026-03-04T14:00', score: 5, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 24, datetime: '2026-03-04T20:00', score: 4, assessor: 'HM', vitals: 'Stable', notes: '' },
-      { id: 25, datetime: '2026-03-05T02:00', score: 4, assessor: 'HM', vitals: 'Stable', notes: '' },
-      { id: 26, datetime: '2026-03-05T08:00', score: 3, assessor: 'FA', vitals: 'Stable', notes: '' },
-    ],
-    checklist: {
-      'COWS < 5 for 24 consecutive hours': false,
-      'Vital signs stable': true,
-      'Adequate oral intake': false,
-    },
-  },
-  KA: {
-    substance: 'Cannabis',
-    protocol: 'Supportive',
-    startDate: '2026-03-01',
-    phase: 'Complete',
-    scores: [
-      { id: 27, datetime: '2026-03-01T08:00', score: null, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 28, datetime: '2026-03-02T08:00', score: null, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 29, datetime: '2026-03-03T08:00', score: null, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 30, datetime: '2026-03-04T08:00', score: null, assessor: 'FA', vitals: 'Stable', notes: '' },
-    ],
-    checklist: {
-      'Clinical observation stable': true,
-      'Mood normalized': true,
-      'Sleep normalized': true,
-      'Appetite normalized': true,
-    },
-  },
-  IM: {
-    substance: 'Alcohol',
-    protocol: 'CIWA-Ar Guided',
-    startDate: '2026-03-04',
-    phase: 'Active Detox',
-    scores: [
-      { id: 31, datetime: '2026-03-04T08:00', score: 26, assessor: 'FA', vitals: 'Unstable', notes: '' },
-      { id: 32, datetime: '2026-03-04T14:00', score: 22, assessor: 'FA', vitals: 'Unstable', notes: '' },
-      { id: 33, datetime: '2026-03-04T20:00', score: 19, assessor: 'HM', vitals: 'Unstable', notes: '' },
-      { id: 34, datetime: '2026-03-05T08:00', score: 16, assessor: 'FA', vitals: 'Stable', notes: '' },
-      { id: 35, datetime: '2026-03-05T14:00', score: 12, assessor: 'FA', vitals: 'Stable', notes: '' },
-    ],
-    checklist: {
-      'CIWA-Ar < 8 for 24 consecutive hours': false,
-      'Vital signs stable': false,
-      'No seizure risk': false,
-    },
-  },
+// Map a patient's free-text primary substance to a detox category.
+function categorizeSubstance(s) {
+  const v = (s || '').toLowerCase()
+  if (/alcohol/.test(v)) return 'Alcohol'
+  if (/heroin|tramadol|codeine|opioid|morphine|fentanyl/.test(v)) return 'Opioid'
+  if (/cannabis|weed|marijuana|igbo/.test(v)) return 'Cannabis'
+  if (/cocaine|amphetamine|meth|stimulant|crack/.test(v)) return 'Stimulant'
+  if (v) return 'Polysubstance'
+  return 'Alcohol'
 }
 
 function getScoreColor(score, threshold) {
@@ -282,9 +196,12 @@ function formatDatetime(dt) {
 }
 
 export default function DetoxTracker() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
-  const [detoxData, setDetoxData] = useState(INITIAL_DETOX_DATA)
+  const [patients, setPatients] = useState([]) // [{id, initials, admittedAt, substanceRaw}]
+  const [selectedPatient, setSelectedPatient] = useState('') // patient_id
+  const [scoresByPatient, setScoresByPatient] = useState({}) // id -> score log[]
+  const [config, setConfig] = useState({}) // id -> {substance, phase, checklist}
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     datetime: '',
@@ -294,10 +211,65 @@ export default function DetoxTracker() {
     notes: '',
   })
 
-  const data = detoxData[selectedPatient]
+  const loadScores = useCallback(async (patientId) => {
+    if (!patientId || !isSupabaseReady()) return []
+    const { data: rows } = await getDetoxRecords(patientId)
+    return (rows || []).map((r) => ({
+      id: r.id,
+      datetime: r.symptoms?.datetime || r.created_at,
+      score: r.score,
+      assessor: r.recorded_by_code || '',
+      vitals: r.symptoms?.vitals || '',
+      notes: r.symptoms?.notes || '',
+    }))
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      if (!isSupabaseReady()) { setLoading(false); return }
+      const { data: rows } = await getPatients()
+      const active = (rows || []).filter(p => ['admitted', 'on-pass', 'suspended'].includes(p.status))
+      const briefs = active.map(p => ({ id: p.id, initials: initialsFromName(p.full_name), admittedAt: p.admitted_at, substanceRaw: p.primary_substance }))
+      setPatients(briefs)
+      const cfg = {}
+      briefs.forEach(b => {
+        const substance = categorizeSubstance(b.substanceRaw)
+        const checklist = {}
+        ;(COMPLETION_CRITERIA[substance] || []).forEach(c => { checklist[c] = false })
+        cfg[b.id] = { substance, phase: 'Active Detox', checklist }
+      })
+      setConfig(cfg)
+      const first = briefs[0]?.id || ''
+      setSelectedPatient(first)
+      if (first) setScoresByPatient({ [first]: await loadScores(first) })
+      setLoading(false)
+    })()
+  }, [loadScores])
+
+  const onSelectPatient = async (id) => {
+    setSelectedPatient(id)
+    setShowForm(false)
+    if (!scoresByPatient[id]) {
+      const s = await loadScores(id)
+      setScoresByPatient(prev => ({ ...prev, [id]: s }))
+    }
+  }
+
+  const cfg = config[selectedPatient] || { substance: 'Alcohol', phase: 'Active Detox', checklist: {} }
+  const scores = scoresByPatient[selectedPatient] || []
+  const data = {
+    substance: cfg.substance,
+    protocol: PROTOCOL_MAP[cfg.substance],
+    startDate: patients.find(p => p.id === selectedPatient)?.admittedAt
+      ? String(patients.find(p => p.id === selectedPatient).admittedAt).slice(0, 10)
+      : (scores.length ? String(scores[0].datetime).slice(0, 10) : '—'),
+    phase: cfg.phase,
+    scores,
+    checklist: cfg.checklist,
+  }
+  const selectedInitials = patients.find(p => p.id === selectedPatient)?.initials || ''
   const protocolInfo = THRESHOLD_MAP[data.protocol]
   const threshold = protocolInfo.threshold
-  const scores = data.scores
   const sortedScores = [...scores].sort((a, b) => new Date(a.datetime) - new Date(b.datetime))
   const consecutiveHours = calculateConsecutiveHours(scores, threshold)
   const status = getDetoxStatus(data.phase, scores, threshold)
@@ -309,62 +281,41 @@ export default function DetoxTracker() {
     setForm({ datetime: '', score: '', assessor: '', vitals: '', notes: '' })
   }
 
-  const handleSubmit = () => {
-    if (!form.datetime || !form.assessor || !form.vitals) return
+  const handleSubmit = async () => {
+    if (!form.datetime || !form.assessor || !form.vitals || !selectedPatient) return
     if (threshold !== null && form.score === '') return
-
-    const newEntry = {
-      id: Date.now(),
-      datetime: form.datetime,
+    setSaving(true)
+    const { error } = await addDetoxRecord({
+      patient_id: selectedPatient,
+      scale: protocolInfo.label,
       score: threshold !== null ? parseInt(form.score, 10) : null,
-      assessor: form.assessor,
-      vitals: form.vitals,
-      notes: form.notes,
-    }
-
-    setDetoxData((prev) => ({
-      ...prev,
-      [selectedPatient]: {
-        ...prev[selectedPatient],
-        scores: [...prev[selectedPatient].scores, newEntry],
-      },
-    }))
+      recorded_by_code: form.assessor,
+      symptoms: { datetime: form.datetime, vitals: form.vitals, notes: form.notes },
+    })
+    setSaving(false)
+    if (error) { alert(`Could not save score: ${error.message}`); return }
+    const s = await loadScores(selectedPatient)
+    setScoresByPatient(prev => ({ ...prev, [selectedPatient]: s }))
     setShowForm(false)
     resetForm()
   }
 
   const handleSubstanceChange = (substance) => {
-    const protocol = PROTOCOL_MAP[substance]
-    const newCriteria = COMPLETION_CRITERIA[substance] || []
     const checklist = {}
-    newCriteria.forEach((c) => { checklist[c] = false })
-    setDetoxData((prev) => ({
-      ...prev,
-      [selectedPatient]: {
-        ...prev[selectedPatient],
-        substance,
-        protocol,
-        checklist,
-      },
-    }))
+    ;(COMPLETION_CRITERIA[substance] || []).forEach((c) => { checklist[c] = false })
+    setConfig((prev) => ({ ...prev, [selectedPatient]: { ...prev[selectedPatient], substance, checklist } }))
   }
 
   const handlePhaseChange = (phase) => {
-    setDetoxData((prev) => ({
-      ...prev,
-      [selectedPatient]: { ...prev[selectedPatient], phase },
-    }))
+    setConfig((prev) => ({ ...prev, [selectedPatient]: { ...prev[selectedPatient], phase } }))
   }
 
   const handleChecklistToggle = (criterion) => {
-    setDetoxData((prev) => ({
+    setConfig((prev) => ({
       ...prev,
       [selectedPatient]: {
         ...prev[selectedPatient],
-        checklist: {
-          ...prev[selectedPatient].checklist,
-          [criterion]: !prev[selectedPatient].checklist[criterion],
-        },
+        checklist: { ...prev[selectedPatient].checklist, [criterion]: !prev[selectedPatient].checklist[criterion] },
       },
     }))
   }
@@ -388,7 +339,7 @@ export default function DetoxTracker() {
           <label style={{ fontWeight: 600, fontSize: 14, color: '#4A5568' }}>Patient:</label>
           <select
             value={selectedPatient}
-            onChange={(e) => { setSelectedPatient(e.target.value); setShowForm(false) }}
+            onChange={(e) => onSelectPatient(e.target.value)}
             style={{
               padding: '8px 12px',
               borderRadius: 8,
@@ -398,8 +349,8 @@ export default function DetoxTracker() {
               background: '#fff',
             }}
           >
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>{p.initials}</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
           </select>
         </div>
@@ -418,7 +369,7 @@ export default function DetoxTracker() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-            Detox Status — {selectedPatient}
+            Detox Status — {selectedInitials}
           </h2>
           <span
             style={{
@@ -805,7 +756,7 @@ export default function DetoxTracker() {
           }}
         >
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: '0 0 8px' }}>
-            Add Score — {selectedPatient}
+            Add Score — {selectedInitials}
           </h2>
           <p style={{ fontSize: 13, color: '#718096', margin: '0 0 20px' }}>
             Record {protocolInfo.label} score with vital signs status.

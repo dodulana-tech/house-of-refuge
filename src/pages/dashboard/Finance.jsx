@@ -1,39 +1,71 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { fmt } from '../../utils/paystack'
+import { getPayments, isSupabaseReady } from '../../utils/supabase'
 
 /*
-  Financial Overview — Revenue streams per SOP Chapter 12:
-  1. Client Fees (Full / Subsidised / Compassion Fund)
-  2. Individual Donors
-  3. Corporate Sponsorship
-  4. Grants (Local & International)
-  5. Equipment Sponsorship
-  6. Revenue-Generating Ventures
+  Financial Overview — Revenue streams per SOP Chapter 12.
+  Reads live payment records from Supabase (amounts stored in kobo).
 */
 
-const REVENUE = {
-  deposits: 3000000,
-  treatmentFees: 1700000,
-  donations: 875000,
-  sponsorship: 920000,
-  grants: 0,
+const TYPE_LABELS = {
+  deposit: 'Deposit',
+  'treatment-fee': 'Treatment Fee',
+  donation: 'Donation',
+  sponsorship: 'Sponsorship',
+  medication: 'Medication',
 }
 
-const TRANSACTIONS = [
-  { date: '2026-04-01', desc: 'Booking Deposit — CO', type: 'deposit', amount: 1000000, status: 'verified', ref: 'HOR_WL_001' },
-  { date: '2026-03-28', desc: 'Booking Deposit — AN', type: 'deposit', amount: 1000000, status: 'verified', ref: 'HOR_WL_002' },
-  { date: '2026-03-25', desc: 'Booking Deposit — KA', type: 'deposit', amount: 1000000, status: 'verified', ref: 'HOR_WL_003' },
-  { date: '2026-04-01', desc: 'Treatment Fee — Month 1 (CO)', type: 'treatment', amount: 850000, status: 'verified', ref: 'HOR_TF_001' },
-  { date: '2026-03-30', desc: 'Treatment Fee — Month 2 (KA)', type: 'treatment', amount: 850000, status: 'verified', ref: 'HOR_TF_002' },
-  { date: '2026-03-28', desc: 'Donation — Anonymous', type: 'donation', amount: 250000, status: 'verified', ref: 'HOR_D_001' },
-  { date: '2026-03-25', desc: 'Equipment Sponsorship — Laptop x2', type: 'sponsorship', amount: 900000, status: 'verified', ref: 'HOR_S_001' },
-  { date: '2026-03-20', desc: 'Donation — Mrs. Adeyemi', type: 'donation', amount: 100000, status: 'verified', ref: 'HOR_D_002' },
-]
-
-const total = Object.values(REVENUE).reduce((s, v) => s + v, 0)
+function isThisMonth(iso) {
+  if (!iso) return false
+  const d = new Date(iso)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+}
 
 export default function Finance() {
   const [tab, setTab] = useState('overview')
+  const [payments, setPayments] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      if (isSupabaseReady()) {
+        const { data } = await getPayments() // all payments (staff RLS)
+        if (active) setPayments(data || [])
+      }
+      if (active) setLoading(false)
+    }
+    load()
+    return () => { active = false }
+  }, [])
+
+  // Settled payments only, amounts kobo → naira.
+  const settled = payments.filter(p => p.status === 'paid' || p.verified)
+  const naira = p => Math.round((p.amount || 0) / 100)
+  const mtd = settled.filter(p => isThisMonth(p.created_at))
+  const sumByType = (list, type) => list.filter(p => p.type === type).reduce((s, p) => s + naira(p), 0)
+
+  const REVENUE = {
+    deposits: sumByType(mtd, 'deposit'),
+    treatmentFees: sumByType(mtd, 'treatment-fee'),
+    donations: sumByType(mtd, 'donation'),
+    sponsorship: sumByType(mtd, 'sponsorship'),
+    grants: 0,
+  }
+  const total = Object.values(REVENUE).reduce((s, v) => s + v, 0)
+
+  const TRANSACTIONS = settled
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .map(p => ({
+      date: (p.created_at || '').slice(0, 10),
+      desc: p.description || `${TYPE_LABELS[p.type] || p.type || 'Payment'}`,
+      type: p.type,
+      amount: naira(p),
+      status: p.verified ? 'verified' : p.status,
+      ref: p.paystack_ref || '—',
+    }))
 
   return (
     <div>
@@ -71,7 +103,13 @@ export default function Finance() {
         ))}
       </div>
 
-      {tab === 'overview' && (
+      {tab === 'overview' && TRANSACTIONS.length === 0 && (
+        <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--g500)' }}>
+          {loading ? 'Loading transactions…' : 'No payments recorded yet.'}
+        </div>
+      )}
+
+      {tab === 'overview' && TRANSACTIONS.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {TRANSACTIONS.map((tx, i) => (
             <div key={i} className="card" style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>

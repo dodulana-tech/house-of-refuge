@@ -1,6 +1,6 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import styles from './Prospectus.module.css'
 
 export default function Prospectus() {
@@ -270,6 +270,9 @@ export default function Prospectus() {
           </div>
           <p className={styles.tierFooter}>
             <strong>Both tiers include:</strong> on-site Medical Director (daily) · visiting consultant psychiatrist (2 sessions/week), 24/7 nursing, supervised detox, daily group therapy, daily fitness, full aftercare planning, and the same WHO/UNODC clinical protocols. Three-month programme may be paid in three monthly instalments — admission confirmed on receipt of Month 1.
+          </p>
+          <p className={styles.subleadShort} style={{ marginTop: 16 }}>
+            Beyond the two paying tiers, a limited number of donor-funded places are held for families in genuine financial hardship — offered as funding allows and reviewed independently by Freedom Foundation. <Link to="/assistance" style={{ color: 'var(--blue)', fontWeight: 600 }}>Learn about Financial Assistance →</Link>
           </p>
 
           {/* 4b — 6-stage admission flow */}

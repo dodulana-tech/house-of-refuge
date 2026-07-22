@@ -1,20 +1,17 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getProgress, getAllProgress, upsertProgress, isSupabaseReady } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   Life Skills Tracker — SOP Chapter 7
   13 Life Skills Group modules tracked per patient.
-  Completion % reflects each patient's programme day and schedule frequency.
+  Per-patient completion is persisted live in `progress_records`
+  under domain 'life_skills' (JSONB map of moduleId -> status).
+  Module content lives on the separate static LifeSkillsModules page.
   HIPAA: initials only.
 */
 
-const PATIENTS = [
-  { initials: 'CO', id: 'P001', day: 23, phase: 'foundation' },
-  { initials: 'AN', id: 'P002', day: 45, phase: 'deepening' },
-  { initials: 'KA', id: 'P003', day: 74, phase: 'reintegration' },
-  { initials: 'IM', id: 'P004', day: 8, phase: 'stabilization' },
-]
-
+// Static module catalog — the definitions never change.
 const MODULES = [
   { id: 1, name: 'Morning Community Meeting', frequency: 'Daily', day: 'Mon–Sat', sessionsPerWeek: 6 },
   { id: 2, name: 'Care Planning Group', frequency: 'Weekly', day: 'Thursday', sessionsPerWeek: 1 },
@@ -31,49 +28,25 @@ const MODULES = [
   { id: 13, name: 'End-of-Day Wrap-Up', frequency: 'Daily', day: 'Mon–Sat', sessionsPerWeek: 6 },
 ]
 
-/*
-  Completion logic:
-  - KA (day 74): mostly complete (85-100% on most modules, started transition group)
-  - AN (day 45): moderate (55-80%)
-  - CO (day 23): early progress (20-50%)
-  - IM (day 8): minimal (0-15%, detox phase)
-  - Transition Group only applies for days >= 70 (Weeks 10-12)
-*/
-function getCompletion(patientInitials, moduleId) {
-  const p = PATIENTS.find(pt => pt.initials === patientInitials)
-  if (!p) return 0
-  const day = p.day
-  const totalDays = 84 // 12-week programme
+const STATUSES = [
+  { value: 'not-started', label: 'Not started', color: '#A0AEC0' },
+  { value: 'in-progress', label: 'In progress', color: '#DD6B20' },
+  { value: 'complete', label: 'Complete', color: '#1A7A4A' },
+]
 
-  // Transition group only for weeks 10-12
-  if (moduleId === 8) {
-    if (day < 70) return 0
-    return Math.min(100, Math.round(((day - 70) / 14) * 100))
+const statusMeta = (value) => STATUSES.find(s => s.value === value) || STATUSES[0]
+
+// Progress % from a status map: complete counts full, in-progress half.
+function completionFromDoc(doc) {
+  const map = doc || {}
+  let score = 0
+  for (const m of MODULES) {
+    const s = map[m.id] || map[String(m.id)]
+    if (s === 'complete') score += 1
+    else if (s === 'in-progress') score += 0.5
   }
-
-  // IM (day 8) — detox, minimal participation
-  if (day <= 14) {
-    if (moduleId === 1 || moduleId === 13) return Math.round((day / totalDays) * 100 * 0.6) // daily modules, limited
-    return Math.round(Math.random() * 10 + (day > 5 ? 5 : 0))
-  }
-
-  // Base completion scaled by day
-  const basePct = (day / totalDays) * 100
-  // Add some variance per module
-  const variance = ((moduleId * 7 + day * 3) % 20) - 10
-  return Math.min(100, Math.max(0, Math.round(basePct + variance)))
+  return Math.round((score / MODULES.length) * 100)
 }
-
-// Precompute all completions
-const COMPLETIONS = {}
-PATIENTS.forEach(p => {
-  COMPLETIONS[p.initials] = {}
-  MODULES.forEach(m => {
-    COMPLETIONS[p.initials][m.id] = getCompletion(p.initials, m.id)
-  })
-})
-
-const phaseColors = { stabilization: '#E53E3E', foundation: '#DD6B20', deepening: '#D69E2E', reintegration: '#1A7A4A' }
 
 function getPctColor(pct) {
   if (pct >= 80) return '#1A7A4A'
@@ -83,15 +56,77 @@ function getPctColor(pct) {
 }
 
 export default function LifeSkillsTracker() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState(null)
+  const [ready] = useState(isSupabaseReady())
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [patients, setPatients] = useState([])           // active briefs { id, initials, full_name }
+  const [allDocs, setAllDocs] = useState({})             // patient_id -> status map (overview)
+  const [selectedPatient, setSelectedPatient] = useState('') // patient_id
+  const [statusMap, setStatusMap] = useState({})         // moduleId -> status (editable)
+  const [detailLoading, setDetailLoading] = useState(false)
 
-  // Overall completion per patient
-  const overalls = PATIENTS.map(p => {
-    const values = Object.values(COMPLETIONS[p.initials])
-    const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length)
-    return { ...p, avg }
-  })
+  const initialsById = Object.fromEntries(patients.map(p => [p.id, p.initials]))
+  const selectedInitials = initialsById[selectedPatient] || ''
+
+  // Initial load: active patients + all life_skills docs for the overview.
+  const load = useCallback(async () => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    setLoading(true)
+    const [{ data: rows }, { data: progressRows }] = await Promise.all([
+      getPatients(),
+      getAllProgress('life_skills'),
+    ])
+    const briefs = activeBriefs(rows)
+    setPatients(briefs)
+    const docs = {}
+    for (const r of (progressRows || [])) docs[r.patient_id] = r.data || {}
+    setAllDocs(docs)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  // When a patient is selected, seed the editable status map from their doc.
+  const openPatient = useCallback(async (id) => {
+    setSelectedPatient(id)
+    if (!id) return
+    setDetailLoading(true)
+    const { data } = await getProgress(id, 'life_skills')
+    setStatusMap((data && data.data) ? { ...data.data } : {})
+    setDetailLoading(false)
+  }, [])
+
+  const setModuleStatus = (moduleId, value) =>
+    setStatusMap(prev => ({ ...prev, [moduleId]: value }))
+
+  const handleSave = async () => {
+    if (!selectedPatient) return
+    setSaving(true)
+    const { error } = await upsertProgress(selectedPatient, 'life_skills', statusMap, 'SN')
+    setSaving(false)
+    if (error) { alert(`Could not save life-skills progress: ${error.message}`); return }
+    setAllDocs(prev => ({ ...prev, [selectedPatient]: { ...statusMap } }))
+  }
+
+  if (!ready) {
+    return (
+      <div>
+        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Life Skills Tracker</h1>
+        <p style={{ color: 'var(--g500)', fontSize: '.9rem' }}>Live data is not configured. Set up Supabase to track life-skills progress.</p>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div>
+        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Life Skills Tracker</h1>
+        <p style={{ color: 'var(--g500)', fontSize: '.9rem' }}>Loading residents…</p>
+      </div>
+    )
+  }
+
+  const selectedPct = completionFromDoc(statusMap)
 
   return (
     <div>
@@ -100,102 +135,110 @@ export default function LifeSkillsTracker() {
           <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Life Skills Tracker</h1>
           <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>SOP Chapter 7 — 13 modules tracked per resident</p>
         </div>
-        {selectedPatient && (
-          <button className="btn btn--secondary" style={{ padding: '8px 16px' }} onClick={() => setSelectedPatient(null)}>
-            Show All Patients
-          </button>
-        )}
-      </div>
-
-      {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
-        {overalls.map(p => (
-          <div className="card" key={p.initials}
-            style={{ padding: 16, textAlign: 'center', cursor: 'pointer', border: selectedPatient === p.initials ? '2px solid var(--blue)' : '2px solid transparent' }}
-            onClick={() => setSelectedPatient(selectedPatient === p.initials ? null : p.initials)}>
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: phaseColors[p.phase], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '.92rem', margin: '0 auto 8px' }}>
-              {p.initials}
-            </div>
-            <div style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', fontWeight: 700, color: getPctColor(p.avg) }}>{p.avg}%</div>
-            <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>Overall · Day {p.day}</div>
-            <div style={{ fontSize: '.68rem', color: phaseColors[p.phase], fontWeight: 600, marginTop: 2, textTransform: 'capitalize' }}>{p.phase}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Module Grid */}
-      <div className="card" style={{ overflow: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.82rem' }}>
-          <thead>
-            <tr style={{ background: 'var(--g50)', textAlign: 'left' }}>
-              <th style={{ padding: '10px 12px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)', width: 30 }}>#</th>
-              <th style={{ padding: '10px 12px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)' }}>Module</th>
-              <th style={{ padding: '10px 12px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)', whiteSpace: 'nowrap' }}>Frequency</th>
-              <th style={{ padding: '10px 12px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)', whiteSpace: 'nowrap' }}>Day</th>
-              {(selectedPatient ? PATIENTS.filter(p => p.initials === selectedPatient) : PATIENTS).map(p => (
-                <th key={p.initials} style={{ padding: '10px 8px', fontWeight: 700, fontSize: '.74rem', color: 'var(--g500)', borderBottom: '2px solid var(--g200)', width: 80, textAlign: 'center' }}>
-                  {p.initials}
-                  <div style={{ fontSize: '.64rem', fontWeight: 400 }}>Day {p.day}</div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {MODULES.map(m => (
-              <tr key={m.id} style={{ borderBottom: '1px solid var(--g100)' }}>
-                <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--g400)', fontFamily: 'var(--fd)' }}>{m.id}</td>
-                <td style={{ padding: '10px 12px', fontWeight: 500 }}>{m.name}</td>
-                <td style={{ padding: '10px 12px', color: 'var(--g500)', fontSize: '.78rem' }}>{m.frequency}</td>
-                <td style={{ padding: '10px 12px', color: 'var(--g500)', fontSize: '.78rem', whiteSpace: 'nowrap' }}>{m.day}</td>
-                {(selectedPatient ? PATIENTS.filter(p => p.initials === selectedPatient) : PATIENTS).map(p => {
-                  const pct = COMPLETIONS[p.initials][m.id]
-                  const color = getPctColor(pct)
-                  return (
-                    <td key={p.initials} style={{ padding: '10px 8px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                        <span style={{ fontWeight: 700, fontSize: '.82rem', color }}>{pct}%</span>
-                        <div style={{ width: '100%', maxWidth: 60, height: 6, borderRadius: 3, background: 'var(--g100)', overflow: 'hidden' }}>
-                          <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: color, transition: 'width .3s' }} />
-                        </div>
-                      </div>
-                    </td>
-                  )
-                })}
-              </tr>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <label style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--g500)' }}>Resident:</label>
+          <select
+            value={selectedPatient}
+            onChange={(e) => openPatient(e.target.value)}
+            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--g200)', fontSize: '.9rem', fontWeight: 600, background: '#fff' }}
+          >
+            <option value="">— Select —</option>
+            {patients.map(p => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
-          </tbody>
-        </table>
+          </select>
+          {selectedPatient && (
+            <button className="btn btn--secondary" style={{ padding: '8px 16px' }} onClick={() => setSelectedPatient('')}>
+              Show All Residents
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Detail view for selected patient */}
-      {selectedPatient && (
-        <div style={{ marginTop: 24 }}>
-          <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.2rem', marginBottom: 12 }}>
-            {selectedPatient} — Module Breakdown
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-            {MODULES.map(m => {
-              const pct = COMPLETIONS[selectedPatient][m.id]
-              const color = getPctColor(pct)
-              return (
-                <div className="card" key={m.id} style={{ padding: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '.85rem' }}>{m.id}. {m.name}</div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>{m.frequency} · {m.day}</div>
-                    </div>
-                    <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, fontSize: '1.1rem', color }}>{pct}%</span>
-                  </div>
-                  <div style={{ width: '100%', height: 8, borderRadius: 4, background: 'var(--g100)', overflow: 'hidden' }}>
-                    <div style={{ width: `${pct}%`, height: '100%', borderRadius: 4, background: color, transition: 'width .3s' }} />
-                  </div>
-                  {m.id === 8 && pct === 0 && (
-                    <div style={{ fontSize: '.72rem', color: 'var(--g400)', marginTop: 6, fontStyle: 'italic' }}>Available Weeks 10–12 only</div>
-                  )}
+      {patients.length === 0 && (
+        <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)' }}>
+          No active residents to track.
+        </div>
+      )}
+
+      {/* Overview cards (live overview from all life_skills docs) */}
+      {!selectedPatient && patients.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 12, marginBottom: 24 }}>
+          {patients.map(p => {
+            const pct = completionFromDoc(allDocs[p.id])
+            const hasDoc = !!allDocs[p.id]
+            return (
+              <div className="card" key={p.id}
+                style={{ padding: 16, textAlign: 'center', cursor: 'pointer', border: '2px solid transparent' }}
+                onClick={() => openPatient(p.id)}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '.92rem', margin: '0 auto 8px' }}>
+                  {p.initials}
                 </div>
-              )
-            })}
+                <div style={{ fontFamily: 'var(--fd)', fontSize: '1.5rem', fontWeight: 700, color: hasDoc ? getPctColor(pct) : 'var(--g300)' }}>
+                  {hasDoc ? `${pct}%` : '—'}
+                </div>
+                <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>{hasDoc ? 'Overall completion' : 'No records yet'}</div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Per-resident editable breakdown */}
+      {selectedPatient && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.2rem', margin: 0 }}>
+                {selectedInitials} — Module Breakdown
+              </h2>
+              <div style={{ fontSize: '.8rem', color: getPctColor(selectedPct), fontWeight: 600, marginTop: 2 }}>
+                {selectedPct}% overall completion
+              </div>
+            </div>
+            <button
+              className="btn btn--primary"
+              style={{ padding: '8px 20px' }}
+              onClick={handleSave}
+              disabled={saving || detailLoading}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
           </div>
+
+          {detailLoading ? (
+            <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)' }}>Loading records…</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+              {MODULES.map(m => {
+                const value = statusMap[m.id] || statusMap[String(m.id)] || 'not-started'
+                const meta = statusMeta(value)
+                return (
+                  <div className="card" key={m.id} style={{ padding: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 10 }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '.85rem' }}>{m.id}. {m.name}</div>
+                        <div style={{ fontSize: '.72rem', color: 'var(--g500)' }}>{m.frequency} · {m.day}</div>
+                      </div>
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: meta.color, marginTop: 5, flexShrink: 0 }} />
+                    </div>
+                    <select
+                      value={value}
+                      onChange={(e) => setModuleStatus(m.id, e.target.value)}
+                      style={{ width: '100%', padding: '7px 10px', borderRadius: 8, border: '1px solid var(--g200)', fontSize: '.82rem', fontWeight: 600, color: meta.color, background: '#fff' }}
+                    >
+                      {STATUSES.map(s => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))}
+                    </select>
+                    {m.id === 8 && (
+                      <div style={{ fontSize: '.72rem', color: 'var(--g400)', marginTop: 6, fontStyle: 'italic' }}>Available Weeks 10–12 only</div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

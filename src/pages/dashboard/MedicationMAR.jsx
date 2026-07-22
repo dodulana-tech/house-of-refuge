@@ -1,7 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  getPatients, getAllMedications, getAllMedAdministrations,
+  addMedication, addMedAdministration, addDetoxRecord, isSupabaseReady,
+} from '../../utils/supabase'
+import { mapPatientRow } from '../../utils/patients'
 
 /*
   Medication Administration Record (MAR) + Withdrawal Monitoring
+  Live tables: medications, medication_administrations, detox_records.
   CIWA-Ar (alcohol): 10 items, max 67, scored 0-7 per item (orientation 0-4)
   COWS (opioid): 11 items, max 47+
 
@@ -13,11 +19,12 @@ import React, { useState } from 'react'
   - Nursing rounds: 6 AM, 12 PM, 6 PM, 10:30 PM
 */
 
-const PATIENTS = [
-  { id: 'P001', initials: 'CO', substance: 'Alcohol', phase: 'foundation', day: 23 },
-  { id: 'P002', initials: 'AN', substance: 'Tramadol', phase: 'deepening', day: 45 },
-  { id: 'P003', initials: 'KA', substance: 'Cannabis', phase: 'reintegration', day: 74 },
-  { id: 'P004', initials: 'IM', substance: 'Heroin', phase: 'stabilization', day: 8 },
+const STAFF_OPTIONS = [
+  { value: 'AI', label: 'AI — Clinical Lead' },
+  { value: 'FA', label: 'FA — Nurse' },
+  { value: 'HM', label: 'HM — Nurse' },
+  { value: 'SN', label: 'SN — Social Worker' },
+  { value: 'TA', label: 'TA — Counsellor' },
 ]
 
 const NURSING_ROUNDS = ['06:00', '12:00', '18:00', '22:30']
@@ -74,43 +81,112 @@ function getCOWSSeverity(score) {
   return { label: 'Severe', color: '#E53E3E' }
 }
 
+const isAlcoholSub = (s) => /alcohol/i.test(s || '')
+const isOpioidSub = (s) => /heroin|tramadol|codeine|opioid|morphine|fentanyl/i.test(s || '')
+const TODAY = new Date().toISOString().slice(0, 10)
+
 export default function MedicationMAR() {
   const [tab, setTab] = useState('mar')
-  const [selectedPatient, setSelectedPatient] = useState('P004') // IM in detox
+  const [patients, setPatients] = useState([]) // [{id, initials, substance, phase, day}]
+  const [meds, setMeds] = useState([]) // active medications
+  const [adminsToday, setAdminsToday] = useState({}) // medication_id -> { round: {code,status} }
+  const [loading, setLoading] = useState(true)
+  const [staffCode, setStaffCode] = useState('FA')
+  const [selectedPatient, setSelectedPatient] = useState('')
   const [ciwaScores, setCiwaScores] = useState({})
   const [cowsScores, setCowsScores] = useState({})
-  const [medForm, setMedForm] = useState({ patient: '', medication: '', category: '', route: '', dose: '', frequency: '', round: '' })
+  const [savingDetox, setSavingDetox] = useState(false)
+  const [medForm, setMedForm] = useState({ patient: '', medication: '', category: '', route: '', dose: '', frequency: '', prescriber: '' })
+  const [savingMed, setSavingMed] = useState(false)
 
-  const patient = PATIENTS.find(p => p.id === selectedPatient)
-  const isAlcohol = patient?.substance === 'Alcohol'
-  const isOpioid = ['Heroin', 'Tramadol / Codeine', 'Codeine Syrup'].includes(patient?.substance)
+  const load = useCallback(async () => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    const [{ data: rows }, { data: medRows }, { data: adminRows }] = await Promise.all([
+      getPatients(), getAllMedications(), getAllMedAdministrations(),
+    ])
+    const active = (rows || []).filter(p => ['admitted', 'on-pass', 'suspended'].includes(p.status))
+    const mapped = active.map(r => {
+      const m = mapPatientRow(r)
+      return { id: r.id, initials: m.initials, substance: m.substance, phase: m.phase, day: m.day }
+    })
+    setPatients(mapped)
+    const activeIds = new Set(mapped.map(p => p.id))
+    const activeMeds = (medRows || [])
+      .filter(m => m.status === 'active' && activeIds.has(m.patient_id))
+      .map(m => {
+        const p = mapped.find(x => x.id === m.patient_id)
+        return { id: m.id, patient_id: m.patient_id, initials: p?.initials || '—', name: m.name + (m.dose ? ` ${m.dose}` : ''), category: m.notes || '', route: m.route || '' }
+      })
+    setMeds(activeMeds)
+    const today = {}
+    for (const a of (adminRows || [])) {
+      if (!a.administered_at || a.administered_at.slice(0, 10) !== TODAY) continue
+      ;(today[a.medication_id] = today[a.medication_id] || {})[a.notes] = { code: a.administered_by_code, status: a.status }
+    }
+    setAdminsToday(today)
+    setSelectedPatient(prev => prev || mapped.find(p => p.phase === 'stabilization')?.id || mapped[0]?.id || '')
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const patient = patients.find(p => p.id === selectedPatient)
+  const isAlcohol = isAlcoholSub(patient?.substance)
+  const isOpioid = isOpioidSub(patient?.substance)
   const scaleItems = isAlcohol ? CIWA_ITEMS : COWS_ITEMS
   const scores = isAlcohol ? ciwaScores : cowsScores
   const setScores = isAlcohol ? setCiwaScores : setCowsScores
   const totalScore = Object.values(scores).reduce((s, v) => s + v, 0)
   const severity = isAlcohol ? getCIWASeverity(totalScore) : getCOWSSeverity(totalScore)
 
-  const MOCK_MEDS_INIT = [
-    { patient: 'IM', medication: 'Diazepam 10mg', category: 'Detox support', route: 'Oral', frequency: 'TDS', rounds: { '06:00': true, '12:00': true, '18:00': false, '22:30': false } },
-    { patient: 'IM', medication: 'Thiamine 100mg', category: 'Vitamin supplement', route: 'IM', frequency: 'OD', rounds: { '06:00': true, '12:00': false, '18:00': false, '22:30': false } },
-    { patient: 'CO', medication: 'Multivitamin', category: 'Vitamin supplement', route: 'Oral', frequency: 'OD', rounds: { '06:00': true, '12:00': false, '18:00': false, '22:30': false } },
-    { patient: 'AN', medication: 'Paracetamol 1g', category: 'Analgesic (non-opioid)', route: 'Oral', frequency: 'PRN', rounds: {} },
-  ]
-
-  const [marRounds, setMarRounds] = useState(() =>
-    MOCK_MEDS_INIT.map(med => ({ ...med.rounds }))
-  )
-
-  const toggleRound = (medIdx, round) => {
-    setMarRounds(prev => {
-      const updated = [...prev]
-      const current = updated[medIdx][round]
-      updated[medIdx] = { ...updated[medIdx], [round]: current === true ? false : true }
-      return updated
+  const recordRound = async (medId, patientId, round) => {
+    if (adminsToday[medId]?.[round]) return // already recorded — locked
+    const { error } = await addMedAdministration({
+      medication_id: medId,
+      patient_id: patientId,
+      administered_by_code: staffCode,
+      status: 'given',
+      notes: round,
     })
+    if (error) { alert(`Could not record administration: ${error.message}`); return }
+    await load()
   }
 
-  const MOCK_MEDS = MOCK_MEDS_INIT.map((med, i) => ({ ...med, rounds: marRounds[i] }))
+  const handleSaveDetox = async () => {
+    if (!selectedPatient) return
+    setSavingDetox(true)
+    const { error } = await addDetoxRecord({
+      patient_id: selectedPatient,
+      scale: isAlcohol ? 'CIWA-Ar' : 'COWS',
+      score: totalScore,
+      day: patient?.day || null,
+      symptoms: { ...scores },
+      recorded_by_code: staffCode,
+    })
+    setSavingDetox(false)
+    if (error) { alert(`Could not save assessment: ${error.message}`); return }
+    setScores({})
+    alert('Withdrawal assessment saved.')
+  }
+
+  const handleAddMed = async () => {
+    if (!medForm.patient || !medForm.medication || !medForm.category || !medForm.route || !medForm.frequency) return
+    setSavingMed(true)
+    const { error } = await addMedication({
+      patient_id: medForm.patient,
+      name: medForm.medication,
+      route: medForm.route,
+      frequency: medForm.frequency,
+      prescriber_code: medForm.prescriber || null,
+      notes: medForm.category,
+      status: 'active',
+    })
+    setSavingMed(false)
+    if (error) { alert(`Could not add medication: ${error.message}`); return }
+    setMedForm({ patient: '', medication: '', category: '', route: '', dose: '', frequency: '', prescriber: '' })
+    setTab('mar')
+    await load()
+  }
 
   return (
     <div>
@@ -132,6 +208,14 @@ export default function MedicationMAR() {
         ))}
       </div>
 
+      {/* Administering-staff selector (shared) */}
+      <div className="fg" style={{ maxWidth: 280, marginBottom: 16 }}>
+        <label className="flabel">Administering / Recording Staff</label>
+        <select className="fi" value={staffCode} onChange={e => setStaffCode(e.target.value)}>
+          {STAFF_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+      </div>
+
       {/* MAR Tab */}
       {tab === 'mar' && (
         <div>
@@ -139,30 +223,38 @@ export default function MedicationMAR() {
             No opioid-containing medications permitted in the facility under any circumstances (SOP 5.6)
           </div>
 
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 700 }}>
-              {/* Header row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 80px repeat(4, 70px)', gap: 8, padding: '8px 12px', fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                <span>Patient</span><span>Medication</span><span>Category</span><span>Route</span>
-                {NURSING_ROUNDS.map(r => <span key={r} style={{ textAlign: 'center' }}>{r}</span>)}
-              </div>
-              {MOCK_MEDS.map((med, i) => (
-                <div key={i} className="card" style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 80px repeat(4, 70px)', gap: 8, padding: '12px', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 700, fontSize: '.88rem' }}>{med.patient}</span>
-                  <span style={{ fontSize: '.86rem', fontWeight: 600 }}>{med.medication}</span>
-                  <span style={{ fontSize: '.74rem', color: 'var(--g500)' }}>{med.category}</span>
-                  <span style={{ fontSize: '.74rem', color: 'var(--g500)' }}>{med.route}</span>
-                  {NURSING_ROUNDS.map(r => (
-                    <div key={r} style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleRound(i, r)}>
-                      {med.rounds[r] === true && <span style={{ color: '#1A7A4A', fontWeight: 700 }}>✓</span>}
-                      {med.rounds[r] === false && <span style={{ color: '#E53E3E', fontWeight: 700 }}>—</span>}
-                      {med.rounds[r] === undefined && <span style={{ color: 'var(--g300)' }}>·</span>}
-                    </div>
-                  ))}
+          {loading ? (
+            <p style={{ color: 'var(--g500)', fontSize: '.9rem' }}>Loading…</p>
+          ) : meds.length === 0 ? (
+            <p style={{ color: 'var(--g500)', fontSize: '.9rem' }}>No active medication orders recorded yet.</p>
+          ) : (
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 700 }}>
+                {/* Header row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 80px repeat(4, 70px)', gap: 8, padding: '8px 12px', fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                  <span>Patient</span><span>Medication</span><span>Category</span><span>Route</span>
+                  {NURSING_ROUNDS.map(r => <span key={r} style={{ textAlign: 'center' }}>{r}</span>)}
                 </div>
-              ))}
+                {meds.map((med) => (
+                  <div key={med.id} className="card" style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 80px repeat(4, 70px)', gap: 8, padding: '12px', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700, fontSize: '.88rem' }}>{med.initials}</span>
+                    <span style={{ fontSize: '.86rem', fontWeight: 600 }}>{med.name}</span>
+                    <span style={{ fontSize: '.74rem', color: 'var(--g500)' }}>{med.category}</span>
+                    <span style={{ fontSize: '.74rem', color: 'var(--g500)' }}>{med.route}</span>
+                    {NURSING_ROUNDS.map(r => {
+                      const given = adminsToday[med.id]?.[r]
+                      return (
+                        <div key={r} title={given ? `Given by ${given.code}` : 'Tap to record'} style={{ textAlign: 'center', cursor: given ? 'default' : 'pointer', userSelect: 'none' }} onClick={() => recordRound(med.id, med.patient_id, r)}>
+                          {given ? <span style={{ color: '#1A7A4A', fontWeight: 700 }}>✓</span> : <span style={{ color: 'var(--g300)' }}>·</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+              <p style={{ fontSize: '.72rem', color: 'var(--g400)', marginTop: 12 }}>A recorded round is an add-only audit entry and cannot be undone. Ticks reset each day.</p>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -174,7 +266,8 @@ export default function MedicationMAR() {
             <div className="fg">
               <label className="flabel">Patient</label>
               <select className="fi" value={selectedPatient} onChange={e => { setSelectedPatient(e.target.value); setScores({}) }}>
-                {PATIENTS.filter(p => p.phase === 'stabilization').map(p => (
+                {patients.length === 0 && <option value="">No active patients</option>}
+                {patients.map(p => (
                   <option key={p.id} value={p.id}>{p.initials} — {p.substance} (Day {p.day})</option>
                 ))}
               </select>
@@ -182,7 +275,7 @@ export default function MedicationMAR() {
             <div className="fg">
               <label className="flabel">Assessment Tool</label>
               <div className="fi" style={{ background: 'var(--off)', fontWeight: 600 }}>
-                {isAlcohol ? 'CIWA-Ar (Alcohol Withdrawal)' : isOpioid ? 'COWS (Opioid Withdrawal)' : 'No standard scale for this substance'}
+                {isAlcohol ? 'CIWA-Ar (Alcohol Withdrawal)' : isOpioid ? 'COWS (Opioid Withdrawal)' : 'COWS (default)'}
               </div>
             </div>
           </div>
@@ -200,9 +293,9 @@ export default function MedicationMAR() {
               {isAlcohol && totalScore >= 15 && 'Consider symptom-triggered benzodiazepine protocol. Monitor q1h.'}
               {isAlcohol && totalScore >= 8 && totalScore < 15 && 'Start withdrawal medication. Monitor q2h.'}
               {isAlcohol && totalScore < 8 && 'Continue monitoring q4h. No medication indicated.'}
-              {isOpioid && totalScore >= 25 && 'Severe withdrawal. Consider comfort medications.'}
-              {isOpioid && totalScore >= 13 && totalScore < 25 && 'Moderate withdrawal. Monitor closely.'}
-              {isOpioid && totalScore < 13 && 'Mild withdrawal. Continue supportive care.'}
+              {!isAlcohol && totalScore >= 25 && 'Severe withdrawal. Consider comfort medications.'}
+              {!isAlcohol && totalScore >= 13 && totalScore < 25 && 'Moderate withdrawal. Monitor closely.'}
+              {!isAlcohol && totalScore < 13 && 'Mild withdrawal. Continue supportive care.'}
             </div>
           </div>
 
@@ -222,7 +315,9 @@ export default function MedicationMAR() {
             ))}
           </div>
 
-          <button className="btn btn--primary" style={{ marginTop: 16 }}>Save Assessment</button>
+          <button className="btn btn--primary" style={{ marginTop: 16 }} disabled={!selectedPatient || savingDetox} onClick={handleSaveDetox}>
+            {savingDetox ? 'Saving…' : 'Save Assessment'}
+          </button>
         </div>
       )}
 
@@ -237,7 +332,7 @@ export default function MedicationMAR() {
           <div className="fg"><label className="flabel">Patient *</label>
             <select className="fi" value={medForm.patient} onChange={e => setMedForm(p => ({ ...p, patient: e.target.value }))}>
               <option value="">Select patient...</option>
-              {PATIENTS.map(p => <option key={p.id} value={p.initials}>{p.initials} — {p.substance} (Day {p.day})</option>)}
+              {patients.map(p => <option key={p.id} value={p.id}>{p.initials} — {p.substance} (Day {p.day})</option>)}
             </select>
           </div>
           <div className="fg"><label className="flabel">Medication Category *</label>
@@ -266,7 +361,15 @@ export default function MedicationMAR() {
               </select>
             </div>
           </div>
-          <button className="btn btn--primary btn--sm">Submit Medication Order</button>
+          <div className="fg"><label className="flabel">Prescriber</label>
+            <select className="fi" value={medForm.prescriber} onChange={e => setMedForm(p => ({ ...p, prescriber: e.target.value }))}>
+              <option value="">Select prescriber...</option>
+              {STAFF_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
+          <button className="btn btn--primary btn--sm" disabled={savingMed || !medForm.patient || !medForm.medication || !medForm.category || !medForm.route || !medForm.frequency} onClick={handleAddMed}>
+            {savingMed ? 'Saving…' : 'Submit Medication Order'}
+          </button>
         </div>
       )}
     </div>

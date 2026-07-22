@@ -1,5 +1,15 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  isSupabaseReady,
+  getPatients,
+  getTherapySessions,
+  getTherapySessionsByPatient,
+  addTherapySession,
+  getProgress,
+  getAllProgress,
+  upsertProgress,
+} from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   Outpatient Engagement Pathway — Treatment Protocol Section 4.5
@@ -7,14 +17,16 @@ import { useAuth } from '../../context/AuthContext'
   residential treatment. Tracks MI sessions, stage-of-change
   progression, and conversion to residential pathway.
   Initials only (HIPAA). All fields are selects — zero free text.
+
+  Live data:
+  - Session log  -> `therapy_sessions` (type 'outpatient'); the outpatient
+    session type is stored in `modality`, assessor in `therapist_code`,
+    outcome in `status`, stage-at-session in `data.stageAtSession`.
+  - Per-client engagement state -> `progress_records` (domain
+    'outpatient_client'), one JSONB document per patient.
 */
 
-const OUTPATIENT_CLIENTS = [
-  { id: 'OC001', initials: 'DA', stage: 'Precontemplation', referredBy: 'Family', startDate: '2026-02-10' },
-  { id: 'OC002', initials: 'EB', stage: 'Contemplation', referredBy: 'Self', startDate: '2026-03-01' },
-  { id: 'OC003', initials: 'FC', stage: 'Precontemplation', referredBy: 'NDLEA', startDate: '2026-03-15' },
-  { id: 'OC004', initials: 'GD', stage: 'Contemplation', referredBy: 'Church', startDate: '2026-01-20' },
-]
+const DOMAIN = 'outpatient_client'
 
 const STAGES = ['Precontemplation', 'Contemplation', 'Preparation', 'Action']
 
@@ -61,57 +73,28 @@ const STATUS_COLORS = {
   'Referred Out': { color: '#805AD5', bg: '#FAF5FF', border: '#E9D8FD' },
 }
 
-const INITIAL_SESSION_LOGS = {
-  DA: [
-    { id: 1, date: '2026-02-12', type: 'MI Session', assessor: 'TA', outcome: 'Resistant', stageAtSession: 'Precontemplation' },
-    { id: 2, date: '2026-02-19', type: 'MI Session', assessor: 'TA', outcome: 'Resistant', stageAtSession: 'Precontemplation' },
-    { id: 3, date: '2026-02-26', type: 'Psychoeducation', assessor: 'AI', outcome: 'Engaged', stageAtSession: 'Precontemplation' },
-    { id: 4, date: '2026-03-05', type: 'MI Session', assessor: 'TA', outcome: 'Engaged', stageAtSession: 'Precontemplation' },
-    { id: 5, date: '2026-03-12', type: 'MI Session', assessor: 'TA', outcome: 'Engaged', stageAtSession: 'Precontemplation' },
-    { id: 6, date: '2026-03-19', type: 'Family Counselling', assessor: 'SN', outcome: 'Engaged', stageAtSession: 'Precontemplation' },
-    { id: 7, date: '2026-03-26', type: 'MI Session', assessor: 'TA', outcome: 'Engaged', stageAtSession: 'Precontemplation' },
-    { id: 8, date: '2026-04-02', type: 'MI Session', assessor: 'TA', outcome: 'Engaged', stageAtSession: 'Precontemplation' },
-    { id: 9, date: '2026-04-02', type: 'URICA Reassessment', assessor: 'AI', outcome: 'Engaged', stageAtSession: 'Precontemplation' },
-    { id: 10, date: '2026-04-02', type: 'Harm Reduction', assessor: 'FA', outcome: 'Engaged', stageAtSession: 'Precontemplation' },
-  ],
-  EB: [
-    { id: 11, date: '2026-03-04', type: 'MI Session', assessor: 'TA', outcome: 'Engaged', stageAtSession: 'Contemplation' },
-    { id: 12, date: '2026-03-11', type: 'MI Session', assessor: 'TA', outcome: 'Progressing', stageAtSession: 'Contemplation' },
-    { id: 13, date: '2026-03-18', type: 'Psychoeducation', assessor: 'AI', outcome: 'Progressing', stageAtSession: 'Contemplation' },
-    { id: 14, date: '2026-03-25', type: 'MI Session', assessor: 'TA', outcome: 'Progressing', stageAtSession: 'Contemplation' },
-    { id: 15, date: '2026-04-01', type: 'MI Session', assessor: 'TA', outcome: 'Ready for Residential', stageAtSession: 'Preparation' },
-    { id: 16, date: '2026-04-01', type: 'URICA Reassessment', assessor: 'AI', outcome: 'Ready for Residential', stageAtSession: 'Preparation' },
-  ],
-  FC: [
-    { id: 17, date: '2026-03-18', type: 'MI Session', assessor: 'TA', outcome: 'Resistant', stageAtSession: 'Precontemplation' },
-    { id: 18, date: '2026-03-25', type: 'MI Session', assessor: 'TA', outcome: 'Resistant', stageAtSession: 'Precontemplation' },
-    { id: 19, date: '2026-03-25', type: 'Harm Reduction', assessor: 'FA', outcome: 'Engaged', stageAtSession: 'Precontemplation' },
-  ],
-  GD: [
-    { id: 20, date: '2026-01-22', type: 'MI Session', assessor: 'TA', outcome: 'Engaged', stageAtSession: 'Contemplation' },
-    { id: 21, date: '2026-01-29', type: 'MI Session', assessor: 'TA', outcome: 'Engaged', stageAtSession: 'Contemplation' },
-    { id: 22, date: '2026-02-05', type: 'Spiritual Engagement', assessor: 'PK', outcome: 'Engaged', stageAtSession: 'Contemplation' },
-    { id: 23, date: '2026-02-05', type: 'MI Session', assessor: 'TA', outcome: 'Progressing', stageAtSession: 'Contemplation' },
-    { id: 24, date: '2026-02-12', type: 'MI Session', assessor: 'TA', outcome: 'Progressing', stageAtSession: 'Contemplation' },
-    { id: 25, date: '2026-02-19', type: 'URICA Reassessment', assessor: 'AI', outcome: 'Progressing', stageAtSession: 'Contemplation' },
-    { id: 26, date: '2026-02-19', type: 'MI Session', assessor: 'TA', outcome: 'Progressing', stageAtSession: 'Contemplation' },
-    { id: 27, date: '2026-02-26', type: 'MI Session', assessor: 'TA', outcome: 'Progressing', stageAtSession: 'Preparation' },
-    { id: 28, date: '2026-03-05', type: 'Family Counselling', assessor: 'SN', outcome: 'Engaged', stageAtSession: 'Preparation' },
-    { id: 29, date: '2026-03-05', type: 'MI Session', assessor: 'TA', outcome: 'Progressing', stageAtSession: 'Preparation' },
-    { id: 30, date: '2026-03-12', type: 'MI Session', assessor: 'TA', outcome: 'Progressing', stageAtSession: 'Preparation' },
-    { id: 31, date: '2026-03-19', type: 'MI Session', assessor: 'TA', outcome: 'Progressing', stageAtSession: 'Action' },
-    { id: 32, date: '2026-03-19', type: 'URICA Reassessment', assessor: 'AI', outcome: 'Ready for Residential', stageAtSession: 'Action' },
-    { id: 33, date: '2026-03-26', type: 'MI Session', assessor: 'TA', outcome: 'Ready for Residential', stageAtSession: 'Action' },
-    { id: 34, date: '2026-04-02', type: 'MI Session', assessor: 'TA', outcome: 'Ready for Residential', stageAtSession: 'Action' },
-  ],
-}
+// Default engagement state for a client with no progress_records document yet.
+const defaultState = () => ({
+  currentStage: 'Precontemplation',
+  status: 'Active',
+  referredBy: '',
+  nextSession: '',
+  nextReassessment: '',
+})
 
-const INITIAL_CLIENT_STATE = {
-  DA: { currentStage: 'Precontemplation', status: 'Active', nextSession: '2026-04-09', nextReassessment: '2026-04-16' },
-  EB: { currentStage: 'Preparation', status: 'Active', nextSession: '2026-04-08', nextReassessment: '2026-04-15' },
-  FC: { currentStage: 'Precontemplation', status: 'Active', nextSession: '2026-04-01', nextReassessment: '2026-04-08' },
-  GD: { currentStage: 'Action', status: 'Graduated to Residential', nextSession: '', nextReassessment: '' },
-}
+// therapy_sessions row -> the shape the session-log JSX reads.
+const mapSession = (row) => ({
+  id: row.id,
+  date: row.session_date || '',
+  type: row.modality || '',
+  assessor: row.therapist_code || '',
+  outcome: row.status || '',
+  stageAtSession: row.data?.stageAtSession || '',
+})
+
+// Oldest-first, so the timeline reads forward and the table's reverse() shows newest first.
+const sortSessions = (rows) =>
+  (rows || []).map(mapSession).sort((a, b) => String(a.date).localeCompare(String(b.date)))
 
 const stageBadge = (stage) => {
   const cfg = STAGE_COLORS[stage] || STAGE_COLORS.Precontemplation
@@ -142,10 +125,12 @@ const statusBadge = (status) => {
 }
 
 export default function OutpatientPathway() {
-  const { user } = useAuth()
-  const [selectedClient, setSelectedClient] = useState(null)
-  const [sessionLogs, setSessionLogs] = useState(INITIAL_SESSION_LOGS)
-  const [clientState, setClientState] = useState(INITIAL_CLIENT_STATE)
+  const [clients, setClients] = useState([]) // [{ id, initials, full_name, startDate }]
+  const [selectedClient, setSelectedClient] = useState(null) // patient_id
+  const [sessionLogs, setSessionLogs] = useState({}) // patient_id -> mapped session array
+  const [clientState, setClientState] = useState({}) // patient_id -> engagement state doc
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     date: '',
@@ -160,66 +145,127 @@ export default function OutpatientPathway() {
     setForm({ date: '', type: '', assessor: '', outcome: '' })
   }
 
+  const stateFor = useCallback(
+    (id) => clientState[id] || defaultState(),
+    [clientState]
+  )
+
+  // Initial load: patients (client selector), all engagement docs, all outpatient sessions.
+  useEffect(() => {
+    ;(async () => {
+      if (!isSupabaseReady()) { setLoading(false); return }
+      const [{ data: rows }, { data: progressRows }, { data: sessionRows }] = await Promise.all([
+        getPatients(),
+        getAllProgress(DOMAIN),
+        getTherapySessions('outpatient'),
+      ])
+      const startById = {}
+      for (const r of rows || []) {
+        startById[r.id] = r.admitted_at ? String(r.admitted_at).slice(0, 10) : ''
+      }
+      const briefs = activeBriefs(rows).map((b) => ({ ...b, startDate: startById[b.id] || '' }))
+      setClients(briefs)
+
+      const stateMap = {}
+      for (const row of progressRows || []) {
+        if (row?.data) stateMap[row.patient_id] = { ...defaultState(), ...row.data }
+      }
+      setClientState(stateMap)
+
+      const logMap = {}
+      for (const row of sessionRows || []) {
+        ;(logMap[row.patient_id] ||= []).push(row)
+      }
+      for (const id of Object.keys(logMap)) logMap[id] = sortSessions(logMap[id])
+      setSessionLogs(logMap)
+
+      setLoading(false)
+    })()
+  }, [])
+
+  // On select: refresh this client's sessions + engagement doc from the server.
+  const handleSelectClient = async (id) => {
+    setSelectedClient(id)
+    setShowForm(false)
+    resetForm()
+    if (!isSupabaseReady()) return
+    const [{ data: sessionRows }, { data: progressRow }] = await Promise.all([
+      getTherapySessionsByPatient(id, 'outpatient'),
+      getProgress(id, DOMAIN),
+    ])
+    setSessionLogs((prev) => ({ ...prev, [id]: sortSessions(sessionRows) }))
+    setClientState((prev) => ({
+      ...prev,
+      [id]: progressRow?.data ? { ...defaultState(), ...progressRow.data } : (prev[id] || defaultState()),
+    }))
+  }
+
+  // Persist an engagement-state document, updating local state on success.
+  const persistState = async (id, nextState) => {
+    setClientState((prev) => ({ ...prev, [id]: nextState }))
+    setSaving(true)
+    const { error } = await upsertProgress(id, DOMAIN, nextState, 'TA')
+    setSaving(false)
+    if (error) alert(`Could not save client state: ${error.message}`)
+  }
+
   // Summary calculations
-  const activeClients = OUTPATIENT_CLIENTS.filter((c) => clientState[c.initials]?.status === 'Active').length
-  const graduatedClients = OUTPATIENT_CLIENTS.filter((c) => clientState[c.initials]?.status === 'Graduated to Residential')
-  const conversionRate = OUTPATIENT_CLIENTS.length > 0
-    ? Math.round((graduatedClients.length / OUTPATIENT_CLIENTS.length) * 100)
+  const activeClients = clients.filter((c) => stateFor(c.id).status === 'Active').length
+  const graduatedClients = clients.filter((c) => stateFor(c.id).status === 'Graduated to Residential')
+  const conversionRate = clients.length > 0
+    ? Math.round((graduatedClients.length / clients.length) * 100)
     : 0
   const avgSessionsToConversion = graduatedClients.length > 0
     ? Math.round(
         graduatedClients.reduce((sum, c) => {
-          const logs = sessionLogs[c.initials] || []
+          const logs = sessionLogs[c.id] || []
           return sum + logs.filter((l) => l.type === 'MI Session').length
         }, 0) / graduatedClients.length
       )
     : 0
 
-  const handleAddSession = () => {
+  const handleAddSession = async () => {
     if (!form.date || !form.type || !form.assessor || !form.outcome) return
-
-    const initials = selectedClient
-    const logs = sessionLogs[initials] || []
-    const newSession = {
-      id: Date.now(),
-      date: form.date,
-      type: form.type,
-      assessor: form.assessor,
-      outcome: form.outcome,
-      stageAtSession: clientState[initials].currentStage,
+    const id = selectedClient
+    setSaving(true)
+    const { error } = await addTherapySession({
+      patient_id: id,
+      type: 'outpatient',
+      session_date: form.date,
+      session_time: null,
+      therapist_code: form.assessor,
+      modality: form.type,
+      status: form.outcome,
+      data: { stageAtSession: stateFor(id).currentStage },
+    })
+    if (error) {
+      setSaving(false)
+      alert(`Could not log session: ${error.message}`)
+      return
     }
-
-    setSessionLogs((prev) => ({
-      ...prev,
-      [initials]: [...(prev[initials] || []), newSession],
-    }))
-
+    const { data: sessionRows } = await getTherapySessionsByPatient(id, 'outpatient')
+    setSessionLogs((prev) => ({ ...prev, [id]: sortSessions(sessionRows) }))
+    setSaving(false)
     setShowForm(false)
     resetForm()
   }
 
-  const handleConvertToResidential = (initials) => {
-    setClientState((prev) => ({
-      ...prev,
-      [initials]: {
-        ...prev[initials],
-        status: 'Graduated to Residential',
-        nextSession: '',
-        nextReassessment: '',
-      },
-    }))
+  const handleConvertToResidential = (id) => {
+    persistState(id, {
+      ...stateFor(id),
+      status: 'Graduated to Residential',
+      nextSession: '',
+      nextReassessment: '',
+    })
   }
 
-  const handleStageChange = (initials, newStage) => {
-    setClientState((prev) => ({
-      ...prev,
-      [initials]: { ...prev[initials], currentStage: newStage },
-    }))
+  const handleStageChange = (id, newStage) => {
+    persistState(id, { ...stateFor(id), currentStage: newStage })
   }
 
   const clientLogs = selectedClient ? (sessionLogs[selectedClient] || []) : []
-  const clientInfo = selectedClient ? OUTPATIENT_CLIENTS.find((c) => c.initials === selectedClient) : null
-  const clientStatus = selectedClient ? clientState[selectedClient] : null
+  const clientInfo = selectedClient ? clients.find((c) => c.id === selectedClient) : null
+  const clientStatus = selectedClient ? stateFor(selectedClient) : null
   const miSessionCount = clientLogs.filter((l) => l.type === 'MI Session').length
   const canConvert = clientStatus && (clientStatus.currentStage === 'Preparation' || clientStatus.currentStage === 'Action') && clientStatus.status === 'Active'
 
@@ -229,7 +275,7 @@ export default function OutpatientPathway() {
     const progression = []
     let lastStage = null
     for (const log of logs) {
-      if (log.stageAtSession !== lastStage) {
+      if (log.stageAtSession && log.stageAtSession !== lastStage) {
         progression.push({ date: log.date, stage: log.stageAtSession })
         lastStage = log.stageAtSession
       }
@@ -267,8 +313,20 @@ export default function OutpatientPathway() {
         )}
       </div>
 
+      {/* Loading / empty states */}
+      {!selectedClient && loading && (
+        <div className="card" style={{ padding: 20, borderRadius: 12, border: '1px solid #E2E8F0', background: '#fff', color: '#718096', fontSize: 14 }}>
+          Loading outpatient clients…
+        </div>
+      )}
+      {!selectedClient && !loading && clients.length === 0 && (
+        <div className="card" style={{ padding: 20, borderRadius: 12, border: '1px solid #E2E8F0', background: '#fff', color: '#A0AEC0', fontSize: 14 }}>
+          No active outpatient clients.
+        </div>
+      )}
+
       {/* Summary Cards */}
-      {!selectedClient && (
+      {!selectedClient && !loading && clients.length > 0 && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
             <div
@@ -338,19 +396,19 @@ export default function OutpatientPathway() {
                   </tr>
                 </thead>
                 <tbody>
-                  {OUTPATIENT_CLIENTS.map((c) => {
-                    const state = clientState[c.initials]
-                    const logs = sessionLogs[c.initials] || []
+                  {clients.map((c) => {
+                    const state = stateFor(c.id)
+                    const logs = sessionLogs[c.id] || []
                     const miCount = logs.filter((l) => l.type === 'MI Session').length
                     return (
                       <tr key={c.id} style={{ borderBottom: '1px solid #EDF2F7' }}>
-                        <td style={{ padding: '8px 10px', color: '#718096' }}>{c.id}</td>
+                        <td style={{ padding: '8px 10px', color: '#718096' }}>{String(c.id).slice(0, 8)}</td>
                         <td style={{ padding: '8px 10px', fontWeight: 700, color: '#2D3748' }}>{c.initials}</td>
                         <td style={{ padding: '8px 10px' }}>
                           <span style={stageBadge(state.currentStage)}>{state.currentStage}</span>
                         </td>
-                        <td style={{ padding: '8px 10px' }}>{c.referredBy}</td>
-                        <td style={{ padding: '8px 10px' }}>{c.startDate}</td>
+                        <td style={{ padding: '8px 10px' }}>{state.referredBy || '--'}</td>
+                        <td style={{ padding: '8px 10px' }}>{c.startDate || '--'}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 600 }}>{miCount}</td>
                         <td style={{ padding: '8px 10px' }}>
                           <span style={statusBadge(state.status)}>{state.status}</span>
@@ -358,7 +416,7 @@ export default function OutpatientPathway() {
                         <td style={{ padding: '8px 10px' }}>{state.nextSession || '--'}</td>
                         <td style={{ padding: '8px 10px' }}>
                           <button
-                            onClick={() => setSelectedClient(c.initials)}
+                            onClick={() => handleSelectClient(c.id)}
                             style={{
                               padding: '6px 14px',
                               borderRadius: 8,
@@ -399,7 +457,7 @@ export default function OutpatientPathway() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-                Client {clientInfo.initials} — {clientInfo.id}
+                Client {clientInfo.initials} — {String(clientInfo.id).slice(0, 8)}
               </h2>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                 <span style={stageBadge(clientStatus.currentStage)}>{clientStatus.currentStage}</span>
@@ -407,8 +465,8 @@ export default function OutpatientPathway() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13, color: '#4A5568' }}>
-              <span><strong>Referred By:</strong> {clientInfo.referredBy}</span>
-              <span><strong>Start Date:</strong> {clientInfo.startDate}</span>
+              <span><strong>Referred By:</strong> {clientStatus.referredBy || '--'}</span>
+              <span><strong>Start Date:</strong> {clientInfo.startDate || '--'}</span>
               <span><strong>MI Sessions:</strong> {miSessionCount}</span>
               <span><strong>Total Sessions:</strong> {clientLogs.length}</span>
               <span><strong>Next Session:</strong> {clientStatus.nextSession || '--'}</span>
@@ -470,6 +528,7 @@ export default function OutpatientPathway() {
                 <select
                   value={clientStatus.currentStage}
                   onChange={(e) => handleStageChange(selectedClient, e.target.value)}
+                  disabled={saving}
                   style={{
                     padding: '8px 12px',
                     borderRadius: 8,
@@ -685,19 +744,19 @@ export default function OutpatientPathway() {
               <div style={{ display: 'flex', gap: 12 }}>
                 <button
                   onClick={handleAddSession}
-                  disabled={!form.date || !form.type || !form.assessor || !form.outcome}
+                  disabled={saving || !form.date || !form.type || !form.assessor || !form.outcome}
                   style={{
                     padding: '10px 24px',
                     borderRadius: 8,
                     border: 'none',
-                    background: (!form.date || !form.type || !form.assessor || !form.outcome) ? '#CBD5E0' : '#2B6CB0',
+                    background: (saving || !form.date || !form.type || !form.assessor || !form.outcome) ? '#CBD5E0' : '#2B6CB0',
                     color: '#fff',
                     fontWeight: 600,
                     fontSize: 14,
-                    cursor: (!form.date || !form.type || !form.assessor || !form.outcome) ? 'not-allowed' : 'pointer',
+                    cursor: (saving || !form.date || !form.type || !form.assessor || !form.outcome) ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  Save Session
+                  {saving ? 'Saving…' : 'Save Session'}
                 </button>
                 <button
                   onClick={() => { setShowForm(false); resetForm() }}
@@ -740,19 +799,20 @@ export default function OutpatientPathway() {
                 </div>
                 <button
                   onClick={() => handleConvertToResidential(selectedClient)}
+                  disabled={saving}
                   style={{
                     padding: '10px 24px',
                     borderRadius: 8,
                     border: 'none',
-                    background: '#38A169',
+                    background: saving ? '#9AE6B4' : '#38A169',
                     color: '#fff',
                     fontWeight: 700,
                     fontSize: 14,
-                    cursor: 'pointer',
+                    cursor: saving ? 'not-allowed' : 'pointer',
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  Convert to Residential
+                  {saving ? 'Saving…' : 'Convert to Residential'}
                 </button>
               </div>
             </div>

@@ -1,19 +1,13 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getAssessments, addAssessment, isSupabaseReady } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   URICA — University of Rhode Island Change Assessment (Simplified 12-item)
-  Readiness-to-change instrument per Treatment Protocol Section 5.1.
-  Required at admission and bi-weekly. Initials only (HIPAA).
-  All fields are selects — zero free text.
+  Readiness-to-change instrument per Treatment Protocol Section 5.1. Live
+  `assessments` table (type 'urica'). Required at admission and bi-weekly.
+  Initials only (HIPAA). All fields are selects — zero free text.
 */
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
 
 const STAFF_OPTIONS = [
   { value: 'AI', label: 'AI — Clinical Lead' },
@@ -189,94 +183,24 @@ const stageBadgeStyle = (stage) => {
   }
 }
 
-/* ---- Demo Data ---- */
-const INITIAL_ASSESSMENTS = {
-  CO: [
-    {
-      id: 1,
-      date: '2026-02-10',
-      assessor: 'AI',
-      q1: '3', q2: '3', q3: '2', q4: '4', q5: '4', q6: '3', q7: '2', q8: '2', q9: '2', q10: '2', q11: '2', q12: '2',
-      pcMean: 2.67, cMean: 3.67, aMean: 2.00, mMean: 2.00,
-      readiness: 5.00,
-      stage: 'Contemplation',
-    },
-    {
-      id: 2,
-      date: '2026-02-24',
-      assessor: 'AI',
-      q1: '2', q2: '2', q3: '2', q4: '4', q5: '5', q6: '4', q7: '3', q8: '4', q9: '3', q10: '3', q11: '3', q12: '3',
-      pcMean: 2.00, cMean: 4.33, aMean: 3.33, mMean: 3.00,
-      readiness: 8.67,
-      stage: 'Contemplation',
-    },
-    {
-      id: 3,
-      date: '2026-03-10',
-      assessor: 'TA',
-      q1: '1', q2: '1', q3: '1', q4: '4', q5: '5', q6: '4', q7: '5', q8: '5', q9: '4', q10: '4', q11: '4', q12: '3',
-      pcMean: 1.00, cMean: 4.33, aMean: 4.67, mMean: 3.67,
-      readiness: 11.67,
-      stage: 'Action',
-    },
-  ],
-  AN: [
-    {
-      id: 4,
-      date: '2026-02-15',
-      assessor: 'AI',
-      q1: '3', q2: '3', q3: '3', q4: '3', q5: '4', q6: '3', q7: '2', q8: '2', q9: '3', q10: '2', q11: '2', q12: '3',
-      pcMean: 3.00, cMean: 3.33, aMean: 2.33, mMean: 2.33,
-      readiness: 5.00,
-      stage: 'Contemplation',
-    },
-    {
-      id: 5,
-      date: '2026-03-01',
-      assessor: 'AI',
-      q1: '2', q2: '2', q3: '2', q4: '4', q5: '4', q6: '4', q7: '4', q8: '3', q9: '4', q10: '3', q11: '3', q12: '3',
-      pcMean: 2.00, cMean: 4.00, aMean: 3.67, mMean: 3.00,
-      readiness: 8.67,
-      stage: 'Preparation',
-    },
-  ],
-  KA: [
-    {
-      id: 6,
-      date: '2026-02-20',
-      assessor: 'FA',
-      q1: '3', q2: '4', q3: '3', q4: '3', q5: '3', q6: '3', q7: '2', q8: '2', q9: '2', q10: '2', q11: '2', q12: '2',
-      pcMean: 3.33, cMean: 3.00, aMean: 2.00, mMean: 2.00,
-      readiness: 3.67,
-      stage: 'Contemplation',
-    },
-  ],
-  IM: [
-    {
-      id: 7,
-      date: '2026-02-18',
-      assessor: 'AI',
-      q1: '2', q2: '2', q3: '2', q4: '4', q5: '4', q6: '4', q7: '3', q8: '3', q9: '3', q10: '3', q11: '3', q12: '3',
-      pcMean: 2.00, cMean: 4.00, aMean: 3.00, mMean: 3.00,
-      readiness: 8.00,
-      stage: 'Contemplation',
-    },
-    {
-      id: 8,
-      date: '2026-03-04',
-      assessor: 'TA',
-      q1: '1', q2: '1', q3: '2', q4: '4', q5: '5', q6: '4', q7: '5', q8: '4', q9: '5', q10: '4', q11: '4', q12: '3',
-      pcMean: 1.33, cMean: 4.33, aMean: 4.67, mMean: 3.67,
-      readiness: 11.33,
-      stage: 'Action',
-    },
-  ],
+// Map an `assessments` row (type 'urica') to the page's assessment shape.
+function rowToAssessment(r) {
+  const resp = r.responses || {}
+  const obj = { id: r.id, date: (r.created_at || '').slice(0, 10), assessor: r.assessed_by_code || '', stage: r.level || 'Contemplation' }
+  for (let i = 1; i <= 12; i++) obj[`q${i}`] = resp[`q${i}`] ?? ''
+  obj.pcMean = resp.pcMean ?? 0
+  obj.cMean = resp.cMean ?? 0
+  obj.aMean = resp.aMean ?? 0
+  obj.mMean = resp.mMean ?? 0
+  obj.readiness = resp.readiness ?? r.score ?? 0
+  return obj
 }
 
 export default function URICAAssessment() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
-  const [assessments, setAssessments] = useState(INITIAL_ASSESSMENTS)
+  const [patients, setPatients] = useState([])
+  const [selectedPatient, setSelectedPatient] = useState('')
+  const [assessments, setAssessments] = useState({}) // patient_id -> ascending[]
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     assessor: '',
@@ -284,6 +208,35 @@ export default function URICAAssessment() {
     q7: '', q8: '', q9: '', q10: '', q11: '', q12: '',
   })
 
+  const loadAssessments = useCallback(async (patientId) => {
+    if (!patientId || !isSupabaseReady()) return []
+    const { data: rows } = await getAssessments(patientId, 'urica')
+    // getAssessments returns descending; page expects ascending (latest last)
+    return (rows || []).map(rowToAssessment).reverse()
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      if (!isSupabaseReady()) return
+      const { data: rows } = await getPatients()
+      const briefs = activeBriefs(rows)
+      setPatients(briefs)
+      const first = briefs[0]?.id || ''
+      setSelectedPatient(first)
+      if (first) setAssessments({ [first]: await loadAssessments(first) })
+    })()
+  }, [loadAssessments])
+
+  const onSelectPatient = async (id) => {
+    setSelectedPatient(id)
+    setShowForm(false)
+    if (!assessments[id]) {
+      const a = await loadAssessments(id)
+      setAssessments(prev => ({ ...prev, [id]: a }))
+    }
+  }
+
+  const selectedInitials = patients.find(p => p.id === selectedPatient)?.initials || ''
   const patientAssessments = assessments[selectedPatient] || []
   const latestAssessment = patientAssessments.length > 0 ? patientAssessments[patientAssessments.length - 1] : null
   const previousAssessment = patientAssessments.length > 1 ? patientAssessments[patientAssessments.length - 2] : null
@@ -306,29 +259,34 @@ export default function URICAAssessment() {
   const formReadiness = formSubscales ? calculateReadiness(formSubscales) : null
   const formStage = formSubscales ? determineStage(formSubscales, formReadiness) : null
 
-  const handleSubmit = () => {
-    if (!form.assessor || !allItemsComplete) return
+  const handleSubmit = async () => {
+    if (!form.assessor || !allItemsComplete || !selectedPatient) return
 
     const subscales = calculateSubscales(form)
     const readiness = calculateReadiness(subscales)
     const stage = determineStage(subscales, readiness)
 
-    const newAssessment = {
-      id: Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      ...form,
-      pcMean: subscales.PC,
-      cMean: subscales.C,
-      aMean: subscales.A,
-      mMean: subscales.M,
-      readiness,
-      stage,
-    }
+    const responses = {}
+    for (let i = 1; i <= 12; i++) responses[`q${i}`] = form[`q${i}`]
+    responses.pcMean = subscales.PC
+    responses.cMean = subscales.C
+    responses.aMean = subscales.A
+    responses.mMean = subscales.M
+    responses.readiness = readiness
 
-    setAssessments((prev) => ({
-      ...prev,
-      [selectedPatient]: [...(prev[selectedPatient] || []), newAssessment],
-    }))
+    setSaving(true)
+    const { error } = await addAssessment({
+      patient_id: selectedPatient,
+      type: 'urica',
+      score: Math.round(readiness),
+      level: stage,
+      responses,
+      assessed_by_code: form.assessor,
+    })
+    setSaving(false)
+    if (error) { alert(`Could not save assessment: ${error.message}`); return }
+    const a = await loadAssessments(selectedPatient)
+    setAssessments(prev => ({ ...prev, [selectedPatient]: a }))
     setShowForm(false)
     resetForm()
   }
@@ -352,7 +310,7 @@ export default function URICAAssessment() {
           <label style={{ fontWeight: 600, fontSize: 14, color: '#4A5568' }}>Patient:</label>
           <select
             value={selectedPatient}
-            onChange={(e) => { setSelectedPatient(e.target.value); setShowForm(false) }}
+            onChange={(e) => onSelectPatient(e.target.value)}
             style={{
               padding: '8px 12px',
               borderRadius: 8,
@@ -362,8 +320,8 @@ export default function URICAAssessment() {
               background: '#fff',
             }}
           >
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>{p.initials}</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
           </select>
         </div>
@@ -382,7 +340,7 @@ export default function URICAAssessment() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-            Current Stage — {selectedPatient}
+            Current Stage — {selectedInitials}
           </h2>
           <span style={currentStage !== 'Not assessed' ? stageBadgeStyle(currentStage) : { fontSize: 13, color: '#A0AEC0', fontWeight: 600 }}>
             {currentStage}
@@ -590,7 +548,7 @@ export default function URICAAssessment() {
           }}
         >
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: '0 0 8px' }}>
-            New URICA Assessment — {selectedPatient}
+            New URICA Assessment — {selectedInitials}
           </h2>
           <p style={{ fontSize: 13, color: '#718096', margin: '0 0 20px' }}>
             University of Rhode Island Change Assessment (12-item). Rate each statement on a 5-point scale.

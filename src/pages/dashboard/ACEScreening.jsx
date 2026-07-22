@@ -1,18 +1,12 @@
-import React, { useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
+import React, { useState, useEffect, useCallback } from 'react'
+import { getPatients, getAssessments, addAssessment, isSupabaseReady } from '../../utils/supabase'
+import { activeBriefs } from '../../utils/patients'
 
 /*
   ACE Screening — Adverse Childhood Experiences Questionnaire
-  Required at admission per Treatment Protocol Section 9.2.
-  Initials only (HIPAA). All fields are selects — zero free text.
+  Required at admission per Treatment Protocol Section 9.2. Live `assessments`
+  table (type 'ace'). Initials only (HIPAA). All fields are selects — zero free text.
 */
-
-const PATIENTS = [
-  { id: 'P001', initials: 'CO' },
-  { id: 'P002', initials: 'AN' },
-  { id: 'P003', initials: 'KA' },
-  { id: 'P004', initials: 'IM' },
-]
 
 const STAFF_OPTIONS = [
   { value: 'AI', label: 'AI — Clinical Lead' },
@@ -121,51 +115,12 @@ const CLINICAL_ACTIONS = {
   },
 }
 
-const INITIAL_ASSESSMENTS = {
-  CO: [
-    {
-      id: 1,
-      date: '2026-03-08',
-      assessor: 'AI',
-      q1: 'Yes', q2: 'No', q3: 'No', q4: 'Yes', q5: 'No',
-      q6: 'No', q7: 'No', q8: 'No', q9: 'No', q10: 'No',
-      aceScore: 2,
-      riskLevel: 'Low',
-    },
-  ],
-  AN: [
-    {
-      id: 2,
-      date: '2026-02-20',
-      assessor: 'AI',
-      q1: 'Yes', q2: 'Yes', q3: 'No', q4: 'Yes', q5: 'No',
-      q6: 'Yes', q7: 'No', q8: 'Yes', q9: 'No', q10: 'No',
-      aceScore: 5,
-      riskLevel: 'Moderate',
-    },
-  ],
-  KA: [
-    {
-      id: 3,
-      date: '2026-01-15',
-      assessor: 'FA',
-      q1: 'No', q2: 'No', q3: 'No', q4: 'No', q5: 'No',
-      q6: 'Yes', q7: 'No', q8: 'No', q9: 'No', q10: 'No',
-      aceScore: 1,
-      riskLevel: 'Low',
-    },
-  ],
-  IM: [
-    {
-      id: 4,
-      date: '2026-03-23',
-      assessor: 'AI',
-      q1: 'Yes', q2: 'Yes', q3: 'Yes', q4: 'Yes', q5: 'No',
-      q6: 'Yes', q7: 'Yes', q8: 'Yes', q9: 'No', q10: 'No',
-      aceScore: 7,
-      riskLevel: 'High',
-    },
-  ],
+// Map an `assessments` row (type 'ace') to the page's assessment shape.
+function rowToAssessment(r) {
+  const resp = r.responses || {}
+  const obj = { id: r.id, date: (r.created_at || '').slice(0, 10), assessor: r.assessed_by_code || '', aceScore: r.score ?? 0, riskLevel: r.level || 'Low' }
+  for (let i = 1; i <= 10; i++) obj[`q${i}`] = resp[`q${i}`] ?? ''
+  return obj
 }
 
 function calculateACEScore(form) {
@@ -198,9 +153,10 @@ const riskLevelStyle = (level) => {
 }
 
 export default function ACEScreening() {
-  const { user } = useAuth()
-  const [selectedPatient, setSelectedPatient] = useState('CO')
-  const [assessments, setAssessments] = useState(INITIAL_ASSESSMENTS)
+  const [patients, setPatients] = useState([])
+  const [selectedPatient, setSelectedPatient] = useState('')
+  const [assessments, setAssessments] = useState({}) // patient_id -> ascending[]
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     assessor: '',
@@ -208,6 +164,34 @@ export default function ACEScreening() {
     q6: '', q7: '', q8: '', q9: '', q10: '',
   })
 
+  const loadAssessments = useCallback(async (patientId) => {
+    if (!patientId || !isSupabaseReady()) return []
+    const { data: rows } = await getAssessments(patientId, 'ace')
+    return (rows || []).map(rowToAssessment).reverse()
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      if (!isSupabaseReady()) return
+      const { data: rows } = await getPatients()
+      const briefs = activeBriefs(rows)
+      setPatients(briefs)
+      const first = briefs[0]?.id || ''
+      setSelectedPatient(first)
+      if (first) setAssessments({ [first]: await loadAssessments(first) })
+    })()
+  }, [loadAssessments])
+
+  const onSelectPatient = async (id) => {
+    setSelectedPatient(id)
+    setShowForm(false)
+    if (!assessments[id]) {
+      const a = await loadAssessments(id)
+      setAssessments(prev => ({ ...prev, [id]: a }))
+    }
+  }
+
+  const selectedInitials = patients.find(p => p.id === selectedPatient)?.initials || ''
   const patientAssessments = assessments[selectedPatient] || []
   const latestAssessment = patientAssessments.length > 0 ? patientAssessments[patientAssessments.length - 1] : null
   const currentRisk = latestAssessment ? latestAssessment.riskLevel : 'Not assessed'
@@ -228,23 +212,27 @@ export default function ACEScreening() {
     form.q1 && form.q2 && form.q3 && form.q4 && form.q5 &&
     form.q6 && form.q7 && form.q8 && form.q9 && form.q10
 
-  const handleSubmit = () => {
-    if (!allQuestionsAnswered) return
+  const handleSubmit = async () => {
+    if (!allQuestionsAnswered || !selectedPatient) return
 
     const aceScore = calculateACEScore(form)
     const riskLevel = getRiskLevel(aceScore)
-    const newAssessment = {
-      id: Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      ...form,
-      aceScore,
-      riskLevel,
-    }
+    const responses = {}
+    for (let i = 1; i <= 10; i++) responses[`q${i}`] = form[`q${i}`]
 
-    setAssessments((prev) => ({
-      ...prev,
-      [selectedPatient]: [...(prev[selectedPatient] || []), newAssessment],
-    }))
+    setSaving(true)
+    const { error } = await addAssessment({
+      patient_id: selectedPatient,
+      type: 'ace',
+      score: aceScore,
+      level: riskLevel,
+      responses,
+      assessed_by_code: form.assessor,
+    })
+    setSaving(false)
+    if (error) { alert(`Could not save assessment: ${error.message}`); return }
+    const a = await loadAssessments(selectedPatient)
+    setAssessments(prev => ({ ...prev, [selectedPatient]: a }))
     setShowForm(false)
     resetForm()
   }
@@ -266,7 +254,7 @@ export default function ACEScreening() {
           <label style={{ fontWeight: 600, fontSize: 14, color: '#4A5568' }}>Patient:</label>
           <select
             value={selectedPatient}
-            onChange={(e) => { setSelectedPatient(e.target.value); setShowForm(false) }}
+            onChange={(e) => onSelectPatient(e.target.value)}
             style={{
               padding: '8px 12px',
               borderRadius: 8,
@@ -276,8 +264,8 @@ export default function ACEScreening() {
               background: '#fff',
             }}
           >
-            {PATIENTS.map((p) => (
-              <option key={p.id} value={p.initials}>{p.initials}</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.initials}</option>
             ))}
           </select>
         </div>
@@ -320,7 +308,7 @@ export default function ACEScreening() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: 0 }}>
-            Current ACE Status — {selectedPatient}
+            Current ACE Status — {selectedInitials}
           </h2>
           {currentRisk !== 'Not assessed' ? (
             <span style={riskLevelStyle(currentRisk)}>
@@ -481,7 +469,7 @@ export default function ACEScreening() {
           }}
         >
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D3748', margin: '0 0 8px' }}>
-            New ACE Screening — {selectedPatient}
+            New ACE Screening — {selectedInitials}
           </h2>
           <p style={{ fontSize: 13, color: '#718096', margin: '0 0 4px' }}>
             Adverse Childhood Experiences Questionnaire. All questions refer to events before the age of 18.

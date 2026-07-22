@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { isSupabaseReady, getAlumni, addAlumnus, updateAlumnus } from '../../utils/supabase'
+import { initialsFromName } from '../../utils/patients'
 
 /*
   Alumni CRM — 24-Month Post-Discharge Monitoring per SOP Chapter 8.5
@@ -17,6 +19,7 @@ const STATUS_COLORS = {
 }
 
 const calcMonthsSince = (dateStr) => {
+  if (!dateStr) return 0
   const d = new Date(dateStr)
   const now = new Date('2026-03-31')
   return (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth())
@@ -39,63 +42,122 @@ const getHomeVisitDue = (monthsSince) => {
   return 'Bi-monthly'
 }
 
-const initAlumni = () => [
-  {
-    id: 1, initials: 'C.O.', graduationDate: '2025-12-15', lastContact: '2026-03-25',
-    status: 'active',
-    contacts: [
-      { date: '2026-03-25', type: 'phone', notes: 'Client in good spirits. Employed at a bakery. Attending weekly church services.', relapse: false },
-      { date: '2026-03-10', type: 'visit', notes: 'Home visit — living with family, stable environment. No signs of relapse.', relapse: false },
-      { date: '2026-02-20', type: 'group', notes: 'Attended alumni group meeting. Shared testimony with current clients.', relapse: false },
-    ],
-  },
-  {
-    id: 2, initials: 'A.N.', graduationDate: '2025-06-01', lastContact: '2026-03-15',
-    status: 'relapsed',
-    contacts: [
-      { date: '2026-03-15', type: 'phone', notes: 'Client admitted to alcohol use over the past 2 weeks. Offered re-admission counselling.', relapse: true },
-      { date: '2026-02-28', type: 'visit', notes: 'Home visit — client appeared distressed. Lost employment in February.', relapse: false },
-      { date: '2026-01-20', type: 'phone', notes: 'Routine check-in. Client reported stress at work but coping.', relapse: false },
-    ],
-  },
-  {
-    id: 3, initials: 'K.A.', graduationDate: '2024-04-01', lastContact: '2026-02-10',
-    status: 'active',
-    contacts: [
-      { date: '2026-02-10', type: 'phone', notes: 'Monthly check-in. Running his own small business. Very stable.', relapse: false },
-      { date: '2025-12-15', type: 'visit', notes: 'Annual home visit. Family fully reunited. Active church member.', relapse: false },
-    ],
-  },
-]
+// Normalise a DB row into the shape this screen renders.
+const contactsOf = (row) => (row.data?.contactLog || [])
+const lastContactOf = (row) => row.data?.lastContact || contactsOf(row)[0]?.date || null
 
 export default function AlumniCRM() {
-  const [alumni, setAlumni] = useState(initAlumni)
+  const [alumni, setAlumni] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showContactForm, setShowContactForm] = useState(null)
   const [contactForm, setContactForm] = useState({ date: '', type: 'phone', notes: '', relapse: false })
   const [filterStatus, setFilterStatus] = useState('all')
+  const [saving, setSaving] = useState(false)
+  const [showAdd, setShowAdd] = useState(false)
+  const [addForm, setAddForm] = useState({ full_name: '', discharge_date: '', status: 'active', risk_level: 'low' })
 
-  const handleLogContact = (alumniId) => {
+  const load = async () => {
+    setLoading(true)
+    const { data, error } = await getAlumni()
+    if (error) alert('Failed to load alumni: ' + error.message)
+    setAlumni(data || [])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    load()
+  }, [])
+
+  const handleLogContact = async (alumniId) => {
     if (!contactForm.date || !contactForm.notes) return
-    setAlumni(prev => prev.map(a =>
-      a.id === alumniId ? {
-        ...a,
-        lastContact: contactForm.date,
-        status: contactForm.relapse ? 'relapsed' : a.status,
-        contacts: [{ ...contactForm }, ...a.contacts],
-      } : a
-    ))
+    const row = alumni.find(a => a.id === alumniId)
+    if (!row) return
+    const existing = row.data || {}
+    const newContact = { date: contactForm.date, type: contactForm.type, notes: contactForm.notes, relapse: contactForm.relapse }
+    const updates = {
+      status: contactForm.relapse ? 'relapsed' : row.status,
+      data: { ...existing, lastContact: contactForm.date, contactLog: [newContact, ...(existing.contactLog || [])] },
+    }
+    setSaving(true)
+    const { error } = await updateAlumnus(alumniId, updates)
+    setSaving(false)
+    if (error) { alert('Failed to log contact: ' + error.message); return }
     setContactForm({ date: '', type: 'phone', notes: '', relapse: false })
     setShowContactForm(null)
+    load()
+  }
+
+  const handleAddAlumnus = async () => {
+    if (!addForm.full_name || !addForm.discharge_date) return
+    setSaving(true)
+    const { error } = await addAlumnus({
+      initials: initialsFromName(addForm.full_name),
+      full_name: addForm.full_name,
+      discharge_date: addForm.discharge_date,
+      status: addForm.status,
+      risk_level: addForm.risk_level,
+      data: { contactLog: [] },
+    })
+    setSaving(false)
+    if (error) { alert('Failed to add alumnus: ' + error.message); return }
+    setAddForm({ full_name: '', discharge_date: '', status: 'active', risk_level: 'low' })
+    setShowAdd(false)
+    load()
   }
 
   const filtered = filterStatus === 'all' ? alumni : alumni.filter(a => a.status === filterStatus)
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Alumni CRM</h1>
-        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>24-month post-discharge monitoring — SOP Chapter 8.5</p>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Alumni CRM</h1>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>24-month post-discharge monitoring — SOP Chapter 8.5</p>
+        </div>
+        <button onClick={() => setShowAdd(!showAdd)}
+          style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--blue)', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: '.82rem' }}>
+          {showAdd ? 'Cancel' : '+ Add Alumnus'}
+        </button>
       </div>
+
+      {/* Add Alumnus Form */}
+      {showAdd && (
+        <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+            <div>
+              <label style={{ fontSize: '.72rem', fontWeight: 600, display: 'block', marginBottom: 3 }}>Full Name</label>
+              <input value={addForm.full_name} onChange={e => setAddForm(p => ({ ...p, full_name: e.target.value }))}
+                style={{ width: '100%', padding: 6, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.8rem' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '.72rem', fontWeight: 600, display: 'block', marginBottom: 3 }}>Discharge Date</label>
+              <input type="date" value={addForm.discharge_date} onChange={e => setAddForm(p => ({ ...p, discharge_date: e.target.value }))}
+                style={{ width: '100%', padding: 6, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.8rem' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '.72rem', fontWeight: 600, display: 'block', marginBottom: 3 }}>Status</label>
+              <select value={addForm.status} onChange={e => setAddForm(p => ({ ...p, status: e.target.value }))}
+                style={{ width: '100%', padding: 6, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.8rem' }}>
+                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '.72rem', fontWeight: 600, display: 'block', marginBottom: 3 }}>Risk Level</label>
+              <select value={addForm.risk_level} onChange={e => setAddForm(p => ({ ...p, risk_level: e.target.value }))}
+                style={{ width: '100%', padding: 6, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.8rem' }}>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+            </div>
+          </div>
+          <button onClick={handleAddAlumnus} disabled={saving}
+            style={{ marginTop: 10, padding: '6px 18px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '.78rem', opacity: saving ? .6 : 1 }}>
+            {saving ? 'Saving…' : 'Save Alumnus'}
+          </button>
+        </div>
+      )}
 
       {/* KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -150,14 +212,23 @@ export default function AlumniCRM() {
         ))}
       </div>
 
+      {/* Loading / Empty states */}
+      {loading && <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)' }}>Loading alumni…</div>}
+      {!loading && alumni.length === 0 && (
+        <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--g500)' }}>No alumni on record yet.</div>
+      )}
+
       {/* Alumni List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {filtered.map(a => {
-          const months = calcMonthsSince(a.graduationDate)
-          const sc = STATUS_COLORS[a.status]
+        {!loading && filtered.map(a => {
+          const months = calcMonthsSince(a.discharge_date)
+          const sc = STATUS_COLORS[a.status] || STATUS_COLORS.closed
           const schedule = getNextContactSchedule(months, a.status)
           const visitDue = getHomeVisitDue(months)
           const nearClosure = months >= 22 && a.status === 'active'
+          const initials = a.initials || initialsFromName(a.full_name)
+          const contacts = contactsOf(a)
+          const lastContact = lastContactOf(a)
 
           return (
             <div key={a.id} className="card" style={{ padding: 18, borderLeft: `4px solid ${sc.color}` }}>
@@ -168,10 +239,10 @@ export default function AlumniCRM() {
                       width: 36, height: 36, borderRadius: '50%', background: sc.bg, color: sc.color,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '.82rem',
                     }}>
-                      {a.initials}
+                      {initials}
                     </span>
                     <div>
-                      <Link to={'/dashboard/alumni/' + a.id} style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--charcoal)'}>{a.initials}</Link>
+                      <Link to={'/dashboard/alumni/' + a.id} style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--charcoal)', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--charcoal)'}>{initials}</Link>
                       <span style={{
                         marginLeft: 8, padding: '2px 10px', borderRadius: 12, fontSize: '.68rem', fontWeight: 700,
                         background: sc.bg, color: sc.color,
@@ -181,9 +252,9 @@ export default function AlumniCRM() {
                     </div>
                   </div>
                   <div style={{ fontSize: '.8rem', color: 'var(--g500)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                    <span>Graduated: {a.graduationDate}</span>
+                    <span>Graduated: {a.discharge_date || '—'}</span>
                     <span>{months} months post-discharge</span>
-                    <span>Last contact: {a.lastContact}</span>
+                    <span>Last contact: {lastContact || '—'}</span>
                   </div>
                   <div style={{ fontSize: '.78rem', marginTop: 6, display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                     <span>Contact freq: <strong>{schedule}</strong></span>
@@ -229,18 +300,18 @@ export default function AlumniCRM() {
                         style={{ width: '100%', padding: 6, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.8rem', resize: 'vertical' }} />
                     </div>
                   </div>
-                  <button onClick={() => handleLogContact(a.id)}
-                    style={{ marginTop: 8, padding: '6px 18px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: '.78rem' }}>
-                    Save Contact
+                  <button onClick={() => handleLogContact(a.id)} disabled={saving}
+                    style={{ marginTop: 8, padding: '6px 18px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '.78rem', opacity: saving ? .6 : 1 }}>
+                    {saving ? 'Saving…' : 'Save Contact'}
                   </button>
                 </div>
               )}
 
               {/* Contact History */}
-              {a.contacts.length > 0 && (
+              {contacts.length > 0 && (
                 <div style={{ marginTop: 12 }}>
                   <div style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', marginBottom: 4 }}>Contact History</div>
-                  {a.contacts.slice(0, 4).map((c, i) => (
+                  {contacts.slice(0, 4).map((c, i) => (
                     <div key={i} style={{ fontSize: '.78rem', padding: '5px 0', borderTop: '1px solid var(--g100)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <span style={{ color: 'var(--g400)', minWidth: 80 }}>{c.date}</span>
                       <span style={{ fontWeight: 600, minWidth: 50, textTransform: 'capitalize' }}>{c.type}</span>

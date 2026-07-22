@@ -73,9 +73,10 @@ export default function Contact() {
               <div className={styles.bank}>
                 <h4>Bank Transfer Details</h4>
                 {[
-                  ['Bank Name',      'Freedom Foundation'],
-                  ['Account Name',   'House of Refuge Rehab Centre'],
-                  ['Account Number', 'Contact us for details'],
+                  ['Account Name',   'Freedom Foundation House of Refuge'],
+                  ['Account Number', '1014768696'],
+                  ['Bank',           'Zenith Bank'],
+                  ['Currency',       'Naira (₦)'],
                 ].map(([k,v]) => (
                   <div key={k} className={styles.bankRow}>
                     <span>{k}</span><span>{v}</span>

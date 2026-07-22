@@ -1,46 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-
-const alumni = [
-  {
-    id: 1, name: 'C.O.', graduationDate: '2025-12-15', substance: 'Alcohol',
-    phaseCompleted: 'Phase 4 — Reintegration', churchPlacement: 'Living Faith Chapel, Ikorodu',
-    employmentStatus: 'Employed — Bakery Assistant',
-    riskLevel: 'low', lastAssessment: '2026-03-20',
-    riskFactors: ['Occasional peer pressure', 'Limited savings'],
-    housing: 'Living with family — stable', familyReunification: 'Fully reunited',
-    churchAttendance: 'Weekly — active member',
-  },
-  {
-    id: 2, name: 'A.N.', graduationDate: '2025-06-01', substance: 'Alcohol & Cannabis',
-    phaseCompleted: 'Phase 4 — Reintegration', churchPlacement: 'Grace Assembly, Surulere',
-    employmentStatus: 'Unemployed — lost job Feb 2026',
-    riskLevel: 'high', lastAssessment: '2026-03-15',
-    riskFactors: ['Recent relapse (alcohol)', 'Job loss', 'Isolation from support network', 'Financial stress'],
-    housing: 'Renting alone — unstable', familyReunification: 'Partial — estranged from siblings',
-    churchAttendance: 'Irregular — last attended 3 weeks ago',
-  },
-  {
-    id: 3, name: 'K.A.', graduationDate: '2024-04-01', substance: 'Cannabis',
-    phaseCompleted: 'Phase 4 — Reintegration', churchPlacement: 'Redeemed Christian Church, Ikeja',
-    employmentStatus: 'Self-employed — small business owner',
-    riskLevel: 'low', lastAssessment: '2026-02-10',
-    riskFactors: ['None identified'],
-    housing: 'Own accommodation — stable', familyReunification: 'Fully reunited',
-    churchAttendance: 'Weekly — serves as usher',
-  },
-]
-
-const contactHistory = [
-  { date: '2026-03-25', type: 'phone', notes: 'Routine check-in. Client in good spirits, maintaining employment.', contactedBy: 'Sister Adaeze' },
-  { date: '2026-03-10', type: 'visit', notes: 'Home visit — stable environment, family supportive. No signs of relapse.', contactedBy: 'Brother Chuka' },
-  { date: '2026-02-20', type: 'group', notes: 'Attended alumni group meeting. Shared testimony with current clients.', contactedBy: 'Pastor Emeka' },
-  { date: '2026-02-05', type: 'phone', notes: 'Bi-weekly call. Reported minor stress at work but coping well with prayer.', contactedBy: 'Sister Adaeze' },
-  { date: '2026-01-15', type: 'visit', notes: 'Scheduled home visit. Living conditions improved since last visit.', contactedBy: 'Brother Chuka' },
-  { date: '2026-01-02', type: 'phone', notes: 'New year check-in. Client set goals for the year — volunteering and saving.', contactedBy: 'Sister Adaeze' },
-  { date: '2025-12-20', type: 'group', notes: 'Christmas alumni gathering. Client brought family members along.', contactedBy: 'Pastor Emeka' },
-  { date: '2025-12-15', type: 'phone', notes: 'Post-graduation follow-up. Settled into new routine at home.', contactedBy: 'Sister Adaeze' },
-]
+import { isSupabaseReady, getAlumnus, updateAlumnus } from '../../utils/supabase'
+import { initialsFromName } from '../../utils/patients'
 
 const RISK_COLORS = {
   low: { bg: '#C6F6D5', color: '#22543D' },
@@ -48,13 +9,40 @@ const RISK_COLORS = {
   high: { bg: '#FED7D7', color: '#742A2A' },
 }
 
-const TYPE_ICONS = { phone: '\u260E', visit: '\u{1F3E0}', group: '\u{1F465}' }
+const STATUSES = ['active', 'relapsed', 'lost-to-follow-up', 'closed']
+
+const TYPE_ICONS = { phone: '☎', visit: '\u{1F3E0}', group: '\u{1F465}' }
 
 export default function AlumniDetail() {
   const { id } = useParams()
-  const alumnus = alumni[parseInt(id)]
-
+  const [alumnus, setAlumnus] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [contactForm, setContactForm] = useState({ date: '', type: 'phone', notes: '', outcome: 'stable' })
+
+  const load = async () => {
+    setLoading(true)
+    const { data, error } = await getAlumnus(id)
+    if (error && error.code !== 'PGRST116') alert('Failed to load alumnus: ' + error.message)
+    setAlumnus(data || null)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    if (!isSupabaseReady()) { setLoading(false); return }
+    load()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Link to="/dashboard/alumni" style={{ color: 'var(--blue)', textDecoration: 'none', fontSize: '.88rem', fontWeight: 600 }}>
+          &larr; Back to Alumni Programme
+        </Link>
+        <div style={{ marginTop: 40, textAlign: 'center', color: 'var(--g500)' }}>Loading alumni record…</div>
+      </div>
+    )
+  }
 
   if (!alumnus) {
     return (
@@ -69,11 +57,30 @@ export default function AlumniDetail() {
     )
   }
 
-  const rc = RISK_COLORS[alumnus.riskLevel]
+  const d = alumnus.data || {}
+  const name = alumnus.full_name || alumnus.initials || '—'
+  const riskLevel = alumnus.risk_level || 'low'
+  const rc = RISK_COLORS[riskLevel] || RISK_COLORS.low
+  const riskFactors = d.riskFactors || []
+  const contactHistory = d.contactLog || []
 
-  const handleSave = () => {
+  const patchData = async (updates) => {
+    setSaving(true)
+    const { data, error } = await updateAlumnus(alumnus.id, updates)
+    setSaving(false)
+    if (error) { alert('Failed to save: ' + error.message); return }
+    if (data) setAlumnus(data)
+  }
+
+  const handleStatusChange = (status) => patchData({ status })
+  const handleRiskChange = (risk_level) => patchData({ risk_level })
+
+  const handleSave = async () => {
     if (!contactForm.date || !contactForm.notes) return
-    alert('Contact logged successfully.')
+    const newContact = { date: contactForm.date, type: contactForm.type, notes: contactForm.notes, outcome: contactForm.outcome }
+    await patchData({
+      data: { ...d, lastContact: contactForm.date, contactLog: [newContact, ...contactHistory] },
+    })
     setContactForm({ date: '', type: 'phone', notes: '', outcome: 'stable' })
   }
 
@@ -84,9 +91,18 @@ export default function AlumniDetail() {
       </Link>
 
       {/* Header */}
-      <div style={{ marginTop: 16, marginBottom: 24 }}>
-        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>{alumnus.name}</h1>
-        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Alumni detail — 24-month post-discharge monitoring</p>
+      <div style={{ marginTop: 16, marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>{name}</h1>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>Alumni detail — 24-month post-discharge monitoring</p>
+        </div>
+        <div>
+          <label style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', display: 'block', marginBottom: 3 }}>Status</label>
+          <select value={alumnus.status || 'active'} disabled={saving} onChange={e => handleStatusChange(e.target.value)}
+            style={{ padding: 6, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.82rem', cursor: saving ? 'not-allowed' : 'pointer' }}>
+            {STATUSES.map(s => <option key={s} value={s}>{s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Demographics */}
@@ -94,12 +110,12 @@ export default function AlumniDetail() {
         <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 12 }}>Profile Summary</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, fontSize: '.84rem' }}>
           {[
-            ['Name', alumnus.name],
-            ['Graduation Date', alumnus.graduationDate],
-            ['Substance', alumnus.substance],
-            ['Programme Phase Completed', alumnus.phaseCompleted],
-            ['Church Placement', alumnus.churchPlacement],
-            ['Employment Status', alumnus.employmentStatus],
+            ['Name', name],
+            ['Graduation Date', alumnus.discharge_date || '—'],
+            ['Substance', d.substance || '—'],
+            ['Programme Phase Completed', d.phaseCompleted || '—'],
+            ['Church Placement', d.churchPlacement || '—'],
+            ['Employment Status', d.employmentStatus || d.employment || '—'],
           ].map(([label, value]) => (
             <div key={label}>
               <div style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', marginBottom: 2 }}>{label}</div>
@@ -114,19 +130,27 @@ export default function AlumniDetail() {
         {/* Risk Assessment */}
         <div className="card" style={{ padding: 18 }}>
           <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 12 }}>Risk Assessment</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
             <span style={{
               padding: '4px 14px', borderRadius: 12, fontSize: '.78rem', fontWeight: 700,
               background: rc.bg, color: rc.color, textTransform: 'uppercase',
             }}>
-              {alumnus.riskLevel} risk
+              {riskLevel} risk
             </span>
-            <span style={{ fontSize: '.78rem', color: 'var(--g500)' }}>Last assessed: {alumnus.lastAssessment}</span>
+            <select value={riskLevel} disabled={saving} onChange={e => handleRiskChange(e.target.value)}
+              style={{ padding: 4, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.75rem', cursor: saving ? 'not-allowed' : 'pointer' }}>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+            {d.lastAssessment && <span style={{ fontSize: '.78rem', color: 'var(--g500)' }}>Last assessed: {d.lastAssessment}</span>}
           </div>
           <div style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', marginBottom: 6 }}>Key Risk Factors</div>
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: '.82rem', color: 'var(--g600)', lineHeight: 1.8 }}>
-            {alumnus.riskFactors.map((f, i) => <li key={i}>{f}</li>)}
-          </ul>
+          {riskFactors.length === 0
+            ? <p style={{ fontSize: '.82rem', color: 'var(--g400)' }}>None recorded.</p>
+            : <ul style={{ margin: 0, paddingLeft: 18, fontSize: '.82rem', color: 'var(--g600)', lineHeight: 1.8 }}>
+                {riskFactors.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>}
         </div>
 
         {/* Reintegration Progress */}
@@ -134,10 +158,10 @@ export default function AlumniDetail() {
           <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 12 }}>Reintegration Progress</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '.84rem' }}>
             {[
-              ['Housing Status', alumnus.housing],
-              ['Employment', alumnus.employmentStatus],
-              ['Family Reunification', alumnus.familyReunification],
-              ['Church Attendance', alumnus.churchAttendance],
+              ['Housing Status', d.housing || '—'],
+              ['Employment', d.employmentStatus || d.employment || '—'],
+              ['Family Reunification', d.familyReunification || d.family || '—'],
+              ['Church Attendance', d.churchAttendance || d.church || '—'],
             ].map(([label, value]) => (
               <div key={label}>
                 <div style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--g500)', marginBottom: 2 }}>{label}</div>
@@ -151,6 +175,7 @@ export default function AlumniDetail() {
       {/* Contact History Timeline */}
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 12 }}>Contact History</h3>
+        {contactHistory.length === 0 && <p style={{ fontSize: '.85rem', color: 'var(--g400)' }}>No contacts logged yet.</p>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {contactHistory.map((c, i) => (
             <div key={i} style={{
@@ -169,7 +194,7 @@ export default function AlumniDetail() {
                   <span style={{ fontSize: '.72rem', color: 'var(--g400)' }}>{c.date}</span>
                 </div>
                 <div style={{ fontSize: '.8rem', color: 'var(--g600)', marginTop: 2 }}>{c.notes}</div>
-                <div style={{ fontSize: '.72rem', color: 'var(--g400)', marginTop: 3 }}>Contacted by: {c.contactedBy}</div>
+                {c.contactedBy && <div style={{ fontSize: '.72rem', color: 'var(--g400)', marginTop: 3 }}>Contacted by: {c.contactedBy}</div>}
               </div>
             </div>
           ))}
@@ -212,9 +237,9 @@ export default function AlumniDetail() {
               style={{ width: '100%', padding: 6, borderRadius: 6, border: '1px solid var(--g200)', fontSize: '.8rem', resize: 'vertical' }} />
           </div>
         </div>
-        <button onClick={handleSave}
-          style={{ marginTop: 10, padding: '7px 20px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: '.8rem' }}>
-          Save Contact
+        <button onClick={handleSave} disabled={saving}
+          style={{ marginTop: 10, padding: '7px 20px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '.8rem', opacity: saving ? .6 : 1 }}>
+          {saving ? 'Saving…' : 'Save Contact'}
         </button>
       </div>
     </div>
