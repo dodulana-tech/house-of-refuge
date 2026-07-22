@@ -9,11 +9,9 @@ export default function Footer() {
         <div className={styles.grid}>
           <div className={styles.brand}>
             <div className={styles.logoText}>HOUSE OF REFUGE</div>
-            <p>A 19-bed drug rehabilitation centre in Lekki, Lagos. A Freedom Foundation initiative managed by ConsultForAfrica.</p>
+            <p>A 19-bed drug rehabilitation centre in Lekki, Lagos. A Freedom Foundation initiative.</p>
             <div className={styles.orgs}>
               <span>Freedom Foundation Nigeria</span>
-              <span className={styles.dot}>·</span>
-              <a href="https://consultforafrica.com" target="_blank" rel="noreferrer">ConsultForAfrica</a>
             </div>
           </div>
           <div>
@@ -39,7 +37,6 @@ export default function Footer() {
           <div>
             <div className={styles.colTitle}>Partners</div>
             <ul className={styles.links}>
-              <li><a href="https://consultforafrica.com" target="_blank" rel="noreferrer">ConsultForAfrica</a></li>
               <li><a href="https://cookedindoors.com" target="_blank" rel="noreferrer">CookedIndoors</a></li>
               <li><span style={{opacity:.5}}>Freedom Foundation NG</span></li>
             </ul>

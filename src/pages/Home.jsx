@@ -66,7 +66,6 @@ export default function Home() {
               <div className={styles.mOrgs}>
                 <div className={styles.mOrgLbl}>An initiative of</div>
                 <div className={styles.mOrgName}>Freedom Foundation Nigeria</div>
-                <div className={styles.mOrgSub}>Managed by ConsultForAfrica.com</div>
               </div>
             </div>
             <div>
