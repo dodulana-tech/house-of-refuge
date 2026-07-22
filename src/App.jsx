@@ -55,6 +55,7 @@ const DLifeSkillsTracker = lazy(() => import('./pages/dashboard/LifeSkillsTracke
 const DShiftScheduler = lazy(() => import('./pages/dashboard/ShiftScheduler'))
 const DTrainingTracker = lazy(() => import('./pages/dashboard/TrainingTracker'))
 const DDonorCRM = lazy(() => import('./pages/dashboard/DonorCRM'))
+const DDonations = lazy(() => import('./pages/dashboard/Donations'))
 const DOutcomeTracking = lazy(() => import('./pages/dashboard/OutcomeTracking'))
 const DAlumniCRM = lazy(() => import('./pages/dashboard/AlumniCRM'))
 const DSafeguarding = lazy(() => import('./pages/dashboard/SafeguardingDashboard'))
@@ -224,6 +225,7 @@ function AppRoutes() {
         <Route path="payments" element={<Payments />} />
         <Route path="donors" element={<DDonorCRM />} />
         <Route path="donors/:id" element={<DDonorDetail />} />
+        <Route path="donations" element={<DDonations />} />
         <Route path="inventory" element={<DInventory />} />
         <Route path="sponsorship" element={<DEquipmentSponsorship />} />
         <Route path="financial-assistance" element={<DFinancialAssistanceList />} />

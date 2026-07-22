@@ -503,6 +503,19 @@ export async function getDonor(id) {
 export const addDonor = (row) => insertRow('donors', row)
 export const updateDonor = (id, updates) => updateRow('donors', id, updates)
 
+// Public donation submissions (anon insert; staff read/manage).
+export async function submitDonation(donation) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase
+    .from('donations')
+    .insert([donation])
+    .select()
+    .single()
+  return { data, error }
+}
+export const getDonations = () => listBy('donations', null, null, 'created_at', false)
+export const updateDonation = (id, updates) => updateRow('donations', id, updates)
+
 // Programme KPIs (quarterly board metrics)
 export async function getProgrammeKpis(year, quarter) {
   if (!supabase) return { data: [], error: null }
