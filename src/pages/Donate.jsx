@@ -94,7 +94,7 @@ export default function Donate() {
 
                 <p style={{ fontSize:'.82rem', color:'var(--g500)', marginTop:14, lineHeight:1.6 }}>
                   After your transfer, please email your reference to{' '}
-                  <a href="mailto:e.abutu@freedomfoundationng.org" style={{ color:'var(--blue)' }}>e.abutu@freedomfoundationng.org</a>{' '}
+                  <a href="mailto:donations@houseofrefugeng.org" style={{ color:'var(--blue)' }}>donations@houseofrefugeng.org</a>{' '}
                   so we can acknowledge your gift and issue a receipt.
                 </p>
 
