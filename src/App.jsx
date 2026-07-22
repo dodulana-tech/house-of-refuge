@@ -7,6 +7,7 @@ import Notification from './components/Notification'
 import SponsorModal from './components/SponsorModal'
 import Home from './pages/Home'
 import About from './pages/About'
+import Partners from './pages/Partners'
 import Donate from './pages/Donate'
 import Sponsor from './pages/Sponsor'
 import SponsorItem from './pages/SponsorItem'
@@ -145,6 +146,7 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<Home />} />
       <Route path="/about" element={<About />} />
+      <Route path="/partners" element={<Partners />} />
       <Route path="/prospectus" element={<Prospectus />} />
       <Route path="/assistance" element={<FinancialAssistance />} />
       <Route path="/assistance/apply" element={<FinancialAssistanceApply />} />
