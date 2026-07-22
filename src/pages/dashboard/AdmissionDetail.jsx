@@ -113,6 +113,90 @@ const REFER_REASONS = [
   'Clinical assessment recommends outpatient',
 ]
 
+function escapeHtml(v) {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
+// Build a self-contained, print-ready HTML document for one application.
+// Rendered into a new window and sent to the browser print dialog (Save as PDF).
+function buildApplicationHtml(app) {
+  const statusLabel = PIPELINE_STEPS.find(s => s.key === app.status)?.label || app.status
+  const depositLine = app.depositPaid
+    ? `${fmt(app.depositAmount)} paid`
+    : app.depositRequestSentAt
+      ? `Request sent ${new Date(app.depositRequestSentAt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}`
+      : 'Not yet requested'
+  const applied = app.dateApplied
+    ? new Date(app.dateApplied).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '—'
+  const generated = new Date().toLocaleString('en-NG', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+  const row = (k, v) => `<tr><td class="k">${escapeHtml(k)}</td><td class="v">${escapeHtml(v)}</td></tr>`
+  const section = (title, rows) => `
+    <section>
+      <h2>${escapeHtml(title)}</h2>
+      <table>${rows}</table>
+    </section>`
+
+  return `<!doctype html><html><head><meta charset="utf-8">
+    <title>Application ${escapeHtml(app.applicantName)}</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: #1f2733; margin: 0; padding: 32px 40px; }
+      .brand { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; color: #1A5FAD; }
+      .doc { font-size: 11px; color: #7a8699; margin-top: 2px; }
+      h1 { font-size: 22px; margin: 18px 0 2px; }
+      .meta { font-size: 12px; color: #55606f; margin-bottom: 4px; }
+      .badges { margin: 10px 0 20px; font-size: 11px; }
+      .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; background: #eef3fb; color: #1A5FAD; font-weight: 700; margin-right: 6px; }
+      section { margin-bottom: 18px; break-inside: avoid; }
+      h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #1A5FAD; border-bottom: 1.5px solid #e3e9f2; padding-bottom: 5px; margin: 0 0 8px; }
+      table { width: 100%; border-collapse: collapse; }
+      td { padding: 4px 0; font-size: 12.5px; vertical-align: top; }
+      td.k { color: #7a8699; width: 42%; }
+      td.v { color: #1f2733; font-weight: 600; }
+      footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #e3e9f2; font-size: 10px; color: #9aa4b2; display: flex; justify-content: space-between; }
+      @media print { body { padding: 0; } @page { margin: 18mm; } }
+    </style></head><body>
+    <div class="brand">House of Refuge</div>
+    <div class="doc">Admission Application &middot; Confidential</div>
+    <h1>${escapeHtml(app.applicantName)}</h1>
+    <div class="meta">Application ID: ${escapeHtml(app.id)}</div>
+    <div class="meta">${app.applicantEmail ? escapeHtml(app.applicantEmail) + ' &middot; ' : ''}${app.applicantPhone ? escapeHtml(app.applicantPhone) + ' &middot; ' : ''}Applied ${escapeHtml(applied)}</div>
+    <div class="badges">
+      <span class="badge">${escapeHtml(statusLabel)}</span>
+      <span class="badge">Pathway ${escapeHtml(app.pathway)}</span>
+      <span class="badge">Deposit: ${escapeHtml(depositLine)}</span>
+    </div>
+    ${section('Clinical Summary', [
+      row('Substance', app.substance),
+      row('Duration', app.substanceDuration),
+      row('Frequency', app.frequency),
+      row('Route of use', app.route),
+      row('Mental health', app.mentalHealth),
+      row('Suicide risk', app.suicideRisk),
+      row('Exclusion screening', app.exclusionScreening),
+    ].join(''))}
+    ${section('Insight & Readiness', [
+      row('Stage of change', app.stageOfChange),
+      row('Motivation', app.motivation),
+      row('Voluntary', app.voluntary ? 'Yes' : 'No'),
+      row('Treatment goals', app.treatmentGoals),
+      row('12-week commitment', app.twelveWeekCommitment ? 'Confirmed' : 'Not confirmed'),
+    ].join(''))}
+    ${section('Support & Family', [
+      row('Family awareness', app.familyAwareness),
+      row('PFSP details', app.pfspDetails),
+      row('Household', app.household),
+      row('Enablers identified', app.enablers),
+      row('Aftercare housing', app.aftercareHousing),
+    ].join(''))}
+    <footer><span>House of Refuge Rehabilitation Centre</span><span>Generated ${escapeHtml(generated)}</span></footer>
+  </body></html>`
+}
+
 export default function AdmissionDetail() {
   const { user } = useAuth()
   const { id } = useParams()
@@ -222,6 +306,21 @@ export default function AdmissionDetail() {
     }
   }
 
+  function exportPdf() {
+    const w = window.open('', '_blank')
+    if (!w) {
+      alert('Please allow pop-ups for this site to export the application as PDF.')
+      return
+    }
+    w.document.write(buildApplicationHtml(app))
+    w.document.close()
+    w.focus()
+    // Give the new window a tick to lay out before invoking the print dialog.
+    const fire = () => { w.print() }
+    if (w.document.readyState === 'complete') setTimeout(fire, 250)
+    else w.onload = () => setTimeout(fire, 250)
+  }
+
   const handleAction = (action) => {
     setConfirm(action)
     setActionReason('')
@@ -268,6 +367,14 @@ export default function AdmissionDetail() {
               Applied: {new Date(app.dateApplied).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
             </p>
           </div>
+          <button
+            className="btn btn--secondary btn--sm"
+            style={{ marginLeft: 'auto', flexShrink: 0 }}
+            onClick={exportPdf}
+            title="Download this application as a PDF"
+          >
+            ⬇ Export PDF
+          </button>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
           <span style={{ padding: '4px 12px', borderRadius: 14, fontSize: '.74rem', fontWeight: 700, background: '#DD6B2015', color: '#DD6B20' }}>
