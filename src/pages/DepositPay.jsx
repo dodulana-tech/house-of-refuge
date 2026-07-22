@@ -117,7 +117,7 @@ export default function DepositPay() {
                 We could not find an application matching this link. Please call us on{' '}
                 <a href="tel:09112777600" style={{ color: 'var(--blue)', fontWeight: 600 }}>09112777600</a>{' '}
                 or email{' '}
-                <a href="mailto:e.abutu@freedomfoundationng.org" style={{ color: 'var(--blue)', fontWeight: 600 }}>e.abutu@freedomfoundationng.org</a>.
+                <a href="mailto:contact@houseofrefugeng.org" style={{ color: 'var(--blue)', fontWeight: 600 }}>contact@houseofrefugeng.org</a>.
               </p>
               <Link to="/apply" className="btn btn--primary btn--sm" style={{ marginTop: 16 }}>Start a new application</Link>
             </div>
