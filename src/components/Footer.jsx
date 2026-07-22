@@ -37,6 +37,7 @@ export default function Footer() {
           <div>
             <div className={styles.colTitle}>Partners</div>
             <ul className={styles.links}>
+              <li><a href="https://consultforafrica.com" target="_blank" rel="noreferrer">ConsultForAfrica</a></li>
               <li><a href="https://cookedindoors.com" target="_blank" rel="noreferrer">CookedIndoors</a></li>
               <li><span style={{opacity:.5}}>Freedom Foundation NG</span></li>
             </ul>
