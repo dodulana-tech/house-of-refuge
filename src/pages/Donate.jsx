@@ -5,7 +5,7 @@ import { submitDonation } from '../utils/supabase'
 import styles from './Donate.module.css'
 
 const BANK = [
-  ['Account Name', 'Freedom Foundation House of Refuge'],
+  ['Account Name', 'Freedom Foundation - House of Refuge'],
   ['Account No.',  '1014768696'],
   ['Bank',         'Zenith Bank'],
   ['Currency',     'Naira (₦)'],
