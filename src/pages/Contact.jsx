@@ -56,7 +56,7 @@ export default function Contact() {
                 {[
                   { icon:'📍', lbl:'Address',          val:'Lekki, Lagos State, Nigeria' },
                   { icon:'📞', lbl:'Phone',             val:<a href="tel:09112777600" style={{color:'var(--blue)'}}>09112777600</a> },
-                  { icon:'✉️', lbl:'Email',             val:<a href="mailto:e.abutu@freedomfoundationng.org" style={{color:'var(--blue)',fontSize:'.85rem'}}>e.abutu@freedomfoundationng.org</a> },
+                  { icon:'✉️', lbl:'Email',             val:<a href="mailto:contact@houseofrefugeng.org" style={{color:'var(--blue)',fontSize:'.85rem'}}>contact@houseofrefugeng.org</a> },
                   { icon:'🕐', lbl:'Admissions Hours',  val:'Mon – Sat, 8:00am – 6:00pm' },
                   { icon:'🌐', lbl:'Management Partner',val:<a href="https://consultforafrica.com" target="_blank" rel="noreferrer" style={{color:'var(--blue)'}}>consultforafrica.com</a> },
                 ].map(({ icon, lbl, val }) => (

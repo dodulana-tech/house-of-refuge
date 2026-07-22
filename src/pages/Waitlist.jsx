@@ -1019,7 +1019,7 @@ export default function Waitlist() {
                   <a href="tel:09112777600" style={{ color: 'var(--blue)' }}>09112777600</a>
                 </div>
                 <div style={{ fontSize: '.82rem' }}>
-                  <a href="mailto:e.abutu@freedomfoundationng.org" style={{ color: 'var(--blue)' }}>e.abutu@freedomfoundationng.org</a>
+                  <a href="mailto:contact@houseofrefugeng.org" style={{ color: 'var(--blue)' }}>contact@houseofrefugeng.org</a>
                 </div>
               </div>
             </div>
