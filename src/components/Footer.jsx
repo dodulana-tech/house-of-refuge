@@ -31,7 +31,7 @@ export default function Footer() {
             <div className={styles.colTitle}>Contact</div>
             <ul className={styles.links}>
               <li><a href="tel:09112777600">09112777600</a></li>
-              <li><a href="mailto:e.abutu@freedomfoundationng.org" style={{fontSize:'.78rem'}}>e.abutu@freedomfoundationng.org</a></li>
+              <li><a href="mailto:contact@houseofrefugeng.org" style={{fontSize:'.78rem'}}>contact@houseofrefugeng.org</a></li>
               <li><span style={{opacity:.5}}>Lekki, Lagos, Nigeria</span></li>
               <li><span style={{opacity:.5}}>Mon–Sat, 8am–6pm</span></li>
             </ul>

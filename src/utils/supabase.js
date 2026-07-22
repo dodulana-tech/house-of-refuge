@@ -504,14 +504,15 @@ export const addDonor = (row) => insertRow('donors', row)
 export const updateDonor = (id, updates) => updateRow('donors', id, updates)
 
 // Public donation submissions (anon insert; staff read/manage).
+// No .select() read-back: anon donors can't read the row back (staff-only SELECT
+// policy), and requesting representation would fail the whole insert with a
+// row-level-security error even though the insert itself is permitted.
 export async function submitDonation(donation) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('donations')
     .insert([donation])
-    .select()
-    .single()
-  return { data, error }
+  return { error }
 }
 export const getDonations = () => listBy('donations', null, null, 'created_at', false)
 export const updateDonation = (id, updates) => updateRow('donations', id, updates)
