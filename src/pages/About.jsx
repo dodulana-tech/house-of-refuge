@@ -28,19 +28,13 @@ export default function About() {
             <div className="dv" />
             <p style={{ marginBottom:14 }}>House of Refuge is an initiative of <strong>Freedom Foundation Nigeria</strong>, an NGO founded and supported by our present house church. What began as a pastoral response to drug-affected families in our congregation has grown into a fully planned, clinically governed 19-bed residential rehabilitation facility.</p>
             <p style={{ marginBottom:14 }}>Situated in <strong>Lekki, Lagos</strong>, the centre offers a faith-integrated, medically supervised residential programme for individuals struggling with substance use disorders. The care provided is holistic, dignified, and genuinely transformative.</p>
-            <p>The project is professionally managed by <strong>ConsultForAfrica</strong>, a specialist management consultancy contracted to oversee all pre-launch and ongoing operational workstreams, targeting a go-live of <strong>1 July 2026</strong>.</p>
+            <p>The centre opened on <strong>1 July 2026</strong> as a fully planned, clinically governed facility, following an extensive pre-launch programme of clinical, operational, and technology workstreams.</p>
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
             <div className="card" style={{ background:'var(--blue-lt)', border:'none' }}>
               <div className="sh__lbl">Freedom Foundation Nigeria</div>
               <h3 style={{ marginBottom:8, fontSize:'1.25rem' }}>The NGO behind the vision</h3>
               <p style={{ fontSize:'.85rem' }}>Freedom Foundation is a registered Nigerian NGO committed to social transformation through faith-motivated action. House of Refuge is its flagship healthcare initiative.</p>
-            </div>
-            <div className="card" style={{ background:'var(--gold-lt)', border:'1px solid rgba(192,138,48,.2)' }}>
-              <div style={{ fontSize:'.7rem', letterSpacing:'.12em', textTransform:'uppercase', color:'var(--gold)', fontWeight:700, marginBottom:7 }}>Management Partner</div>
-              <h3 style={{ marginBottom:8, fontSize:'1.25rem' }}>ConsultForAfrica</h3>
-              <p style={{ fontSize:'.85rem' }}>Contracted for recruitment, clinical protocols, technology systems, nutrition operations, and all pre-launch workstreams.</p>
-              <a href="https://consultforafrica.com" target="_blank" rel="noreferrer" style={{ fontSize:'.83rem', color:'var(--gold)', fontWeight:600, display:'block', marginTop:10 }}>consultforafrica.com →</a>
             </div>
           </div>
         </div>
