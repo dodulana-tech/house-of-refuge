@@ -4,4 +4,4 @@ Disallow: /portal
 Disallow: /admin
 Disallow: /family
 Disallow: /login
-Sitemap: https://hor-app.vercel.app/sitemap.xml
+Sitemap: https://houseofrefugeng.org/sitemap.xml
