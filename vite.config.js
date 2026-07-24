@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'House of Refuge — Rehabilitation Centre',
         short_name: 'House of Refuge',
-        description: 'A 24-bed residential drug rehabilitation centre in Lekki, Lagos.',
+        description: 'A 19-bed residential drug rehabilitation centre in Lekki, Lagos.',
         theme_color: '#1A5FAD',
         background_color: '#FFFFFF',
         display: 'standalone',
