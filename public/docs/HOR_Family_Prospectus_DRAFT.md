@@ -323,7 +323,7 @@ Admissions phone, application link, in-person facility tour requests, communicat
 # Appendix — Key facts at a glance
 
 - **Location:** Lekki, Lagos, Nigeria
-- **Capacity:** 24 beds (3 Signature + 19 Premium + 2 Scholarship)
+- **Capacity:** 19 beds (3 Signature + 14 Premium + 2 Scholarship)
 - **Programme length:** 12 weeks, extendable to 6 months
 - **Daily schedule:** 5:30 AM – 11:00 PM
 - **Clinical leadership:** On-site consultant psychiatrist (5 d/wk), 24/7 nursing

@@ -282,7 +282,7 @@ House of Refuge (HOR) is a residential drug and alcohol rehabilitation centre es
 | Detail | Specification |
 |--------|---------------|
 | Location | Lekki, Lagos, Nigeria |
-| Bed Capacity | 24 beds |
+| Bed Capacity | 19 beds |
 | Wing Configuration | 4 wings (configurable Male/Female ratio, default 3:1) |
 | Programme Duration | 12 weeks (84 days), extendable to 26 weeks where clinically indicated |
 | Regulatory Registration | Lagos State Ministry of Health; Lagos State Ministry of Youth, Sport and Social Welfare; NDLEA |
