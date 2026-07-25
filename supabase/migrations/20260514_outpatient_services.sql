@@ -152,12 +152,14 @@ drop policy if exists bookings_public_insert on outpatient_bookings;
 create policy bookings_public_insert on outpatient_bookings
   for insert to anon with check (true);
 
--- Anonymous can read own booking by reference code (status page)
+-- NOTE: No anon SELECT policy on outpatient_bookings. A `USING (true)` anon
+-- policy would let anyone read every patient's booking + contact details. If a
+-- public "check booking status" page is needed, add a SECURITY DEFINER function
+-- returning only non-sensitive status columns for an exact reference (see the
+-- fa_status_by_reference pattern in 20260514_financial_assistance.sql).
 drop policy if exists bookings_public_select on outpatient_bookings;
-create policy bookings_public_select on outpatient_bookings
-  for select to anon using (true);
 
--- Authenticated staff have full access
+-- Practitioner/service CATALOG is safe for staff to manage broadly.
 drop policy if exists practitioners_authed on outpatient_practitioners;
 create policy practitioners_authed on outpatient_practitioners
   for all to authenticated using (true) with check (true);
@@ -166,9 +168,10 @@ drop policy if exists services_authed on outpatient_services;
 create policy services_authed on outpatient_services
   for all to authenticated using (true) with check (true);
 
+-- Bookings contain patient PII: restrict to staff, not any authenticated user.
 drop policy if exists bookings_authed on outpatient_bookings;
 create policy bookings_authed on outpatient_bookings
-  for all to authenticated using (true) with check (true);
+  for all to authenticated using (public.is_staff()) with check (public.is_staff());
 
 -- ── Seed practitioners ───────────────────────────────────────
 insert into outpatient_practitioners (full_name, title, role_type, public, active, display_order)

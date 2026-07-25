@@ -85,12 +85,13 @@ export async function submitFinancialAssistance(payload) {
 
 export async function getFAByReference(referenceCode) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
+  // Reads via a SECURITY DEFINER function that returns only non-sensitive
+  // status columns. The table itself is NOT anon-readable (would expose the
+  // applicant's PII, financials, and staff notes). See SECURITY_HOTFIX_2026-07-25.sql.
   const { data, error } = await supabase
-    .from('financial_assistance_applications')
-    .select('*')
-    .eq('reference_code', referenceCode)
-    .maybeSingle()
-  return { data, error }
+    .rpc('fa_status_by_reference', { p_ref: referenceCode })
+  const row = Array.isArray(data) ? data[0] : data
+  return { data: row || null, error }
 }
 
 export async function listFinancialAssistance({ search, statuses, sort = 'submitted_at.desc' } = {}) {
