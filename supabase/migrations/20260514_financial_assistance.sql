@@ -98,15 +98,31 @@ drop policy if exists fa_anon_insert on financial_assistance_applications;
 create policy fa_anon_insert on financial_assistance_applications
   for insert to anon with check (true);
 
--- Anonymous public can read by exact reference_code (status check route)
-drop policy if exists fa_anon_select_by_ref on financial_assistance_applications;
-create policy fa_anon_select_by_ref on financial_assistance_applications
-  for select to anon using (true);
+-- NOTE: There is deliberately NO anon SELECT policy on this table. A
+-- `USING (true)` anon policy would expose every applicant's PII, financials,
+-- addiction history, and staff notes to anyone holding the public anon key.
+-- The public "check status" page reads status via the SECURITY DEFINER
+-- function below, which returns only non-sensitive columns for an exact ref.
+create or replace function public.fa_status_by_reference(p_ref text)
+returns table (reference_code text, status text, submitted_at timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select reference_code, status, submitted_at
+  from public.financial_assistance_applications
+  where reference_code = p_ref
+  limit 1
+$$;
+revoke all on function public.fa_status_by_reference(text) from public;
+grant execute on function public.fa_status_by_reference(text) to anon, authenticated;
 
--- Authenticated staff can do everything (per agreement: not enforcing hard role split in v1)
+-- Staff (Freedom Foundation committee) can do everything. Scoped to is_staff()
+-- so self-registered patient/family accounts cannot read financial files.
 drop policy if exists fa_authed_full on financial_assistance_applications;
-create policy fa_authed_full on financial_assistance_applications
-  for all to authenticated using (true) with check (true);
+drop policy if exists fa_staff_full on financial_assistance_applications;
+create policy fa_staff_full on financial_assistance_applications
+  for all to authenticated using (public.is_staff()) with check (public.is_staff());
 
 -- Storage bucket for uploaded supporting documents
 insert into storage.buckets (id, name, public)
