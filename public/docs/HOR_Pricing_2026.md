@@ -3,7 +3,7 @@
 **Drug Rehabilitation Centre · Lekki, Lagos**
 *A Freedom Foundation Initiative · Managed by ConsultForAfrica*
 
-**Effective:** July 2026
+**Effective:** August 2026
 **Status:** Supersedes all prior pricing one-pagers
 **All fees in Nigerian Naira (NGN). Confidential.**
 

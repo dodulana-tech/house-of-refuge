@@ -35,7 +35,7 @@ export default function Home() {
               <span className={styles.dot} />
               <div>
                 <div className={styles.launchLbl}>Opening Soon</div>
-                <div className={styles.launchTxt}>Launching 1 July 2026 · Lekki, Lagos</div>
+                <div className={styles.launchTxt}>Launching 1 August 2026 · Lekki, Lagos</div>
               </div>
             </div>
             <div className={styles.statsGrid}>
@@ -137,8 +137,8 @@ export default function Home() {
               <div style={{ marginTop:10, fontSize:'.8rem', color:'var(--g700)' }}>Medical · Facility · Therapeutic</div>
             </div>
             <div className="card" style={{ textAlign:'center' }}>
-              <div className={styles.bigN} style={{ color:'#1A7A4A' }}>May</div>
-              <div className={styles.bigL}>Target launch, 2026</div>
+              <div className={styles.bigN} style={{ color:'#1A7A4A' }}>1 Aug</div>
+              <div className={styles.bigL}>Launch date, 2026</div>
               <div style={{ marginTop:10, fontSize:'.8rem', color:'var(--g700)' }}>Pre-launch workstreams active</div>
             </div>
           </div>

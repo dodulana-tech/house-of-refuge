@@ -36,7 +36,7 @@ The family-facing prospectus for House of Refuge — the marketing and conversio
 | Menu labels | "Executive menu" (Sig + Prem), "Standard menu" (Scholarship) | "Signature menu" (Sig), "Premium menu" (Prem) — "executive" dropped as overselling |
 | 30k Premium → Signature upgrade | Listed but unclear what it bought | Locked: full Signature menu access for the month |
 | Waitlist hold mechanics | Implied 60-day refundable | Locked: 6-month active hold, monthly check-in, voluntary withdrawal anytime, single-decline clean exit |
-| Launch date | "Launching April 2026" | "Launching 1 July 2026" |
+| Launch date | "Launching April 2026" | "Launching 1 August 2026" |
 
 ### What stakeholders are asked to review
 1. **Voice and tone** — does this read like House of Refuge? Is anything overselling, underselling, or off-brand?
@@ -54,7 +54,7 @@ The family-facing prospectus for House of Refuge — the marketing and conversio
 
 ## Executive summary
 
-House of Refuge is a 19-bed residential drug rehabilitation centre in Lekki, Lagos — a Freedom Foundation initiative, clinically governed and managed by ConsultForAfrica, launching 1 July 2026.
+House of Refuge is a 19-bed residential drug rehabilitation centre in Lekki, Lagos — a Freedom Foundation initiative, clinically governed and managed by ConsultForAfrica, launching 1 August 2026.
 
 The programme combines international clinical standards (WHO/UNODC protocols, on-site Medical Director daily, visiting consultant psychiatrist 2 sessions/week, multidisciplinary team, 24/7 nursing) with faith-integrated recovery (chaplaincy, biblical formation, community). Two paying tiers — Signature (NGN 4.5M/month, 3 beds) and Premium (NGN 2.8M/month, 16 beds) — share the same clinical care; what differs is privacy, amenity, and the cadence of one-to-one contact.
 
@@ -332,7 +332,7 @@ Admissions phone, application link, in-person facility tour requests, communicat
 - **Management:** ConsultForAfrica
 - **Catering:** CookedIndoors (tiered menu platform)
 - **Admissions:** 0911 277 7600 · houseofrefugeng.org
-- **Launch:** 1 July 2026
+- **Launch:** 1 August 2026
 
 ---
 
