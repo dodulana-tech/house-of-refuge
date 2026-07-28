@@ -6,7 +6,6 @@ import styles from './Nav.module.css'
 const NAV = [
   { to: '/',     label: 'Home'  },
   { to: '/about', label: 'About' },
-  { to: '/partners', label: 'Partners' },
   {
     label: 'Admissions',
     children: [
@@ -24,6 +23,7 @@ const NAV = [
     ],
   },
   { to: '/contact', label: 'Contact' },
+  { to: '/partners', label: 'Partners' },
 ]
 
 function Caret({ className }) {
