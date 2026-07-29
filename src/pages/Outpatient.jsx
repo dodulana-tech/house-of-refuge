@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet-async'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   SERVICE_CATEGORIES,
-  fmtNaira,
   listPublicServices,
   listPublicPractitioners,
 } from '../utils/outpatient'
@@ -68,7 +67,7 @@ export default function Outpatient() {
             <h2 style={{ maxWidth: 720 }}>Book the care you need — without admission.</h2>
             <div className="dv" />
             <p style={{ maxWidth: 720, color: 'var(--g700)', marginTop: 12 }}>
-              Every service is delivered to the same clinical standard as our inpatient programme. The <strong>Pre-admission Clinical Assessment</strong> is creditable to the inpatient deposit within 90 days if your family proceeds to residential care.
+              Every service is delivered to the same clinical standard as our inpatient programme. The <strong>Pre-admission Clinical Assessment</strong> is creditable to the inpatient deposit within 90 days if your family proceeds to residential care. Request the session you need and our team confirms the appointment, the practitioner, and the fee with you directly, usually within one working day.
             </p>
           </div>
 
@@ -103,7 +102,7 @@ export default function Outpatient() {
                         {s.short_description && <p className={styles.svcDesc}>{s.short_description}</p>}
                         <div className={styles.svcMeta}>
                           {s.duration_minutes && <span>{s.duration_minutes >= 60 ? `${Math.round(s.duration_minutes/60*10)/10}h` : `${s.duration_minutes} min`}</span>}
-                          <span className={styles.svcPrice}>{fmtNaira(s.price_ngn)}</span>
+                          <span className={styles.svcPrice}>Request a session →</span>
                         </div>
                         {s.conversion_eligible && (
                           <div className={styles.svcCredit}>Creditable to inpatient deposit within {s.conversion_window_days} days</div>

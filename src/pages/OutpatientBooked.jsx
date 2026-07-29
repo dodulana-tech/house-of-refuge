@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getBookingByReference, fmtNaira } from '../utils/outpatient'
+import { getBookingByReference } from '../utils/outpatient'
 
 export default function OutpatientBooked() {
   const { ref } = useParams()
@@ -25,9 +25,9 @@ export default function OutpatientBooked() {
       <Helmet><title>Booking received | House of Refuge</title></Helmet>
       <div className="ph">
         <div className="container">
-          <div className="ph__badge"><span className="badge">Booking received</span></div>
-          <h1>Thank you — your booking is with us.</h1>
-          <p>An admissions counsellor will follow up within one working day with the invoice or to confirm the appointment.</p>
+          <div className="ph__badge"><span className="badge">Request received</span></div>
+          <h1>Thank you — your request is with us.</h1>
+          <p>An admissions counsellor will follow up within one working day to confirm the appointment and the fee.</p>
         </div>
       </div>
 
@@ -43,22 +43,23 @@ export default function OutpatientBooked() {
 
               {b && (
                 <div className="card" style={{ padding: '24px 28px', marginBottom: 24 }}>
-                  <h2 style={{ fontSize: '1.15rem', marginBottom: 14 }}>Booking summary</h2>
+                  <h2 style={{ fontSize: '1.15rem', marginBottom: 14 }}>Request summary</h2>
                   <KV k="Service" v={b.outpatient_services?.name} />
-                  <KV k="Date &amp; time" v={fmtDT(b.scheduled_at)} />
+                  <KV k="Requested slot" v={fmtDT(b.scheduled_at)} />
                   <KV k="Practitioner" v={b.outpatient_practitioners?.full_name || 'Next available'} />
                   <KV k="Patient" v={b.patient_name} />
-                  <KV k="Fee" v={fmtNaira(b.outpatient_services?.price_ngn)} />
+                  <KV k="Fee" v="Confirmed with you by our team" />
                 </div>
               )}
 
               <h2 style={{ fontSize: '1.2rem', marginBottom: 12 }}>What happens next</h2>
               <ol style={{ paddingLeft: 22, lineHeight: 1.8, color: 'var(--charcoal)' }}>
-                <li>You will receive a confirmation email shortly.</li>
-                <li>If you requested an invoice, it will arrive within one working day to the email you provided.</li>
+                <li>You will receive an acknowledgement email shortly.</li>
+                <li>An admissions counsellor contacts you within one working day to confirm the slot and give you the fee for this session in writing.</li>
+                <li>If you wish to proceed, they send a secure payment link or bank transfer details. Nothing is charged before then.</li>
                 <li>Once payment is received, the appointment moves from "pending" to <strong>confirmed</strong>.</li>
                 <li>Pre-appointment intake form will be sent 48 hours before your session.</li>
-                <li>Need to reschedule or have questions? Call <strong>0901 127 7600</strong>.</li>
+                <li>Need to reschedule or have questions? Call <strong>0911 277 7600</strong>.</li>
               </ol>
 
               <div style={{ display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>

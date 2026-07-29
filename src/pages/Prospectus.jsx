@@ -223,16 +223,16 @@ export default function Prospectus() {
         <div className="container">
           <div className="sh" style={{ textAlign: 'left', marginBottom: 28 }}>
             <div className="sh__lbl">Section Three · Joining HOR</div>
-            <h2 style={{ maxWidth: 720 }}>Programme fees, admission flow, and exactly how your money is held.</h2>
+            <h2 style={{ maxWidth: 720 }}>The admission flow, the two care tiers, and exactly how your money is held.</h2>
             <div className="dv" />
           </div>
 
           <p className={styles.lead}>
-            A clinical decision and a financial decision happen together. Below is exactly how both work — what you pay, when, what each part of the deposit covers, and what protects you at every step.
+            A clinical decision and a financial decision happen together. Below is exactly how both work: the stages, what each part of the deposit covers, and what protects you at every step. Fees are quoted directly by the admissions team, in writing, so the conversation can start with your family's situation rather than a price list.
           </p>
 
-          {/* 4a — Tier pricing */}
-          <h3 className={styles.subhead}>Programme fees — two tiers</h3>
+          {/* 4a — Care tiers */}
+          <h3 className={styles.subhead}>Two care tiers</h3>
           <p className={styles.subleadShort}>
             Both tiers receive the same clinical standard. The difference is privacy, amenity, and the rhythm of one-to-one contact — not the medicine.
           </p>
@@ -240,8 +240,6 @@ export default function Prospectus() {
             <div className={`${styles.tierCard} ${styles.tierSignature}`}>
               <div className={styles.tierBadge}>Signature</div>
               <div className={styles.tierBeds}>3 beds · always limited</div>
-              <div className={styles.tierPrice}>NGN 4,500,000<span className={styles.tierPer}>/month</span></div>
-              <div className={styles.tierTotal}>3-month total: NGN 13,500,000</div>
               <ul className={styles.tierList}>
                 <li>Private en-suite room — single occupancy</li>
                 <li>Daily 1:1 therapy with a clinical psychologist</li>
@@ -255,8 +253,6 @@ export default function Prospectus() {
             <div className={`${styles.tierCard} ${styles.tierPremium}`}>
               <div className={styles.tierBadge}>Premium</div>
               <div className={styles.tierBeds}>14 beds</div>
-              <div className={styles.tierPrice}>NGN 2,800,000<span className={styles.tierPer}>/month</span></div>
-              <div className={styles.tierTotal}>3-month total: NGN 8,400,000</div>
               <ul className={styles.tierList}>
                 <li>En-suite room — 2-bed shared</li>
                 <li>1:1 counselling — 3 sessions per week</li>
@@ -269,10 +265,21 @@ export default function Prospectus() {
             </div>
           </div>
           <p className={styles.tierFooter}>
-            <strong>Both tiers include:</strong> on-site Medical Director (daily) · visiting consultant psychiatrist (2 sessions/week), 24/7 nursing, supervised detox, daily group therapy, daily fitness, full aftercare planning, and the same WHO/UNODC clinical protocols. Three-month programme may be paid in three monthly instalments — admission confirmed on receipt of Month 1.
+            <strong>Both tiers include:</strong> on-site Medical Director (daily) · visiting consultant psychiatrist (2 sessions/week), 24/7 nursing, supervised detox, daily group therapy, daily fitness, full aftercare planning, and the same WHO/UNODC clinical protocols. The three-month programme may be paid in three monthly instalments, and admission is confirmed on receipt of Month 1.
           </p>
-          <p className={styles.subleadShort} style={{ marginTop: 16 }}>
-            Beyond the two paying tiers, a limited number of donor-funded places are held for families in genuine financial hardship — offered as funding allows and reviewed independently by Freedom Foundation. <Link to="/assistance" style={{ color: 'var(--blue)', fontWeight: 600 }}>Learn about Financial Assistance →</Link>
+
+          <div className={styles.waitBox} style={{ marginTop: 28 }}>
+            <div className={styles.waitHead}>How fees are quoted</div>
+            <ul className={styles.waitList}>
+              <li><strong>In writing, from admissions.</strong> Ask us at any point, including before you apply, and a written schedule for the tier you are considering is sent to you the same working day.</li>
+              <li><strong>Nothing is charged before you have it.</strong> No family is asked for a payment before the full fee schedule, the instalment structure, and the refund policy are in their hands.</li>
+              <li><strong>The schedule is fixed and applies to everyone.</strong> Fees are set by the board, reviewed annually, and are the same for every family in a tier. There is no negotiated pricing and no charge that is not on the written schedule.</li>
+              <li><strong>Asking costs nothing.</strong> The self-assessment, the admissions conversation, and the fee schedule are all free. You are never committed by asking what something costs.</li>
+            </ul>
+          </div>
+
+          <p className={styles.subleadShort} style={{ marginTop: 20 }}>
+            Beyond the two paying tiers, a limited number of donor-funded places are held for families in genuine financial hardship, offered as funding allows and reviewed independently by Freedom Foundation. If cost is what is standing between your family and treatment, start here rather than ruling us out. <Link to="/assistance" style={{ color: 'var(--blue)', fontWeight: 600 }}>Learn about Financial Assistance →</Link>
           </p>
 
           {/* 4b — 6-stage admission flow */}
@@ -293,8 +300,8 @@ export default function Prospectus() {
               <div className={styles.flowN}>2</div>
               <div>
                 <div className={styles.flowTitle}>Deposit</div>
-                <div className={styles.flowMeta}>NGN 1,000,000 · After self-assessment review</div>
-                <p className={styles.flowDesc}>Once the file passes initial review, you're invited to pay the 1M deposit. This unlocks the psychiatrist's clinical assessment and reserves your place. The deposit is split — 400k assessment fee plus 600k held toward Month 1 (full breakdown below).</p>
+                <div className={styles.flowMeta}>After self-assessment review · Amount confirmed in writing</div>
+                <p className={styles.flowDesc}>Once the file passes initial review, admissions writes to you with the deposit amount and a secure payment link. The deposit unlocks the psychiatrist's clinical assessment and reserves your place. It is split into two parts, an assessment fee and a held balance, and the breakdown below explains exactly what each part does.</p>
               </div>
             </div>
             <div className={styles.flowStep}>
@@ -318,7 +325,7 @@ export default function Prospectus() {
               <div>
                 <div className={styles.flowTitle}>Active waitlist (if needed)</div>
                 <div className={styles.flowMeta}>Up to 6 months · Monthly check-in · Renewable</div>
-                <p className={styles.flowDesc}>Beds are limited (19 in total), so accepted families may need to wait. While you wait, your 600k is held — this is what reserves your place. The admissions team checks in monthly. You can withdraw at any time and receive your 600k in full.</p>
+                <p className={styles.flowDesc}>Beds are limited (19 in total), so accepted families may need to wait. While you wait, the held portion of your deposit stays held — this is what reserves your place. The admissions team checks in monthly. You can withdraw at any time and receive that portion back in full.</p>
               </div>
             </div>
             <div className={styles.flowStep}>
@@ -326,7 +333,7 @@ export default function Prospectus() {
               <div>
                 <div className={styles.flowTitle}>Admission</div>
                 <div className={styles.flowMeta}>Bed offered, family confirms, admission scheduled</div>
-                <p className={styles.flowDesc}>The 600k is applied to Month 1 fees. The remaining balance (3.9M for Signature, 2.2M for Premium) is settled before admission day. Your loved one arrives, is welcomed, and begins Phase One — Medical Stabilization.</p>
+                <p className={styles.flowDesc}>The held portion of your deposit is applied to Month 1 fees, and the remaining Month 1 balance is settled before admission day. Your loved one arrives, is welcomed, and begins Phase One — Medical Stabilization.</p>
               </div>
             </div>
           </div>
@@ -334,12 +341,15 @@ export default function Prospectus() {
           {/* 4c — Deposit breakdown */}
           <div className={styles.depBox}>
             <div className={styles.depHead}>
-              <div className={styles.depHeadLbl}>The 1M deposit, plain</div>
+              <div className={styles.depHeadLbl}>The deposit, plain</div>
               <h3 className={styles.depTitle}>Where every Naira goes.</h3>
+              <p className={styles.subleadShort} style={{ marginTop: 10 }}>
+                The deposit is not a single charge. It is two parts that behave completely differently, and the amount of each is set out in the written invitation admissions sends you.
+              </p>
             </div>
             <div className={styles.depSplit}>
               <div className={styles.depPart}>
-                <div className={styles.depAmt}>NGN 400,000</div>
+                <div className={styles.depAmt}>Part one</div>
                 <div className={styles.depRole}>Clinical assessment fee · itemised</div>
                 <ul>
                   <li><strong>Psychiatrist consultation</strong> (structured clinical interview)</li>
@@ -351,7 +361,7 @@ export default function Prospectus() {
               </div>
               <div className={styles.depDivider} />
               <div className={styles.depPart}>
-                <div className={styles.depAmt}>NGN 600,000</div>
+                <div className={styles.depAmt}>Part two</div>
                 <div className={styles.depRole}>Held toward Month 1</div>
                 <ul>
                   <li>Reserves your place on the active waitlist</li>
@@ -367,44 +377,44 @@ export default function Prospectus() {
           {/* 4d — Refund policy */}
           <h3 className={styles.subhead} style={{ marginTop: 56 }}>Refund policy in plain language</h3>
           <p className={styles.subleadShort}>
-            We refund every Naira we haven't earned. The full table is below — published, not in the small print.
+            We refund every Naira we haven't earned. The full table is below — published, not in the small print. "Assessment fee" and "held balance" are the two parts of the deposit described above.
           </p>
           <div className={styles.refundTable}>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>Within 48 hours of paying the deposit, you change your mind</div>
-              <div className={styles.refundOut}>Full <strong>NGN 1,000,000</strong> refunded</div>
+              <div className={styles.refundOut}><strong>Entire deposit refunded</strong>, both parts</div>
             </div>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>You withdraw between 48 hours and the psychiatrist consult</div>
-              <div className={styles.refundOut}><strong>600k refunded</strong>; 400k retained for clinical work</div>
+              <div className={styles.refundOut}><strong>Held balance refunded</strong>; assessment fee retained for clinical work</div>
             </div>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>Our psychiatrist clinically declines admission</div>
-              <div className={styles.refundOut}><strong>600k refunded</strong> + written referral; 400k retained</div>
+              <div className={styles.refundOut}><strong>Held balance refunded</strong> + written referral; assessment fee retained</div>
             </div>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>You withdraw more than 14 days before admission day</div>
-              <div className={styles.refundOut}><strong>600k refunded</strong></div>
+              <div className={styles.refundOut}><strong>Held balance refunded</strong></div>
             </div>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>You withdraw within 14 days of admission day</div>
-              <div className={styles.refundOut}>50% of 600k refunded; 50% retained as bed-hold cancellation</div>
+              <div className={styles.refundOut}>Half the held balance refunded; half retained as bed-hold cancellation</div>
             </div>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>We cannot offer a bed within your active waitlist hold</div>
-              <div className={styles.refundOut}><strong>600k refunded</strong>; 400k retained</div>
+              <div className={styles.refundOut}><strong>Held balance refunded</strong>; assessment fee retained</div>
             </div>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>You withdraw voluntarily during the waitlist hold</div>
-              <div className={styles.refundOut}><strong>600k refunded</strong> in full, anytime</div>
+              <div className={styles.refundOut}><strong>Held balance refunded</strong> in full, anytime</div>
             </div>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>You decline a slot offer once it's made</div>
-              <div className={styles.refundOut}><strong>600k refunded</strong>; place released, no haggling</div>
+              <div className={styles.refundOut}><strong>Held balance refunded</strong>; place released, no haggling</div>
             </div>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>Within 72 hours of admission, your loved one withdraws</div>
-              <div className={styles.refundOut}><strong>80%</strong> of total Month 1 paid refunded; 400k not refundable</div>
+              <div className={styles.refundOut}><strong>80%</strong> of total Month 1 paid refunded; assessment fee not refundable</div>
             </div>
             <div className={styles.refundRow}>
               <div className={styles.refundCond}>Withdrawal after 72 hours of admission</div>
@@ -421,15 +431,15 @@ export default function Prospectus() {
             <div className={styles.waitHead}>How the waitlist actually works</div>
             <ul className={styles.waitList}>
               <li><strong>Active hold lasts 6 months</strong> — renewable on confirmation if you wish to keep waiting.</li>
-              <li><strong>Monthly check-in.</strong> The admissions team contacts you each month to confirm continued interest. Two missed monthly contacts and we release the hold and refund the 600k.</li>
-              <li><strong>Withdraw whenever you need to.</strong> You can leave the waitlist at any time — by phone, email, or in person. 600k refunded in full.</li>
-              <li><strong>One decline is a clean exit.</strong> If a slot is offered and you decline it, we treat that as your decision and refund the 600k. No haggling.</li>
-              <li><strong>Re-assessment after 6 months.</strong> Clinical assessments age. If you wait beyond six months, a brief re-assessment (NGN 100,000) updates the clinical file before admission.</li>
+              <li><strong>Monthly check-in.</strong> The admissions team contacts you each month to confirm continued interest. Two missed monthly contacts and we release the hold and refund the held balance.</li>
+              <li><strong>Withdraw whenever you need to.</strong> You can leave the waitlist at any time — by phone, email, or in person. Held balance refunded in full.</li>
+              <li><strong>One decline is a clean exit.</strong> If a slot is offered and you decline it, we treat that as your decision and refund the held balance. No haggling.</li>
+              <li><strong>Re-assessment after 6 months.</strong> Clinical assessments age. If you wait beyond six months, a brief re-assessment updates the clinical file before admission, charged at the published re-assessment rate on your fee schedule.</li>
             </ul>
           </div>
 
           <p className={styles.closingNote}>
-            The Pricing One-Pager (PDF) is available on request and provides this same information in printed form. If anything in this section is unclear, or you'd like to talk through your specific situation, the admissions team responds in confidence within one working day.
+            A written fee schedule covering both tiers, the deposit, and this refund policy is sent on request, usually the same working day. Ask for it at any point, including before you apply. If anything in this section is unclear, or you'd like to talk through your specific situation, the admissions team responds in confidence within one working day.
           </p>
         </div>
       </section>
@@ -467,7 +477,7 @@ export default function Prospectus() {
           </p>
 
           <div className={styles.mealsTierNote}>
-            <strong>A note on tiers.</strong> Signature residents eat off the <strong>Signature menu</strong> — broader, with additional protein options and weekend specials routed through the CookedIndoors platform. Premium residents eat off the <strong>Premium menu</strong>, fresh and varied, with the option to upgrade to full Signature menu access for any month at NGN 30,000. The clinical team reviews every plate; every dietary need is met regardless of tier. The medicine doesn't change.
+            <strong>A note on tiers.</strong> Signature residents eat off the <strong>Signature menu</strong> — broader, with additional protein options and weekend specials routed through the CookedIndoors platform. Premium residents eat off the <strong>Premium menu</strong>, fresh and varied, with the option to upgrade to full Signature menu access for any month at a modest add-on rate. The clinical team reviews every plate; every dietary need is met regardless of tier. The medicine doesn't change.
           </div>
         </div>
       </section>
