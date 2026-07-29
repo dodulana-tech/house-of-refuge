@@ -6,7 +6,6 @@ import {
   getServiceBySlug,
   listPublicPractitioners,
   createBooking,
-  fmtNaira,
 } from '../utils/outpatient'
 
 const INITIAL = {
@@ -22,7 +21,6 @@ const INITIAL = {
   scheduled_time: '',
   practitioner_id: '',
   notes_from_booker: '',
-  payment_choice: 'paystack',
   consent_terms: false,
 }
 
@@ -112,13 +110,8 @@ export default function OutpatientBook() {
       return
     }
 
-    if (f.payment_choice === 'invoice') {
-      notify?.('Booking received', `We'll send an invoice to ${f.booker_email} within one working day. Reference: ${data.reference_code}`, 'success')
-      nav(`/outpatient/booked/${data.reference_code}`, { replace: true })
-    } else {
-      notify?.('Booking received', `Reference ${data.reference_code}. Redirecting to payment.`, 'success')
-      nav(`/outpatient/pay/${data.reference_code}`, { replace: true })
-    }
+    notify?.('Request received', `We'll contact ${f.booker_email} within one working day to confirm your appointment and the fee. Reference: ${data.reference_code}`, 'success')
+    nav(`/outpatient/booked/${data.reference_code}`, { replace: true })
   }
 
   if (loading) return <div style={{ padding: '120px 24px', textAlign: 'center' }}>Loading…</div>
@@ -136,8 +129,8 @@ export default function OutpatientBook() {
       <div className="ph">
         <div className="container">
           <div className="ph__badge"><span className="badge">Outpatient booking</span></div>
-          <h1>Book — {svc.name}</h1>
-          <p>{fmtNaira(svc.price_ngn)}{svc.duration_minutes ? ` · ${svc.duration_minutes} minutes` : ''}</p>
+          <h1>Request a session — {svc.name}</h1>
+          <p>{svc.duration_minutes ? `${svc.duration_minutes} minutes · ` : ''}Our team confirms your slot and the fee within one working day.</p>
         </div>
       </div>
 
@@ -169,7 +162,7 @@ export default function OutpatientBook() {
               </Grid2>
             </Card>
 
-            <Card title="Date, time, and practitioner" lead="Pick a preferred slot. Our team will confirm or propose a close alternative once payment is received.">
+            <Card title="Date, time, and practitioner" lead="Pick a preferred slot. Our team will confirm it or propose a close alternative when we call you.">
               <Grid2>
                 <Field label="Preferred date" required type="date" value={f.scheduled_date} onChange={v => set('scheduled_date', v)} />
                 <Field label="Preferred time" required type="time" value={f.scheduled_time} onChange={v => set('scheduled_time', v)} />
@@ -191,33 +184,23 @@ export default function OutpatientBook() {
               </div>
             </Card>
 
-            <Card title="Payment" lead="The appointment is confirmed once payment is received (or invoice is settled).">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={radioRow}>
-                  <input type="radio" name="pay" value="paystack" checked={f.payment_choice === 'paystack'} onChange={e => set('payment_choice', e.target.value)} />
-                  <div>
-                    <div style={{ fontWeight: 600 }}>Pay online by card (Paystack)</div>
-                    <div style={{ fontSize: '.85rem', color: 'var(--g700)' }}>{fmtNaira(svc.price_ngn)} · Confirmed instantly. Recommended.</div>
-                  </div>
-                </label>
-                <label style={radioRow}>
-                  <input type="radio" name="pay" value="invoice" checked={f.payment_choice === 'invoice'} onChange={e => set('payment_choice', e.target.value)} />
-                  <div>
-                    <div style={{ fontWeight: 600 }}>Request invoice for bank transfer</div>
-                    <div style={{ fontSize: '.85rem', color: 'var(--g700)' }}>Our team will email you an invoice within one working day. Appointment is held but not confirmed until paid.</div>
-                  </div>
-                </label>
-              </div>
+            <Card title="What happens after you submit" lead="No payment is taken on this page and nothing is charged today.">
+              <ol style={{ paddingLeft: 20, margin: 0, fontSize: '.9rem', lineHeight: 1.75, color: 'var(--g700)' }}>
+                <li>An admissions counsellor calls or emails you within one working day.</li>
+                <li>They confirm the slot and practitioner, and give you the fee for this session in writing.</li>
+                <li>If you wish to go ahead, they send a secure payment link or bank transfer details.</li>
+                <li>The appointment is confirmed once payment is received.</li>
+              </ol>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 18, fontSize: '.88rem', lineHeight: 1.6, color: 'var(--charcoal)' }}>
                 <input type="checkbox" checked={f.consent_terms} onChange={e => set('consent_terms', e.target.checked)} style={{ marginTop: 4 }} />
-                <span>I understand the <strong>cancellation policy</strong>: reschedule or cancel up to 24 hours before for a full refund. Within 24 hours, the fee is non-refundable but may be rescheduled at 50% credit.</span>
+                <span>I understand the <strong>cancellation policy</strong>: once an appointment is confirmed and paid, reschedule or cancel up to 24 hours before for a full refund. Within 24 hours, the fee is non-refundable but may be rescheduled at 50% credit.</span>
               </label>
             </Card>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 20 }}>
               <button type="button" className="btn btn--secondary" onClick={() => nav(`/outpatient/${slug}`)} disabled={submitting}>Back</button>
               <button type="submit" className="btn btn--primary" disabled={submitting}>
-                {submitting ? 'Submitting…' : (f.payment_choice === 'paystack' ? 'Continue to payment' : 'Request invoice')}
+                {submitting ? 'Submitting…' : 'Submit request'}
               </button>
             </div>
           </form>
@@ -249,4 +232,3 @@ function Field({ label, required, type = 'text', value, onChange, placeholder })
 }
 const lbl = { fontSize: '.8rem', fontWeight: 600, color: 'var(--charcoal)', marginBottom: 6 }
 const inp = { width: '100%', padding: '10px 12px', border: '1px solid #DDE3EA', borderRadius: 6, fontSize: '.94rem', fontFamily: 'inherit', color: 'var(--charcoal)' }
-const radioRow = { display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', border: '1px solid #DDE3EA', borderRadius: 6, cursor: 'pointer', fontSize: '.95rem' }

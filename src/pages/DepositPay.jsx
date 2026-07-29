@@ -13,7 +13,9 @@ import { DEFAULT_DEPOSIT_AMOUNT as DEPOSIT_AMOUNT_NAIRA, DEFAULT_ASSESSMENT_LINE
     - Looks up the application by id (Supabase, anon read of own row) to
       pre-fill name/email and verify the deposit hasn't been paid.
     - Restates the refundable + conditional terms.
-    - Initiates Paystack for the ₦1,000,000 deposit.
+    - Initiates Paystack for the admission deposit. This page is the only
+      family-facing surface that shows the amount; it is reached by a private
+      link from the deposit-invitation email, never linked publicly.
 */
 
 export default function DepositPay() {
@@ -156,16 +158,13 @@ export default function DepositPay() {
               </div>
 
               <div className="card" style={{ padding: 24, marginBottom: 16 }}>
-                <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 8 }}>Indicative assessment & investigation costs</h3>
+                <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', marginBottom: 8 }}>What the assessment stage covers</h3>
                 <p style={{ fontSize: '.82rem', color: 'var(--g500)', marginBottom: 12, lineHeight: 1.6 }}>
-                  For full transparency. The actual list depends on your clinical profile and is agreed with you in writing before anything is billed.
+                  Everything below is included at no additional charge. The exact investigations depend on your clinical profile and are agreed with you in writing before anything is billed against your deposit.
                 </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '6px 14px', fontSize: '.86rem' }}>
+                <div style={{ fontSize: '.86rem' }}>
                   {DEFAULT_ASSESSMENT_LINE_ITEMS.map(item => (
-                    <React.Fragment key={item.label}>
-                      <div style={{ color: 'var(--g700)', borderBottom: '1px solid var(--g100)', padding: '6px 0' }}>{item.label}</div>
-                      <div style={{ color: 'var(--g500)', borderBottom: '1px solid var(--g100)', padding: '6px 0', whiteSpace: 'nowrap' }}>{item.range}</div>
-                    </React.Fragment>
+                    <div key={item.label} style={{ color: 'var(--g700)', borderBottom: '1px solid var(--g100)', padding: '6px 0' }}>{item.label}</div>
                   ))}
                 </div>
               </div>

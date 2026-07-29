@@ -66,7 +66,7 @@
   font-size: .82rem; color: var(--g700);
 }
 .svcPrice {
-  font-size: 1rem; font-weight: 700; color: var(--charcoal);
+  font-size: .88rem; font-weight: 700; color: var(--blue);
   letter-spacing: -.01em;
 }
 .svcCredit {
