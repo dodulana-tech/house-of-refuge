@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { fmt } from '../../utils/paystack'
 import { isSupabaseReady, getDonations, updateDonation } from '../../utils/supabase'
+import { exportTableAsPdf, exportStamp } from '../../utils/exportPdf'
 
 /*
   Donations — public /donate submissions.
@@ -60,13 +61,58 @@ export default function Donations() {
     setRows(prev => prev.map(r => (r.id === row.id ? (data || { ...r, status }) : r)))
   }
 
+  // Exports exactly what is on screen, so the active filter carries into the PDF.
+  const handleExportPdf = () => {
+    const scope = filter === 'all' ? 'All pledges' : `${STATUS_STYLE[filter]?.label || filter} only`
+    exportTableAsPdf({
+      title: 'Donations',
+      subtitle: 'Pledges submitted on the public donate page, reconciled against bank receipts.',
+      meta: [`${scope}`, `${filtered.length} record${filtered.length === 1 ? '' : 's'}`, `Exported ${exportStamp()}`],
+      summary: [
+        { label: 'Total pledges', value: String(rows.length) },
+        { label: 'Amount pledged', value: fmt(totalPledged) },
+        { label: 'Received', value: fmt(receivedSum) },
+        { label: 'Awaiting', value: String(rows.filter(r => r.status === 'pledged').length) },
+      ],
+      columns: [
+        { key: 'date',   label: 'Date',    width: '13%' },
+        { key: 'name',   label: 'Name',    width: '17%' },
+        { key: 'email',  label: 'Email',   width: '20%' },
+        { key: 'phone',  label: 'Phone',   width: '13%' },
+        { key: 'amount', label: 'Amount',  width: '12%', align: 'right' },
+        { key: 'status', label: 'Status',  width: '10%' },
+        { key: 'message', label: 'Message' },
+      ],
+      rows: filtered.map(r => ({
+        date: fmtDate(r.created_at),
+        name: [r.first_name, r.last_name].filter(Boolean).join(' ') || '—',
+        email: r.email || '—',
+        phone: r.phone || '—',
+        amount: r.amount ? fmt(Number(r.amount)) : 'Unspecified',
+        status: STATUS_STYLE[r.status]?.label || r.status,
+        message: r.message || '',
+      })),
+      footNote: 'Internal document. Contains supporter personal data and must be handled in confidence. House of Refuge Rehabilitation Centre, a Freedom Foundation initiative.',
+    })
+  }
+
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Donations</h1>
-        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>
-          Pledges submitted on the public donate page. Reconcile against bank receipts and mark received.
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Donations</h1>
+          <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>
+            Pledges submitted on the public donate page. Reconcile against bank receipts and mark received.
+          </p>
+        </div>
+        <button
+          className="btn btn--secondary btn--sm"
+          onClick={handleExportPdf}
+          disabled={filtered.length === 0}
+          title={filtered.length === 0 ? 'Nothing to export' : 'Opens the print dialog — choose "Save as PDF"'}
+        >
+          Export PDF
+        </button>
       </div>
 
       {/* KPIs */}
