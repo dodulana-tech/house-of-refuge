@@ -162,6 +162,20 @@ export default function Waitlist() {
 
   const hasExclusion = EXCLUSIONS.some(ex => form[ex.key] === 'yes')
   const activeExclusions = EXCLUSIONS.filter(ex => form[ex.key] === 'yes')
+
+  /*
+    Applicants who are not yet willing, or who screen into an exclusion, are not
+    turned away. They continue on a shortened track — steps 1-3, then submit — and
+    land in the dashboard as an outpatient-engagement or referral lead instead of a
+    residential application. Both statuses already exist in the `applications`
+    status CHECK constraint, so this needs no schema change.
+  */
+  const track = form.willingnessConfirm === 'no'
+    ? 'outpatient'
+    : hasExclusion ? 'referral' : 'residential'
+  const isShortTrack = track !== 'residential'
+  const visibleSteps = isShortTrack ? STEPS.filter(s => s.key <= 3 || s.key === 7) : STEPS
+  const stepPos = Math.max(1, visibleSteps.findIndex(s => s.key === step) + 1)
   const severity = getClinicalSeverity(form)
 
   function getInsightColor(level) {
@@ -172,12 +186,11 @@ export default function Waitlist() {
   function validateStep() {
     switch (step) {
       case 1:
-        if (!form.pathway) { showNotif('Required', 'Please select an admission pathway.'); return false }
+        // Willingness is checked first: the pathway selector is not rendered on the
+        // outpatient track, so validating it first asked for a field nobody could see.
         if (!form.willingnessConfirm) { showNotif('Required', 'Please confirm willingness status.'); return false }
-        if (form.willingnessConfirm === 'no') {
-          showNotif('Outpatient Pathway', 'Clients who are not yet willing are enrolled in our Outpatient Engagement Pathway. Please call 09112777600 for a confidential assessment.')
-          return false
-        }
+        if (track === 'outpatient') return true
+        if (!form.pathway) { showNotif('Required', 'Please select an admission pathway.'); return false }
         return true
       case 2:
         if (!form.fn || !form.ln) { showNotif('Name required', "Please enter the patient's full name."); return false }
@@ -189,10 +202,8 @@ export default function Waitlist() {
       case 3:
         if (!form.substance) { showNotif('Substance required', 'Please select primary substance.'); return false }
         if (!form.duration) { showNotif('Duration required', 'Please select duration of use.'); return false }
-        if (hasExclusion) {
-          showNotif('Referral Required', 'Based on the screening, a referral to an appropriate service is recommended. Our team will contact you with referral details. Please call 09112777600.')
-          return false
-        }
+        // An exclusion no longer blocks. It routes to the referral track so the family
+        // still leaves contact details and we can send the written referral.
         return true
       case 4:
         if (!form.insightLevel) { showNotif('Required', "Please assess the patient's insight level."); return false }
@@ -209,19 +220,35 @@ export default function Waitlist() {
     }
   }
 
-  function next() { if (validateStep()) setStep(s => Math.min(s + 1, 7)) }
-  function prev() { setStep(s => Math.max(s - 1, 1)) }
+  // The short tracks skip the residential-only steps (insight, family, next of kin).
+  function next() { if (validateStep()) setStep(s => (isShortTrack && s === 3 ? 7 : Math.min(s + 1, 7))) }
+  function prev() { setStep(s => (isShortTrack && s === 7 ? 3 : Math.max(s - 1, 1))) }
 
   async function handleSubmit() {
-    if (!form.consentAdmission || !form.consentDetox || !form.consentConfidentiality || !form.consentRights || !form.consentFinancial) {
-      showNotif('Consent required', 'Please acknowledge all consent forms before proceeding.')
+    // Residential admission requires all five consents. The outpatient and referral
+    // tracks are engagement leads rather than admissions, so they confirm only
+    // confidentiality — asking a not-yet-willing client to sign a detox consent
+    // would be both meaningless and off-putting.
+    if (track === 'residential') {
+      if (!form.consentAdmission || !form.consentDetox || !form.consentConfidentiality || !form.consentRights || !form.consentFinancial) {
+        showNotif('Consent required', 'Please acknowledge all consent forms before proceeding.')
+        return
+      }
+    } else if (!form.consentConfidentiality) {
+      showNotif('Consent required', 'Please acknowledge the confidentiality agreement before submitting.')
       return
     }
+
+    const status = track === 'outpatient' ? 'outpatient-pathway'
+      : track === 'referral' ? 'referred'
+      : 'submitted'
+
     setLoading(true)
     const app = {
       id: `APP_${Date.now()}`,
       ...form,
-      status: 'submitted',
+      track,
+      status,
       depositPaid: false,
       submittedAt: new Date().toISOString(),
       insightScore: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
@@ -230,7 +257,11 @@ export default function Waitlist() {
 
     if (isSupabaseReady()) {
       await submitApplication({
-        pathway: form.pathway, willingness_confirm: form.willingnessConfirm,
+        // pathway is CHECK-constrained to 'A'/'B'; the outpatient track has none, and
+        // an empty string would fail the constraint and reject the whole insert.
+        pathway: form.pathway || null,
+        willingness_confirm: form.willingnessConfirm,
+        seeking_voluntarily: form.seekingVoluntarily,
         first_name: form.fn, last_name: form.ln, date_of_birth: form.dob || null,
         gender: form.gender, phone: form.phone, email: form.email,
         address: form.address, state: form.state, occupation: form.occupation,
@@ -253,15 +284,23 @@ export default function Waitlist() {
         consent_admission: form.consentAdmission, consent_detox: form.consentDetox,
         consent_confidentiality: form.consentConfidentiality, consent_rights: form.consentRights,
         consent_financial: form.consentFinancial,
-        deposit_paid: false, status: 'submitted',
+        // Exclusion screening answers were collected but never persisted, so staff
+        // could not see why a file was referred. They drive the referral letter.
+        active_psychosis: form.activePsychosis || 'no',
+        antipsychotic_need: form.antipsychoticNeed || 'no',
+        severe_cognitive: form.severeCognitive || 'no',
+        legal_detention: form.legalDetention || 'no',
+        children_cohabitation: form.childrenCohabitation || 'no',
+        deposit_paid: false, status,
       })
     }
     setLoading(false)
-    showNotif(
-      'Application received',
-      `Thank you, ${form.fn}. Your application has been submitted for review. Our admissions team will contact you within 48 hours. No payment is required at this stage.`,
-      'ok'
-    )
+    const done = {
+      residential: ['Application received', `Thank you, ${form.fn}. Your application has been submitted for review. Our admissions team will contact you within 48 hours. No payment is required at this stage.`],
+      outpatient: ['Registered for outpatient engagement', `Thank you. ${form.fn}'s details are with our outpatient team, who will call within one working day to arrange a first Motivational Interviewing session. Nobody is turned away for not being ready yet.`],
+      referral: ['Referral request received', `Thank you. ${form.fn}'s file is with our clinical team, who will call within one working day with a written referral to the right service, and will keep the door open here for when it is the right fit.`],
+    }[track]
+    showNotif(done[0], done[1], 'ok')
     clearDraft()
     setForm(INITIAL)
     setStep(1)
@@ -282,7 +321,7 @@ export default function Waitlist() {
       <section className="section">
         <div className="container">
           <div className={styles.stepper}>
-            {STEPS.map(s => (
+            {visibleSteps.map(s => (
               <div key={s.key} className={`${styles.stepDot} ${step === s.key ? styles.stepActive : ''} ${step > s.key ? styles.stepDone : ''}`}>
                 <div className={styles.stepCircle}>{step > s.key ? '✓' : s.key}</div>
                 <div className={styles.stepLabel}>{s.label}</div>
@@ -293,7 +332,7 @@ export default function Waitlist() {
           <div className={styles.grid}>
             <div className="card">
               <h3 style={{ marginBottom: 4, fontSize: '1.5rem' }}>{STEPS[step - 1].label}</h3>
-              <p style={{ fontSize: '.82rem', color: 'var(--g500)', marginBottom: 24 }}>Step {step} of {STEPS.length}. All information is strictly confidential</p>
+              <p style={{ fontSize: '.82rem', color: 'var(--g500)', marginBottom: 24 }}>Step {stepPos} of {visibleSteps.length}. All information is strictly confidential</p>
 
               {/* Step 1: Pathway & Willingness */}
               {step === 1 && <>
@@ -331,7 +370,10 @@ export default function Waitlist() {
                       <li>Reassessment every 2–4 weeks for residential readiness</li>
                     </ul>
                     <p style={{ fontSize: '.84rem', fontWeight: 600, color: 'var(--blue)', marginTop: 10 }}>
-                      Call 09112777600 to schedule an outpatient assessment.
+                      Continue with this form to register for outpatient engagement. It is three short steps, and our team will call within one working day.
+                    </p>
+                    <p style={{ fontSize: '.82rem', color: 'var(--g700)', marginTop: 6 }}>
+                      Prefer to speak to someone first? Call <a href="tel:09112777600" style={{ color: 'var(--blue)', fontWeight: 700 }}>0911 277 7600</a>.
                     </p>
                   </div>
                 )}
@@ -607,7 +649,10 @@ export default function Waitlist() {
                     <ul style={{ marginTop: 8, paddingLeft: 18 }}>
                       {activeExclusions.map(ex => <li key={ex.key} style={{ fontSize: '.82rem', marginBottom: 4 }}>{ex.referral}</li>)}
                     </ul>
-                    <p style={{ marginTop: 8, fontWeight: 600 }}>Every client leaves with a written referral, a compassionate conversation, and HOR's contact number for when they are ready. Call 09112777600.</p>
+                    <p style={{ marginTop: 8, fontWeight: 600 }}>Every client leaves with a written referral and a compassionate conversation. Continue with this form and our clinical team will call within one working day with the referral details.</p>
+                    <p style={{ fontSize: '.82rem', marginTop: 6 }}>
+                      Prefer to speak to someone first? Call <a href="tel:09112777600" style={{ color: 'var(--blue)', fontWeight: 700 }}>0911 277 7600</a>.
+                    </p>
                   </div>
                 )}
               </>}
@@ -832,9 +877,17 @@ export default function Waitlist() {
               {step === 7 && <>
                 <div className={styles.reviewGrid}>
                   <div className={styles.reviewBlock}>
-                    <div className={styles.reviewTitle}>Pathway</div>
-                    <div className={styles.reviewValue}>Pathway {form.pathway}: {form.pathway === 'A' ? 'Family-Supported' : 'Community-Supported'}</div>
-                    <div className={styles.reviewSub}>Willingness: {form.willingnessConfirm === 'yes' ? 'Voluntary' : 'Family-persuaded'}</div>
+                    <div className={styles.reviewTitle}>{isShortTrack ? 'Requested Support' : 'Pathway'}</div>
+                    <div className={styles.reviewValue}>
+                      {track === 'outpatient' ? 'Outpatient Engagement Pathway'
+                        : track === 'referral' ? 'Referral to an appropriate service'
+                        : `Pathway ${form.pathway}: ${form.pathway === 'A' ? 'Family-Supported' : 'Community-Supported'}`}
+                    </div>
+                    <div className={styles.reviewSub}>
+                      Willingness: {form.willingnessConfirm === 'yes' ? 'Voluntary'
+                        : form.willingnessConfirm === 'family_persuaded' ? 'Family-persuaded'
+                        : 'Not yet willing'}
+                    </div>
                   </div>
                   <div className={styles.reviewBlock}>
                     <div className={styles.reviewTitle}>Patient</div>
@@ -863,6 +916,7 @@ export default function Waitlist() {
                     {form.medConditions && <div className={styles.reviewSub}>Medical: {form.medConditions}</div>}
                     {form.medications && <div className={styles.reviewSub}>Medications: {form.medications}</div>}
                   </div>
+                  {!isShortTrack && <>
                   <div className={styles.reviewBlock}>
                     <div className={styles.reviewTitle}>Insight Level</div>
                     <div className={styles.reviewValue} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -881,8 +935,58 @@ export default function Waitlist() {
                     <div className={styles.reviewValue}>{form.nokName}</div>
                     <div className={styles.reviewSub}>{form.nokRel} · {form.nokPhone}</div>
                   </div>
+                  </>}
                 </div>
 
+                {isShortTrack && <>
+                  <div className={styles.outpatientBox}>
+                    <div className={styles.outpatientTitle}>
+                      {track === 'outpatient' ? 'What you are registering for' : 'What happens with this referral'}
+                    </div>
+                    {track === 'outpatient' ? (
+                      <>
+                        <p style={{ fontSize: '.84rem', color: 'var(--g700)', marginBottom: 10 }}>
+                          This is not a residential admission and carries no admission commitment. You are registering {form.fn || 'the client'} for our Outpatient Engagement Pathway, which works with people who are not yet ready, and with the families around them.
+                        </p>
+                        <ul className={styles.outpatientList}>
+                          <li>Our outpatient team calls within one working day</li>
+                          <li>Motivational Interviewing begins at a pace the client sets</li>
+                          <li>Family counselling runs alongside, with consent</li>
+                          <li>Readiness for residential care is reassessed every 2–4 weeks</li>
+                          <li>If and when readiness comes, this file becomes the admission file</li>
+                        </ul>
+                      </>
+                    ) : (
+                      <>
+                        <p style={{ fontSize: '.84rem', color: 'var(--g700)', marginBottom: 10 }}>
+                          The screening flagged conditions that need a different service before residential care here would be safe or appropriate. Submitting this puts a written referral in motion rather than closing the door.
+                        </p>
+                        <ul className={styles.outpatientList}>
+                          {activeExclusions.map(ex => <li key={ex.key}>{ex.referral}</li>)}
+                          <li>Our clinical team calls within one working day with the referral in writing</li>
+                          <li>Your file stays open here for reassessment once the client is stabilised</li>
+                        </ul>
+                      </>
+                    )}
+                  </div>
+
+                  <div className={styles.sectionHead}>Consent</div>
+                  <div className={styles.consentList}>
+                    <label className={styles.consentItem}>
+                      <input type="checkbox" {...fc('consentConfidentiality')} />
+                      <span>Confidentiality Agreement: I consent to House of Refuge holding these details in confidence and contacting me about {track === 'outpatient' ? 'outpatient engagement' : 'this referral'}.</span>
+                    </label>
+                  </div>
+
+                  <button className="btn btn--primary btn--full" style={{ marginTop: 18 }} onClick={handleSubmit} disabled={loading}>
+                    {loading ? <span className="spin" /> : (track === 'outpatient' ? 'Register for Outpatient Engagement' : 'Request Referral')}
+                  </button>
+                  <p style={{ fontSize: '.72rem', color: 'var(--g500)', textAlign: 'center', marginTop: 9 }}>
+                    Your information is fully confidential · No payment required · No admission commitment
+                  </p>
+                </>}
+
+                {!isShortTrack && <>
                 {/* Consent Forms */}
                 <div className={styles.sectionHead}>Consent & Acknowledgements</div>
                 <p style={{ fontSize: '.84rem', color: 'var(--g700)', marginBottom: 14 }}>
@@ -933,6 +1037,7 @@ export default function Waitlist() {
                 <p style={{ fontSize: '.72rem', color: 'var(--g500)', textAlign: 'center', marginTop: 9 }}>
                   Your information is fully confidential · No payment required at this stage
                 </p>
+                </>}
               </>}
 
               {/* Navigation */}
@@ -951,6 +1056,37 @@ export default function Waitlist() {
 
             {/* Sidebar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {/* The residential deposit/fee timeline contradicts the short tracks,
+                  which carry no payment and no admission commitment. */}
+              {isShortTrack ? (
+                <div className="card">
+                  <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 16 }}>
+                    {track === 'outpatient' ? 'Outpatient Engagement' : 'Referral Process'}
+                  </h4>
+                  <div className={styles.psteps}>
+                    {(track === 'outpatient' ? [
+                      ['1', 'Register (Free)', 'Complete this short form. No payment, and no commitment to residential admission.'],
+                      ['2', 'We call you', 'Our outpatient team calls within one working day to arrange a first session at a time that suits the family.'],
+                      ['3', 'Motivational Interviewing', 'Weekly 45–60 minute sessions, at a pace the client sets. Psychoeducation and harm-reduction guidance alongside.'],
+                      ['4', 'Family counselling', 'Offered in parallel, with consent. Families are supported whether or not the client engages.'],
+                      ['5', 'Reassessment', 'Readiness for residential care is reviewed every 2–4 weeks. If readiness comes, this file becomes the admission file.'],
+                    ] : [
+                      ['1', 'Submit (Free)', 'Complete this short form. No payment, and the door stays open here.'],
+                      ['2', 'Clinical review', 'Our clinical team reviews the screening and identifies the right service.'],
+                      ['3', 'Written referral', 'You receive the referral in writing within one working day, with a contact at the receiving service.'],
+                      ['4', 'Reassessment', 'Once the client is stabilised, we reassess for residential admission here.'],
+                    ]).map(([n, t, d]) => (
+                      <div key={n} className={styles.ps}>
+                        <div className={styles.psN}>{n}</div>
+                        <div>
+                          <div className={styles.psT}>{t}</div>
+                          <p className={styles.psD}>{d}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
               <div className="card">
                 <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 16 }}>Admission Process</h4>
                 <div className={styles.psteps}>
@@ -972,6 +1108,7 @@ export default function Waitlist() {
                   ))}
                 </div>
               </div>
+              )}
 
               <div className="card">
                 <h4 style={{ fontFamily: 'var(--fd)', fontSize: '1.25rem', marginBottom: 8 }}>Selection Criteria</h4>
