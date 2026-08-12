@@ -1,22 +1,29 @@
 // House of Refuge — send-deposit-request
 //
 // Triggered by admin from the Admission Detail screen. Sends the refundable-
-// deposit request email to the applicant via Resend, then stamps the
+// deposit request email to the applicant over Zoho Mail SMTP, then stamps the
 // applications row so the admin UI can show "deposit request sent <date>".
 //
 // Required env vars (set in Supabase → Project Settings → Edge Functions):
-//   RESEND_API_KEY            — Resend API key
-//   DEPOSIT_FROM_EMAIL        — verified sender, e.g. "House of Refuge <admissions@houseofrefuge.org>"
+//   ZOHO_SMTP_USER            — sending mailbox, see _shared/mailer.ts
+//   ZOHO_SMTP_PASSWORD        — Zoho app-specific password
+//   PUBLIC_APP_URL            — site root, e.g. "https://www.houseofrefugeng.org"
 //   DEPOSIT_BCC_EMAIL         — optional, e.g. "admin@..." (so admin keeps a copy)
-//   PUBLIC_APP_URL            — site root, e.g. "https://houseofrefuge.org" (used to build payment link)
+//   DEPOSIT_CONTACT_EMAIL     — optional, address quoted in the email body
 //   SUPABASE_URL              — auto-injected
 //   SUPABASE_SERVICE_ROLE_KEY — auto-injected
+//
+// The From address is no longer configurable here: Zoho rejects any sender that
+// is not the authenticated mailbox or one of its aliases, so mailer.ts derives
+// it from ZOHO_SMTP_USER. (The old DEPOSIT_FROM_EMAIL default pointed at
+// houseofrefuge.org, a domain the organisation does not own.)
 //
 // Deploy with:
 //   supabase functions deploy send-deposit-request --no-verify-jwt=false
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
+import { BRAND, sendMail } from '../_shared/mailer.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -135,7 +142,7 @@ function buildEmail(opts: {
         </td></tr>
         <tr><td style="padding:8px 32px 28px 32px;border-top:1px solid #eee">
           <p style="font-size:14px;line-height:1.6;color:#333;margin:14px 0 6px 0">
-            If you have any questions before paying, please call us on <a href="tel:${contactPhone}" style="color:#1A5FAD">${contactPhone}</a> or reply to this email at <a href="mailto:${contactEmail}" style="color:#1A5FAD">${contactEmail}</a>. We are happy to walk through the terms with you and your family.
+            If you have any questions before paying, please call us on <a href="tel:${BRAND.phoneHref}" style="color:#1A5FAD">${contactPhone}</a> or reply to this email at <a href="mailto:${contactEmail}" style="color:#1A5FAD">${contactEmail}</a>. We are happy to walk through the terms with you and your family.
           </p>
           <p style="font-size:14px;line-height:1.6;color:#333;margin:14px 0 4px 0">Warm regards,</p>
           <p style="font-size:14px;line-height:1.4;color:#333;margin:0">
@@ -253,42 +260,25 @@ serve(async (req) => {
       reviewerName,
       reviewerTitle,
       amount: amountNaira,
-      contactPhone: '09011277600',
-      contactEmail: 'e.abutu@freedomfoundationng.org',
+      // Was '09011277600' (0901 127 7600) — not a House of Refuge number.
+      contactPhone: BRAND.phone,
+      contactEmail: Deno.env.get('DEPOSIT_CONTACT_EMAIL') || 'e.abutu@freedomfoundationng.org',
     })
 
-    // Send via Resend.
-    const fromEmail = Deno.env.get('DEPOSIT_FROM_EMAIL') || 'House of Refuge <admissions@houseofrefuge.org>'
-    const bccEmail = Deno.env.get('DEPOSIT_BCC_EMAIL') || ''
-    const resendKey = Deno.env.get('RESEND_API_KEY')
-    if (!resendKey) {
-      return new Response(JSON.stringify({ error: 'RESEND_API_KEY is not configured on the function' }), {
-        status: 500, headers: { ...cors, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const resendRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [recipientEmail],
-        bcc: bccEmail ? [bccEmail] : undefined,
-        subject,
-        html,
-        text,
-        tags: [{ name: 'category', value: 'deposit-request' }, { name: 'application_id', value: applicationId }],
-      }),
+    // Send over Zoho SMTP.
+    const sent = await sendMail({
+      to: recipientEmail,
+      bcc: Deno.env.get('DEPOSIT_BCC_EMAIL') || undefined,
+      subject,
+      html,
+      text,
     })
 
-    if (!resendRes.ok) {
-      const errText = await resendRes.text()
-      return new Response(JSON.stringify({ error: 'Resend failed', detail: errText }), {
+    if (!sent.ok) {
+      return new Response(JSON.stringify({ error: 'Email send failed', detail: sent.error }), {
         status: 502, headers: { ...cors, 'Content-Type': 'application/json' },
       })
     }
-
-    const resend = await resendRes.json()
 
     // Stamp the application row.
     const sentAt = new Date().toISOString()
@@ -305,11 +295,11 @@ serve(async (req) => {
       deposit_request_count: nextCount,
     }).eq('id', applicationId)
 
-    return new Response(JSON.stringify({ ok: true, sentAt, resendId: resend.id }), {
+    return new Response(JSON.stringify({ ok: true, sentAt, accepted: sent.accepted }), {
       status: 200, headers: { ...cors, 'Content-Type': 'application/json' },
     })
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Server error', detail: String(err?.message || err) }), {
+    return new Response(JSON.stringify({ error: 'Server error', detail: String((err as Error)?.message || err) }), {
       status: 500, headers: { ...cors, 'Content-Type': 'application/json' },
     })
   }

@@ -181,9 +181,11 @@ create policy bookings_authed on outpatient_bookings
 create unique index if not exists outpatient_practitioners_full_name_key
   on outpatient_practitioners (full_name);
 
+-- Dr Alex Adenuga was on the launch roster but is no longer with HOR
+-- (2026-08-12), so he is not seeded. See RUN_update_practitioner_roster.sql
+-- for the statement that retires him from an already-seeded database.
 insert into outpatient_practitioners (full_name, title, role_type, public, active, display_order)
 values
-  ('Dr Alex Adenuga',   'Specialist Psychiatrist', 'visiting', true, true, 10),
   ('Dr Toba Babarinsa', 'Specialist Psychiatrist', 'visiting', true, true, 20)
 on conflict (full_name) do nothing;
 

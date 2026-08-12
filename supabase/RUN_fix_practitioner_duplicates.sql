@@ -1,19 +1,23 @@
 -- ============================================================================
--- HOR — de-duplicate outpatient_practitioners  (2026-08-12)
+-- HOR — outpatient practitioner roster cleanup  (2026-08-12)
 --
 -- Run in the Supabase SQL Editor. Safe to re-run.
 --
--- WHY
---   The seed block in 20260514_outpatient_services.sql ends with a bare
---   `on conflict do nothing`. That clause only suppresses a conflict against an
---   existing unique index, and outpatient_practitioners had none, so every run
---   of the migration inserted another copy of both doctors. The public
---   /outpatient page and the booking practitioner picker list each of them once
---   per run.
+-- Does two things:
 --
---   This removes the duplicates, keeping the earliest row for each name, and
---   adds the unique index the seed always assumed was there. After this the
---   migration is genuinely idempotent.
+-- 1. DE-DUPLICATES. The seed block in 20260514_outpatient_services.sql ended
+--    with a bare `on conflict do nothing`, which only suppresses a conflict
+--    against an existing unique index. outpatient_practitioners had none, so
+--    every run of the migration inserted another copy of both doctors. The
+--    public /outpatient page and the booking practitioner picker currently list
+--    each of them four times.
+--
+-- 2. RETIRES Dr Alex Adenuga, who is no longer with HOR (2026-08-12). He is
+--    removed rather than deactivated because no booking has ever referenced
+--    him, so there is no history to preserve.
+--
+-- The unique index added at the end is what makes the seed idempotent, so this
+-- cannot happen again.
 -- ============================================================================
 
 -- 1. Point any existing bookings at the row we are keeping, so the de-dup
@@ -39,13 +43,17 @@ with keep as (
 delete from public.outpatient_practitioners
 where id not in (select id from keep);
 
--- 3. Make the seed's `on conflict` clause actually have something to conflict
+-- 3. Retire the departed clinician.
+delete from public.outpatient_practitioners
+where full_name = 'Dr Alex Adenuga';
+
+-- 4. Make the seed's `on conflict` clause actually have something to conflict
 --    against, so re-running the migration stops duplicating.
 create unique index if not exists outpatient_practitioners_full_name_key
   on public.outpatient_practitioners (full_name);
 
 notify pgrst, 'reload schema';
 
--- VERIFY — expect exactly 2 rows, one per doctor:
---   select full_name, count(*) from public.outpatient_practitioners
---   group by full_name order by full_name;
+-- VERIFY — expect one row, Dr Toba Babarinsa, until Dr Owolabi is added:
+--   select full_name, title, active, public
+--   from public.outpatient_practitioners order by display_order;
