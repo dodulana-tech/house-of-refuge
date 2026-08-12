@@ -234,11 +234,18 @@ create policy bookings_authed on outpatient_bookings
   for all to authenticated using (public.is_staff()) with check (public.is_staff());
 
 -- ── Seed practitioners ───────────────────────────────────────
+-- The unique index is what makes the `on conflict` below do anything. Without
+-- it a bare `on conflict do nothing` has no index to conflict against, so every
+-- run of this file inserted another copy of both doctors. See
+-- RUN_fix_practitioner_duplicates.sql, which cleans up the rows that created.
+create unique index if not exists outpatient_practitioners_full_name_key
+  on outpatient_practitioners (full_name);
+
 insert into outpatient_practitioners (full_name, title, role_type, public, active, display_order)
 values
   ('Dr Alex Adenuga',   'Specialist Psychiatrist', 'visiting', true, true, 10),
   ('Dr Toba Babarinsa', 'Specialist Psychiatrist', 'visiting', true, true, 20)
-on conflict do nothing;
+on conflict (full_name) do nothing;
 
 -- ── Seed services (prices NULL = TBD, set via admin) ─────────
 insert into outpatient_services
