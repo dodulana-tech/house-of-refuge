@@ -41,6 +41,19 @@ export function AuthProvider({ children }) {
               setUser(userData)
             }
           })
+      } else {
+        /*
+          No Supabase session, but a user object may still be cached in
+          localStorage from a previous sign-in. Keeping it made the dashboard
+          render as staff/admin while every query ran as anon, so RLS returned
+          nothing and pages looked empty instead of signed out. Drop the cached
+          user so the session guard sends them back to /login. DEV demo accounts
+          never had a session to begin with, so they are left alone.
+        */
+        setUser(prev => {
+          if (prev && !prev.demo) { remove('user'); return null }
+          return prev
+        })
       }
       setLoading(false)
     })
@@ -70,7 +83,8 @@ export function AuthProvider({ children }) {
         // Fallback to demo accounts on Supabase error
         const account = DEMO_ACCOUNTS.find(a => a.email === email && a.password === password)
         if (account) {
-          const { password: _, ...userData } = account
+          const { password: _, ...rest } = account
+          const userData = { ...rest, demo: true }
           save('user', userData)
           setUser(userData)
           return { ok: true, user: userData }
@@ -103,7 +117,8 @@ export function AuthProvider({ children }) {
     // Fallback to demo accounts
     const account = DEMO_ACCOUNTS.find(a => a.email === email && a.password === password)
     if (!account) return { ok: false, error: 'Invalid email or password' }
-    const { password: _, ...userData } = account
+    const { password: _, ...rest } = account
+    const userData = { ...rest, demo: true }
     save('user', userData)
     setUser(userData)
     return { ok: true, user: userData }

@@ -10,7 +10,14 @@ import { mapPatientRow, dayInProgramme, phaseForDay, PROGRAMME_DAYS } from '../.
 */
 
 const TOTAL_BEDS = 19
-const PENDING_STATUSES = ['submitted', 'pre-screening', 'clinical-assessment', 'admission-decision', 'documentation', 'intake', 'treatment-planning']
+/*
+  Open files still needing action. 'outpatient-pathway' and 'referred' are
+  included: since the form stopped dead-ending unwilling clients those two
+  statuses carry real people awaiting a call-back, and leaving them out made
+  the KPI read lower than the Admissions pipeline for no visible reason.
+  Closed states (admitted, deferred, declined, withdrawn) stay out.
+*/
+const PENDING_STATUSES = ['submitted', 'pre-screening', 'clinical-assessment', 'admission-decision', 'documentation', 'intake', 'treatment-planning', 'outpatient-pathway', 'referred']
 const PHASE_LABELS = {
   stabilization: 'Medical Stabilization (Wk 1–2)',
   foundation: 'Therapeutic Foundation (Wk 3–6)',
@@ -37,7 +44,12 @@ function buildAdmin(apps, patients, payments) {
     ['pre-screening', 'Pre-screening', '#DD6B20'],
     ['clinical-assessment', 'Clinical Assessment', '#D69E2E'],
     ['admission-decision', 'Admission Decision', '#805AD5'],
+    ['documentation', 'Documentation', '#805AD5'],
+    ['intake', 'Intake', '#2B6CB0'],
+    ['treatment-planning', 'Treatment Planning', '#2B6CB0'],
     ['outpatient-pathway', 'Outpatient Pathway', 'var(--g500)'],
+    ['referred', 'Referred Out', '#E53E3E'],
+    ['deferred', 'Deferred', '#B7791F'],
   ].map(([key, label, color]) => ({ label, color, count: apps.filter(a => a.status === key).length }))
    .filter(i => i.count > 0)
 

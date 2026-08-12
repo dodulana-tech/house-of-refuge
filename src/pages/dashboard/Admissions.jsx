@@ -12,14 +12,26 @@ import { SUBSTANCE_PATHWAYS, SUBSTANCE_PATHWAY_META, POPULATION_PATHWAY_LABELS, 
   + Outpatient Pathway, Referred, Deferred, Declined, Withdrawn
 */
 
+/*
+  Every status the `applications` CHECK constraint allows must appear here.
+  Documentation, intake, treatment-planning, deferred, declined and withdrawn
+  were missing, so files parked in those stages were reachable only through the
+  "All" view and were invisible in the stage chips.
+*/
 const PIPELINE_STAGES = [
   { key: 'submitted', label: 'Submitted', color: 'var(--blue)' },
   { key: 'pre-screening', label: 'Pre-screening', color: '#DD6B20' },
   { key: 'clinical-assessment', label: 'Clinical Assessment', color: '#D69E2E' },
   { key: 'admission-decision', label: 'Decision', color: '#805AD5' },
+  { key: 'documentation', label: 'Documentation', color: '#805AD5' },
+  { key: 'intake', label: 'Intake', color: '#2B6CB0' },
+  { key: 'treatment-planning', label: 'Treatment Planning', color: '#2B6CB0' },
   { key: 'admitted', label: 'Admitted', color: '#1A7A4A' },
   { key: 'outpatient-pathway', label: 'Outpatient', color: 'var(--g500)' },
   { key: 'referred', label: 'Referred', color: '#E53E3E' },
+  { key: 'deferred', label: 'Deferred', color: '#B7791F' },
+  { key: 'declined', label: 'Declined', color: '#822727' },
+  { key: 'withdrawn', label: 'Withdrawn', color: 'var(--g500)' },
 ]
 
 const PATHWAY_COLORS = Object.fromEntries(
@@ -31,12 +43,20 @@ const insightColors = INSIGHT_COLORS
 export default function Admissions() {
   const [apps, setApps] = useState([])
   const [stage, setStage] = useState('all')
+  const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
     async function load() {
       if (isSupabaseReady()) {
-        const { data } = await getSupaApps()
-        if (data?.length) setApps(data)
+        const { data, error } = await getSupaApps()
+        /*
+          A failed read used to leave the page showing "No applications", which
+          is indistinguishable from an empty pipeline. RLS denies the read
+          outright when the session has expired or the account is not staff, so
+          say which it is rather than implying nobody has applied.
+        */
+        if (error) { setLoadError(error.message || 'Could not load applications.'); return }
+        setApps(data || [])
       } else {
         const local = getLocalApps()
         if (local?.length) setApps(local.map(a => ({
@@ -48,7 +68,16 @@ export default function Admissions() {
     load()
   }, [])
 
-  const filtered = stage === 'all' ? apps : apps.filter(a => a.status === stage)
+  const filtered = stage === 'all' ? apps : apps.filter(a => (a.status || '') === stage)
+
+  const known = new Set(PIPELINE_STAGES.map(s => s.key))
+  const unknownStages = Object.entries(
+    apps.reduce((acc, a) => {
+      const key = a.status || ''
+      if (!known.has(key)) acc[key] = (acc[key] || 0) + 1
+      return acc
+    }, {})
+  ).map(([key, count]) => ({ key, count }))
 
   return (
     <div>
@@ -71,6 +100,13 @@ export default function Admissions() {
             </button>
           )
         })}
+        {/* Anything written by a route we do not know about still gets a chip,
+            so a new or mistyped status can never hide a file from admissions. */}
+        {unknownStages.map(s => (
+          <button key={s.key} className={`btn btn--sm ${stage === s.key ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setStage(s.key)}>
+            {s.key || 'No status'} ({s.count})
+          </button>
+        ))}
       </div>
 
       {/* Application cards */}
@@ -127,7 +163,17 @@ export default function Admissions() {
             </div>
           )
         })}
-        {filtered.length === 0 && (
+        {loadError && (
+          <div className="card" style={{ padding: 24, borderLeft: '3px solid #E53E3E' }}>
+            <div style={{ fontWeight: 700, color: '#822727', marginBottom: 6 }}>Applications could not be loaded</div>
+            <div style={{ fontSize: '.85rem', color: 'var(--g700)', marginBottom: 8 }}>{loadError}</div>
+            <div style={{ fontSize: '.82rem', color: 'var(--g500)' }}>
+              This is an access problem, not an empty pipeline. Sign out and back in; if it persists, the
+              signed-in account needs the staff or admin role in Supabase.
+            </div>
+          </div>
+        )}
+        {!loadError && filtered.length === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--g500)' }}>
             No applications in this stage.
           </div>

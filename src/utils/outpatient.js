@@ -66,14 +66,33 @@ export async function listPublicPractitioners() {
 }
 
 // ── Bookings ──────────────────────────────────────────────
+// Matches the OP-XXXXXX shape trg_gen_outpatient_ref produces. The trigger only
+// fills it in when the client sends none, so generating it here is what lets
+// the insert skip the read-back and still hand the booker a reference.
+function newBookingReference() {
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000
+  return `OP-${String(n).padStart(6, '0')}`
+}
+
+/*
+  No .select() read-back. Bookings are made anonymously and the table has anon
+  INSERT but deliberately no anon SELECT, so asking for the row back turns this
+  into INSERT ... RETURNING, which RLS rejects with 42501 and rolls back. Same
+  failure that silently killed the admission and financial assistance forms.
+
+  Retries on 23505 in case the generated reference collides.
+*/
 export async function createBooking(payload) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
-  const { data, error } = await supabase
-    .from('outpatient_bookings')
-    .insert(payload)
-    .select()
-    .single()
-  return { data, error }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const reference_code = newBookingReference()
+    const { error } = await supabase
+      .from('outpatient_bookings')
+      .insert({ ...payload, reference_code })
+    if (!error) return { data: { reference_code }, error: null }
+    if (error.code !== '23505') return { error }
+  }
+  return { error: { message: 'Could not allocate a booking reference. Please try again.' } }
 }
 
 export async function getBookingByReference(ref) {

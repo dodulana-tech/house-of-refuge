@@ -34,6 +34,107 @@ export async function signOut() {
   await supabase.auth.signOut()
 }
 
+/*
+  Password recovery. Supabase emails a link back to /reset-password carrying a
+  recovery token; opening it puts the browser into a temporary recovery session,
+  which is what lets updatePassword() succeed without the old password.
+*/
+export async function sendPasswordReset(email) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  })
+  return { error }
+}
+
+export async function updatePassword(password) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { error } = await supabase.auth.updateUser({ password })
+  return { error }
+}
+
+/*
+  Verifies the current password by signing in with it on a throwaway client, so
+  the check cannot disturb the session of the person already signed in. Used to
+  gate the change-password form.
+*/
+export async function verifyPassword(email, password) {
+  if (!supabase) return false
+  const probe = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, storageKey: 'hor-probe' },
+  })
+  const { error } = await probe.auth.signInWithPassword({ email, password })
+  await probe.auth.signOut()
+  return !error
+}
+
+// ── Account administration ────────────────────────────────
+// Listing relies on the existing "Staff can read all profiles" policy; role
+// changes go through SECURITY DEFINER functions that re-check the caller is an
+// admin server-side, so the anon key alone grants nothing.
+
+export const getProfiles = () => listBy('profiles', null, null, 'created_at', false)
+
+export async function adminSetRole(targetId, newRole) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase.rpc('admin_set_role', {
+    target_id: targetId, new_role: newRole,
+  })
+  return { data, error }
+}
+
+export async function adminUpdateProfile(targetId, { name, phone, department, title }) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { error } = await supabase.rpc('admin_update_profile', {
+    target_id: targetId,
+    new_name: name ?? '',
+    new_phone: phone ?? null,
+    new_department: department ?? null,
+    new_title: title ?? null,
+  })
+  return { error }
+}
+
+/*
+  Creates a staff account without disturbing the admin's own session.
+
+  signUp() would sign the browser in as the account just created, so it runs on
+  an isolated client with its own storage. The new account is created with a
+  throwaway password that nobody is told; the person sets their own via the
+  emailed reset link. handle_new_user() forces the profile to 'patient', so the
+  role is applied afterwards through admin_set_role.
+*/
+export async function adminCreateStaffAccount({ email, fullName, phone, role, department, title }) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+
+  const isolated = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, storageKey: 'hor-provision' },
+  })
+
+  const throwaway = crypto.randomUUID() + 'Aa1!'
+  const { data, error } = await isolated.auth.signUp({
+    email,
+    password: throwaway,
+    options: { data: { full_name: fullName, phone: phone || '' } },
+  })
+  if (error) return { error }
+
+  const newId = data?.user?.id
+  if (!newId) return { error: { message: 'Account created but no user id was returned.' } }
+
+  await isolated.auth.signOut()
+
+  const { error: roleErr } = await adminSetRole(newId, role)
+  if (roleErr) return { error: roleErr, partial: true, id: newId }
+
+  if (department || title || fullName) {
+    await adminUpdateProfile(newId, { name: fullName, phone, department, title })
+  }
+
+  const { error: inviteErr } = await sendPasswordReset(email)
+  return { data: { id: newId }, inviteError: inviteErr }
+}
+
 export async function getSession() {
   if (!supabase) return null
   const { data } = await supabase.auth.getSession()
@@ -47,14 +148,21 @@ export async function getUser() {
 }
 
 // ── Application CRUD ──────────────────────────────────────
+/*
+  No .select() read-back. Applicants submit anonymously and the anon SELECT
+  policy was removed on 2026-07-25 to close the PII leak, so asking for the row
+  back made PostgREST issue INSERT ... RETURNING, which requires SELECT
+  visibility of the new row. RLS refused it with 42501 and rolled the whole
+  insert back, silently killing every public application for three weeks. The
+  insert itself is permitted; only the read-back was not. Same reasoning as
+  submitDonation below.
+*/
 export async function submitApplication(appData) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('applications')
     .insert([appData])
-    .select()
-    .single()
-  return { data, error }
+  return { error }
 }
 
 export async function getApplications(filters = {}) {
@@ -165,14 +273,18 @@ export async function getCheckins(patientId) {
 }
 
 // ── Payments ──────────────────────────────────────────────
+/*
+  No .select() read-back. The deposit page runs unauthenticated (families
+  arrive on an emailed link), and payments allows anon INSERT but restricts
+  SELECT to staff and the paying user, so requesting the row back would fail
+  the whole insert with 42501 and lose the payment record.
+*/
 export async function recordPayment(paymentData) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('payments')
     .insert([paymentData])
-    .select()
-    .single()
-  return { data, error }
+  return { error }
 }
 
 export async function getPayments(userId) {

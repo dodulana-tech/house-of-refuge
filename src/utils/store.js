@@ -12,12 +12,29 @@ export function load(key, fallback = null) {
   } catch { return fallback }
 }
 
+/*
+  localStorage.setItem throws, it does not just fail: QuotaExceededError when
+  the origin is full, and SecurityError in Safari private mode, in in-app
+  browsers, and anywhere the user has blocked site data. load() already
+  tolerated that; save() did not, so a throw here propagated into whatever
+  called it. Returns false instead so callers can carry on.
+*/
 export function save(key, data) {
-  localStorage.setItem(PREFIX + key, JSON.stringify(data))
+  try {
+    localStorage.setItem(PREFIX + key, JSON.stringify(data))
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function remove(key) {
-  localStorage.removeItem(PREFIX + key)
+  try {
+    localStorage.removeItem(PREFIX + key)
+    return true
+  } catch {
+    return false
+  }
 }
 
 // ── Application store ──

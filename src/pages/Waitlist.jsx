@@ -244,57 +244,92 @@ export default function Waitlist() {
       : 'submitted'
 
     setLoading(true)
-    const app = {
-      id: `APP_${Date.now()}`,
-      ...form,
-      track,
-      status,
-      depositPaid: false,
-      submittedAt: new Date().toISOString(),
-      insightScore: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
-    }
-    saveApplication(app)
 
-    if (isSupabaseReady()) {
-      await submitApplication({
-        // pathway is CHECK-constrained to 'A'/'B'; the outpatient track has none, and
-        // an empty string would fail the constraint and reject the whole insert.
-        pathway: form.pathway || null,
-        willingness_confirm: form.willingnessConfirm,
-        seeking_voluntarily: form.seekingVoluntarily,
-        first_name: form.fn, last_name: form.ln, date_of_birth: form.dob || null,
-        gender: form.gender, phone: form.phone, email: form.email,
-        address: form.address, state: form.state, occupation: form.occupation,
-        marital_status: form.maritalStatus, substance: form.substance,
-        substance_other: form.substanceOther, co_substances: form.coSubstances,
-        duration: form.duration, frequency: form.frequency, route_of_use: form.routeOfUse,
-        prev_treatment: form.prevTx, medical_conditions: form.medConditions,
-        medications: form.medications, mental_health: form.mentalHealth,
-        suicide_history: form.suicideHistory, insight_level: form.insightLevel,
-        insight_score: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
-        motivation_source: form.motivationSource, treatment_goals: form.treatmentGoals,
-        change_readiness: form.changeReadiness, trigger_awareness: form.triggerAwareness,
-        family_awareness: form.familyAwareness, family_support: form.familySupport,
-        household_type: form.householdType, dependents: form.dependents,
-        enablers_present: form.enablersPresent, family_therapy_willing: form.familyTherapyWilling,
-        housing_aftercare: form.housingAftercare, pfsp_name: form.pfspName,
-        pfsp_phone: form.pfspPhone, sponsor_type: form.sponsorType,
-        nok_name: form.nokName, nok_relationship: form.nokRel, nok_phone: form.nokPhone,
-        nok_email: form.nokEmail, referral_source: form.referral,
-        consent_admission: form.consentAdmission, consent_detox: form.consentDetox,
-        consent_confidentiality: form.consentConfidentiality, consent_rights: form.consentRights,
-        consent_financial: form.consentFinancial,
-        // Exclusion screening answers were collected but never persisted, so staff
-        // could not see why a file was referred. They drive the referral letter.
-        active_psychosis: form.activePsychosis || 'no',
-        antipsychotic_need: form.antipsychoticNeed || 'no',
-        severe_cognitive: form.severeCognitive || 'no',
-        legal_detention: form.legalDetention || 'no',
-        children_cohabitation: form.childrenCohabitation || 'no',
-        deposit_paid: false, status,
-      })
+    /*
+      The database is the source of truth and is attempted first. The local
+      mirror used to be written before this call, which meant a storage failure
+      threw before the application was ever sent: the submit button stayed
+      disabled behind its spinner, no error surfaced, and the applicant was left
+      with a form that looked like it was still working. The mirror is now a
+      fallback for an unconfigured backend only, so a device that refuses
+      storage can still submit, and no applicant PII is left sitting in the
+      browser of a shared or borrowed phone.
+    */
+    let submitError = null
+    try {
+      if (isSupabaseReady()) {
+        const { error } = await submitApplication({
+          // pathway is CHECK-constrained to 'A'/'B'; the outpatient track has none, and
+          // an empty string would fail the constraint and reject the whole insert.
+          pathway: form.pathway || null,
+          willingness_confirm: form.willingnessConfirm,
+          seeking_voluntarily: form.seekingVoluntarily,
+          first_name: form.fn, last_name: form.ln, date_of_birth: form.dob || null,
+          gender: form.gender, phone: form.phone, email: form.email,
+          address: form.address, state: form.state, occupation: form.occupation,
+          marital_status: form.maritalStatus, substance: form.substance,
+          substance_other: form.substanceOther, co_substances: form.coSubstances,
+          duration: form.duration, frequency: form.frequency, route_of_use: form.routeOfUse,
+          prev_treatment: form.prevTx, medical_conditions: form.medConditions,
+          medications: form.medications, mental_health: form.mentalHealth,
+          suicide_history: form.suicideHistory, insight_level: form.insightLevel,
+          insight_score: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
+          motivation_source: form.motivationSource, treatment_goals: form.treatmentGoals,
+          change_readiness: form.changeReadiness, trigger_awareness: form.triggerAwareness,
+          family_awareness: form.familyAwareness, family_support: form.familySupport,
+          household_type: form.householdType, dependents: form.dependents,
+          enablers_present: form.enablersPresent, family_therapy_willing: form.familyTherapyWilling,
+          housing_aftercare: form.housingAftercare, pfsp_name: form.pfspName,
+          pfsp_phone: form.pfspPhone, sponsor_type: form.sponsorType,
+          nok_name: form.nokName, nok_relationship: form.nokRel, nok_phone: form.nokPhone,
+          nok_email: form.nokEmail, referral_source: form.referral,
+          consent_admission: form.consentAdmission, consent_detox: form.consentDetox,
+          consent_confidentiality: form.consentConfidentiality, consent_rights: form.consentRights,
+          consent_financial: form.consentFinancial,
+          // Exclusion screening answers were collected but never persisted, so staff
+          // could not see why a file was referred. They drive the referral letter.
+          active_psychosis: form.activePsychosis || 'no',
+          antipsychotic_need: form.antipsychoticNeed || 'no',
+          severe_cognitive: form.severeCognitive || 'no',
+          legal_detention: form.legalDetention || 'no',
+          children_cohabitation: form.childrenCohabitation || 'no',
+          deposit_paid: false, status,
+        })
+        submitError = error
+      } else {
+        saveApplication({
+          id: `APP_${Date.now()}`,
+          ...form,
+          track,
+          status,
+          depositPaid: false,
+          submittedAt: new Date().toISOString(),
+          insightScore: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,
+        })
+      }
+    } catch (err) {
+      // Network failure, a blocked request, or anything else thrown on the way
+      // out. Without this the rejection was silent and the spinner never ended.
+      submitError = err
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
+
+    /*
+      A rejected insert used to be discarded, so the family was told the
+      application had been received while nothing reached the admissions
+      pipeline. The draft is deliberately left in place so they can retry
+      without re-entering the whole form.
+    */
+    if (submitError) {
+      console.error('Application submission failed:', submitError)
+      showNotif(
+        'Submission could not be completed',
+        `We could not save ${form.fn}'s application. Your answers have been kept on this device, so please try again in a moment. If it still fails, call admissions on 0911 277 7600 and we will take the details over the phone.`,
+      )
+      return
+    }
+
     const done = {
       residential: ['Application received', `Thank you, ${form.fn}. Your application has been submitted for review. Our admissions team will contact you within 48 hours. No payment is required at this stage.`],
       outpatient: ['Registered for outpatient engagement', `Thank you. ${form.fn}'s details are with our outpatient team, who will call within one working day to arrange a first Motivational Interviewing session. Nobody is turned away for not being ready yet.`],

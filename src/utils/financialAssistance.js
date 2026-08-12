@@ -73,14 +73,35 @@ export async function getFADocumentUrl(path) {
   return data?.signedUrl
 }
 
+// Matches the FA-XXXXXX shape the trg_gen_fa_ref trigger produces. The trigger
+// only fills the code in when the client sends none, so supplying our own is
+// what lets us skip the read-back below and still show the applicant their
+// reference.
+function newReferenceCode() {
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000
+  return `FA-${String(n).padStart(6, '0')}`
+}
+
+/*
+  No .select() read-back, for the same reason as submitApplication: this table
+  has anon INSERT but no anon SELECT since the 2026-07-25 hotfix, and asking
+  for the row back turns the insert into INSERT ... RETURNING, which RLS
+  rejects with 42501 and rolls back. Every financial assistance application
+  submitted since that date was lost this way.
+
+  Retries on 23505 in case the generated code collides with an existing one.
+*/
 export async function submitFinancialAssistance(payload) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
-  const { data, error } = await supabase
-    .from('financial_assistance_applications')
-    .insert(payload)
-    .select()
-    .single()
-  return { data, error }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const reference_code = newReferenceCode()
+    const { error } = await supabase
+      .from('financial_assistance_applications')
+      .insert({ ...payload, reference_code })
+    if (!error) return { data: { reference_code }, error: null }
+    if (error.code !== '23505') return { error }
+  }
+  return { error: { message: 'Could not allocate a reference code. Please try again.' } }
 }
 
 export async function getFAByReference(referenceCode) {
