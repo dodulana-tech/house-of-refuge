@@ -53,7 +53,12 @@ export default function Login() {
                 <input className="fi" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
               </div>
               <div className="fg">
-                <label className="flabel">Password</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                  <label className="flabel">Password</label>
+                  <Link to="/forgot-password" style={{ fontSize: '.76rem', color: 'var(--blue)', fontWeight: 600 }}>
+                    Forgot password?
+                  </Link>
+                </div>
                 <input className="fi" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" />
               </div>
 
