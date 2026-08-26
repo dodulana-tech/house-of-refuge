@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { fmt } from '../../utils/paystack'
 import { isSupabaseReady, getDonors, addDonor, updateDonor } from '../../utils/supabase'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Donor CRM — per SOP Chapter 12
@@ -44,7 +45,8 @@ export default function DonorCRM() {
 
   const handleAddDonor = async e => {
     e.preventDefault()
-    if (!donorForm.name || saving) return
+    if (saving) return
+    if (!requireFields([[donorForm.name, 'Donor name']])) return
     setSaving(true)
     const row = {
       name: donorForm.name,
@@ -66,7 +68,11 @@ export default function DonorCRM() {
   }
 
   const handleLogComm = async (donor) => {
-    if (!commForm.date || !commForm.notes || saving) return
+    if (saving) return
+    if (!requireFields([
+      [commForm.date, 'Date'],
+      [commForm.notes, 'Notes'],
+    ])) return
     setSaving(true)
     const data = donor.data || {}
     const comms = Array.isArray(data.communications) ? data.communications : []

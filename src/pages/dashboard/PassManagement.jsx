@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getPasses, addPass, updatePass, deletePass, isSupabaseReady } from '../../utils/supabase'
 import { mapPatientRow } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Pass Management — SOP Section 5.4
@@ -77,7 +78,19 @@ export default function PassManagement() {
   }
 
   const handleSubmitRequest = async () => {
-    if (!form.patient || !form.type || !form.startDate || !form.guardian || !form.reason) return
+    if (!requireFields([
+      [form.patient, 'Patient'],
+      [form.type, 'Pass type'],
+      [form.startDate, 'Start date'],
+      [form.guardian, 'Accompanying guardian'],
+      [form.reason, 'Reason'],
+    ])) return
+    // Eligibility used to be enforced only by disabling the button, which gave
+    // no reason for the greyed-out control. Say it instead.
+    if (eligibility && !eligibility.eligible) {
+      alert(`This pass cannot be requested yet: ${eligibility.reason}`)
+      return
+    }
     setSaving(true)
     const { error } = await addPass({
       patient_id: form.patient,
@@ -212,7 +225,7 @@ export default function PassManagement() {
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
             <button className="btn btn--primary" style={{ padding: '8px 20px' }}
               onClick={handleSubmitRequest}
-              disabled={!eligibility?.eligible}>Submit Request</button>
+              >Submit Request</button>
             <button className="btn btn--secondary" style={{ padding: '8px 20px' }} onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </div>

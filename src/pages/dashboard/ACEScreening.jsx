@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getAssessments, addAssessment, isSupabaseReady } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   ACE Screening — Adverse Childhood Experiences Questionnaire
@@ -213,7 +214,10 @@ export default function ACEScreening() {
     form.q6 && form.q7 && form.q8 && form.q9 && form.q10
 
   const handleSubmit = async () => {
-    if (!allQuestionsAnswered || !selectedPatient) return
+    if (!requireFields([
+      [selectedPatient, 'Patient'],
+      [allQuestionsAnswered, 'An answer to every question'],
+    ])) return
 
     const aceScore = calculateACEScore(form)
     const riskLevel = getRiskLevel(aceScore)
@@ -641,7 +645,7 @@ export default function ACEScreening() {
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={handleSubmit}
-              disabled={!allQuestionsAnswered}
+              disabled={saving}
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,

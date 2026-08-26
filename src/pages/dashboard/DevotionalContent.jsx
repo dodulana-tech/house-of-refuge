@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Devotional Content — Patient-facing daily faith content.
@@ -122,7 +123,7 @@ export default function DevotionalContent() {
   const [memoryAssessment, setMemoryAssessment] = useState('Working on it')
 
   const addPrayerRequest = () => {
-    if (!prayerCategory) return
+    if (!requireFields([[prayerCategory, 'Prayer category']])) return
     setPrayerRequests([{ id: Date.now(), category: prayerCategory, date: '2026-03-31', status: 'Praying' }, ...prayerRequests])
     setPrayerCategory('')
   }

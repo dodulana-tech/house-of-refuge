@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getProgress, upsertProgress, isSupabaseReady } from '../../utils/supabase'
 import { mapPatientRow } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Spiritual Milestones — SOP Chapter 6
@@ -148,7 +149,8 @@ export default function SpiritualMilestones() {
   }
 
   const handleSave = async () => {
-    if (!selected || !d) return
+    if (!requireFields([[selected, 'Patient']])) return
+    if (!d) return
     setSaving(true)
     const { error } = await upsertProgress(selected, 'spiritual_milestones', d, 'PK')
     setSaving(false)

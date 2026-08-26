@@ -10,6 +10,8 @@ import {
   exportBookingsCSV,
   downloadCSV,
 } from '../../utils/outpatient'
+import { getDocumentationStatus } from '../../utils/outpatientClinical'
+import { requireFields } from '../../utils/formGuard'
 
 export default function OutpatientBookings() {
   const notify = useNotif()
@@ -21,6 +23,7 @@ export default function OutpatientBookings() {
   const [statusFilter, setStatusFilter] = useState(['pending_payment', 'confirmed', 'checked_in'])
   const [sort, setSort] = useState('scheduled_at.desc')
 
+  const [docStatus, setDocStatus] = useState({})
   const [selected, setSelected] = useState(new Set())
   const [bulkAction, setBulkAction] = useState('')
   const [working, setWorking] = useState(false)
@@ -37,6 +40,8 @@ export default function OutpatientBookings() {
     setError('')
     setRows(data || [])
     setSelected(new Set())
+    const { data: docs } = await getDocumentationStatus((data || []).map(r => r.id))
+    setDocStatus(docs || {})
   }
 
   useEffect(() => { load() }, [sort, JSON.stringify(statusFilter)])
@@ -52,7 +57,10 @@ export default function OutpatientBookings() {
   const toggleAll = () => setSelected(selected.size === rows.length ? new Set() : new Set(rows.map(r => r.id)))
 
   const handleBulk = async () => {
-    if (!bulkAction || selected.size === 0) return
+    if (!requireFields([
+      [bulkAction, 'An action to apply'],
+      [selected, 'At least one selected booking'],
+    ])) return
     if (!confirm(`Set ${selected.size} booking(s) to ${BOOKING_STATUSES.find(s => s.key === bulkAction)?.label}?`)) return
     setWorking(true)
     const { error } = await bulkUpdateBookings(Array.from(selected), { status: bulkAction })
@@ -145,14 +153,15 @@ export default function OutpatientBookings() {
               <th style={th()}>Patient</th>
               <th style={th()}>Booker</th>
               <th style={th()}>Practitioner</th>
+              <th style={th()}>Notes</th>
               <th style={th()}></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--g500)' }}>Loading…</td></tr>
+              <tr><td colSpan={11} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--g500)' }}>Loading…</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={10} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--g500)' }}>No bookings match.</td></tr>
+              <tr><td colSpan={11} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--g500)' }}>No bookings match.</td></tr>
             ) : rows.map(r => {
               const s = BOOKING_STATUSES.find(x => x.key === r.status) || BOOKING_STATUSES[0]
               const p = PAYMENT_STATUSES.find(x => x.key === r.payment_status) || PAYMENT_STATUSES[0]
@@ -173,6 +182,7 @@ export default function OutpatientBookings() {
                     <div style={{ fontSize: '.76rem', color: 'var(--g500)' }}>{r.booker_email}</div>
                   </td>
                   <td style={td()}>{r.outpatient_practitioners?.full_name || <span style={{ color: 'var(--g500)', fontStyle: 'italic' }}>Next available</span>}</td>
+                  <td style={td()}><DocCell doc={docStatus[r.id]} status={r.status} /></td>
                   <td style={td()}><Link to={`/dashboard/outpatient/bookings/${r.id}`} className="btn btn--secondary btn--sm">Open</Link></td>
                 </tr>
               )
@@ -196,6 +206,23 @@ function Pill({ it }) {
       {it.label}
     </span>
   )
+}
+
+/*
+  Documentation state for one booking. An appointment that has been through the
+  clinic and has no signed note is the thing this column exists to surface.
+*/
+function DocCell({ doc, status }) {
+  const chip = (text, color) => (
+    <span style={{
+      display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: '.7rem',
+      fontWeight: 700, color, background: color + '18', border: `1px solid ${color}33`, whiteSpace: 'nowrap',
+    }}>{text}</span>
+  )
+  if (doc?.signed) return chip(doc.signed > 1 ? `${doc.signed} notes` : 'Documented', '#1A7A4A')
+  if (doc?.draft) return chip('Draft', '#C08A30')
+  if (['cancelled', 'pending_payment'].includes(status)) return <span style={{ color: 'var(--g500)' }}>—</span>
+  return chip('No note', '#8B2A2A')
 }
 
 const th = w => ({ textAlign: 'left', padding: '10px 12px', fontWeight: 600, fontSize: '.76rem', color: 'var(--g700)', textTransform: 'uppercase', letterSpacing: '.04em', width: w })

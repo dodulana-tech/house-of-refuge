@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { isSupabaseReady, getStaffMember, updateStaff, deleteStaff } from '../../utils/supabase'
+import { requireFields } from '../../utils/formGuard'
 
 const deptColors = {
   Leadership: 'var(--blue)',
@@ -52,7 +53,7 @@ export default function StaffDetail() {
 
   async function handleAddNote(e) {
     e.preventDefault()
-    if (!noteText.trim()) return
+    if (!requireFields([[noteText, 'Note']])) return
     const notes = Array.isArray(staff.data?.notes) ? staff.data.notes : []
     const nextData = {
       ...(staff.data || {}),

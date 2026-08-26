@@ -8,6 +8,7 @@ import {
   getInventoryOrders,
   addInventoryOrder,
 } from '../../utils/supabase'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Inventory Management — 4 categories per SOP:
@@ -114,7 +115,11 @@ export default function InventoryManagement() {
   }
 
   const handleSubmitRequisition = async () => {
-    if (!reorderForm.item || !reorderForm.qty || !reorderForm.urgency) return
+    if (!requireFields([
+      [reorderForm.item, 'Item'],
+      [reorderForm.qty, 'Quantity'],
+      [reorderForm.urgency, 'Urgency'],
+    ])) return
     const selected = items.find(i => i.id === reorderForm.item)
     setSaving(true)
     const { error } = await addInventoryOrder({

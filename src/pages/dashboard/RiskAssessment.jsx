@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getAssessments, addAssessment, isSupabaseReady } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Risk Assessment — Columbia Suicide Severity Rating Scale (C-SSRS) +
@@ -229,10 +230,17 @@ export default function RiskAssessment() {
   }
 
   const handleSubmit = async () => {
-    if (!form.assessor || !form.q1 || !form.q2 || !form.q3 || !form.q4 || !form.q5 || !form.q6 || !form.homicidalIdeation || !selectedPatient) {
+    if (!requireFields([
+      [selectedPatient, 'Patient'],
+      [form.assessor, 'Assessor'],
+      [form.q1, 'Question 1'], [form.q2, 'Question 2'], [form.q3, 'Question 3'],
+      [form.q4, 'Question 4'], [form.q5, 'Question 5'], [form.q6, 'Question 6'],
+      [form.homicidalIdeation, 'Homicidal ideation'],
+    ])) return
+    if (form.q6 === 'Yes' && !form.q6Timeframe) {
+      alert('Timeframe is required when question 6 is answered Yes.')
       return
     }
-    if (form.q6 === 'Yes' && !form.q6Timeframe) return
 
     const riskLevel = calculateRiskLevel(form)
     const { assessor, ...rest } = form
@@ -742,7 +750,7 @@ export default function RiskAssessment() {
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={handleSubmit}
-              disabled={!form.assessor || !form.q1 || !form.q2 || !form.q3 || !form.q4 || !form.q5 || !form.q6 || !form.homicidalIdeation || (form.q6 === 'Yes' && !form.q6Timeframe)}
+              
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,

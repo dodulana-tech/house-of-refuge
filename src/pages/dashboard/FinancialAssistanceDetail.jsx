@@ -11,6 +11,7 @@ import {
   getFADocumentUrl,
   INCOME_BANDS,
 } from '../../utils/financialAssistance'
+import { requireFields } from '../../utils/formGuard'
 
 export default function FinancialAssistanceDetail() {
   const { id } = useParams()
@@ -71,7 +72,7 @@ export default function FinancialAssistanceDetail() {
   }
 
   const applyAction = async () => {
-    if (!decisionStatus) return
+    if (!requireFields([[decisionStatus, 'Decision']])) return
     if (['approved', 'declined'].includes(decisionStatus) && !decisionNotes.trim()) {
       if (!confirm('No decision notes entered. Continue without notes?')) return
     }

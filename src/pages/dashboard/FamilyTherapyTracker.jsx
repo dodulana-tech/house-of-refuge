@@ -8,6 +8,7 @@ import {
   upsertProgress,
 } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Family Therapy Tracker — tracks family therapy as a clinical intervention
@@ -214,7 +215,11 @@ export default function FamilyTherapyTracker() {
   const logComplete = logForm.date && logForm.status && logForm.facilitator && logForm.focusArea
 
   const handleLogSession = async () => {
-    if (!logComplete || logging || !selectedPatient) return
+    if (logging) return
+    if (!requireFields([
+      [selectedPatient, 'Patient'],
+      [logComplete, 'All session details'],
+    ])) return
     setLogging(true)
     const { error } = await addTherapySession({
       patient_id: selectedPatient,
@@ -240,7 +245,8 @@ export default function FamilyTherapyTracker() {
   }
 
   const handleSaveConfig = async () => {
-    if (saving || !selectedPatient) return
+    if (saving) return
+    if (!requireFields([[selectedPatient, 'Patient']])) return
     setSaving(true)
     const { error } = await upsertProgress(selectedPatient, DOMAIN, config, 'TA')
     setSaving(false)
@@ -503,7 +509,7 @@ export default function FamilyTherapyTracker() {
                 </div>
                 <button
                   onClick={handleLogSession}
-                  disabled={!logComplete || logging}
+                  disabled={logging}
                   style={{
                     padding: '8px 20px',
                     borderRadius: 8,

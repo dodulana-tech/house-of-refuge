@@ -9,6 +9,7 @@ import {
 } from '../../utils/supabase'
 import { activeBriefs, mapPatientRow, initialsFromName } from '../../utils/patients'
 import { POPULATION_PATHWAY_LABELS } from '../../data/clinicalConstants'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Discharge Tracker — tracks 6 graduation criteria per patient
@@ -252,7 +253,7 @@ export default function DischargeTracker() {
     setCriteria(prev => ({ ...prev, [key]: { ...prev[key], notes } }))
 
   const handleSave = async (markComplete = false) => {
-    if (!selectedPatient) return
+    if (!requireFields([[selectedPatient, 'Patient']])) return
     setSaving(true)
     const status = markComplete ? 'completed' : (savedStatus === 'completed' ? 'completed' : 'in-progress')
     const payload = {
@@ -285,7 +286,10 @@ export default function DischargeTracker() {
   )
 
   const handleReadmissionSubmit = async () => {
-    if (!readmissionDischargeId || !allReadmissionCriteriaMet) return
+    if (!requireFields([
+      [readmissionDischargeId, 'Previous discharge record'],
+      [allReadmissionCriteriaMet, 'All readmission criteria'],
+    ])) return
     setSubmittingReadmission(true)
     const { error } = await updateDischarge(readmissionDischargeId, {
       readmission: {

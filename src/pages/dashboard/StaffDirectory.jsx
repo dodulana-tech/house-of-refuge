@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { isSupabaseReady, getStaff, addStaff, deleteStaff } from '../../utils/supabase'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Staff Directory — per HOR Organogram
@@ -49,7 +50,7 @@ export default function StaffDirectory() {
 
   async function handleAdd(e) {
     e.preventDefault()
-    if (!form.full_name.trim()) return
+    if (!requireFields([[form.full_name, 'Full name']])) return
     setSaving(true)
     const { error } = await addStaff({
       code: form.code || null,

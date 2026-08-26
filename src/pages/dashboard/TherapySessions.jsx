@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { getPatients, getTherapySessions, addTherapySession, updateTherapySession, deleteTherapySession } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Therapy Session Attendance Tracker — per Treatment Protocol Section 6.4
@@ -216,7 +217,13 @@ export default function TherapySessions() {
   const updateLogForm = (field, value) => setLogForm((prev) => ({ ...prev, [field]: value }))
 
   const handleLogSubmit = async () => {
-    if (!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status || !selectedPatient) return
+    if (!requireFields([
+      [selectedPatient, 'Patient'],
+      [logForm.modality, 'Modality'],
+      [logForm.date, 'Session date'],
+      [logForm.facilitator, 'Facilitator'],
+      [logForm.status, 'Attendance status'],
+    ])) return
     const mod = MODALITIES.find((m) => m.id === logForm.modality)
     setSaving(true)
     try {
@@ -665,7 +672,7 @@ export default function TherapySessions() {
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={handleLogSubmit}
-              disabled={!logForm.modality || !logForm.date || !logForm.facilitator || !logForm.status || saving || !selectedPatient}
+              disabled={saving}
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,

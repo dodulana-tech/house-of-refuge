@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fmt } from '../../utils/paystack'
 import { isSupabaseReady, getDonor, updateDonor } from '../../utils/supabase'
+import { requireFields } from '../../utils/formGuard'
 
 const COMM_TYPES = ['email', 'call', 'visit', 'letter']
 const STATUS_OPTIONS = ['active', 'lapsed', 'prospect', 'inactive']
@@ -86,7 +87,11 @@ export default function DonorDetail() {
 
   const handleLogComm = async (e) => {
     e.preventDefault()
-    if (!commForm.date || !commForm.notes || saving) return
+    if (saving) return
+    if (!requireFields([
+      [commForm.date, 'Date'],
+      [commForm.notes, 'Notes'],
+    ])) return
     const entry = { date: commForm.date, type: commForm.type, notes: commForm.notes }
     const nextComms = [entry, ...comms]
     const ok = await persist({ data: { ...data, communications: nextComms } })

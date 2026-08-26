@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getPatients, getAllUdsTests, addUdsTest, isSupabaseReady } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Urine Drug Screen (UDS) Tracking — Treatment Protocol Section 5.5.
@@ -188,7 +189,11 @@ export default function UDSTracking() {
   }
 
   const handleSubmit = async () => {
-    if (!form.reason || !form.orderedBy || !selectedPatient) return
+    if (!requireFields([
+      [selectedPatient, 'Patient'],
+      [form.reason, 'Reason for test'],
+      [form.orderedBy, 'Ordered by'],
+    ])) return
     const { error } = await addUdsTest({
       patient_id: selectedPatient,
       test_date: TODAY,
@@ -717,7 +722,7 @@ export default function UDSTracking() {
               <div style={{ display: 'flex', gap: 12 }}>
                 <button
                   onClick={handleSubmit}
-                  disabled={!form.reason || !form.orderedBy}
+                  disabled={saving}
                   style={{
                     padding: '10px 24px',
                     borderRadius: 8,

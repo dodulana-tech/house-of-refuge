@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getIncidents, addIncident, deleteIncident, isSupabaseReady } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   3-Tier Behavioral Management System per SOP Chapter 5
@@ -45,7 +46,11 @@ export default function BehavioralManagement() {
   const initialsFor = (id) => patients.find(p => p.id === id)?.initials || '—'
 
   const handleSubmitIncident = async () => {
-    if (!form.patient || !form.tier || !form.type) return
+    if (!requireFields([
+      [form.patient, 'Patient'],
+      [form.tier, 'Tier'],
+      [form.type, 'Incident type'],
+    ])) return
     setSaving(true)
     const { error } = await addIncident({
       patient_id: form.patient,

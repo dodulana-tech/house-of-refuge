@@ -4,6 +4,7 @@ import {
   addMedication, addMedAdministration, addDetoxRecord, isSupabaseReady,
 } from '../../utils/supabase'
 import { mapPatientRow } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Medication Administration Record (MAR) + Withdrawal Monitoring
@@ -153,7 +154,7 @@ export default function MedicationMAR() {
   }
 
   const handleSaveDetox = async () => {
-    if (!selectedPatient) return
+    if (!requireFields([[selectedPatient, 'Patient']])) return
     setSavingDetox(true)
     const { error } = await addDetoxRecord({
       patient_id: selectedPatient,
@@ -170,7 +171,13 @@ export default function MedicationMAR() {
   }
 
   const handleAddMed = async () => {
-    if (!medForm.patient || !medForm.medication || !medForm.category || !medForm.route || !medForm.frequency) return
+    if (!requireFields([
+      [medForm.patient, 'Patient'],
+      [medForm.medication, 'Medication'],
+      [medForm.category, 'Category'],
+      [medForm.route, 'Route'],
+      [medForm.frequency, 'Frequency'],
+    ])) return
     setSavingMed(true)
     const { error } = await addMedication({
       patient_id: medForm.patient,
@@ -315,7 +322,7 @@ export default function MedicationMAR() {
             ))}
           </div>
 
-          <button className="btn btn--primary" style={{ marginTop: 16 }} disabled={!selectedPatient || savingDetox} onClick={handleSaveDetox}>
+          <button className="btn btn--primary" style={{ marginTop: 16 }} disabled={savingDetox} onClick={handleSaveDetox}>
             {savingDetox ? 'Saving…' : 'Save Assessment'}
           </button>
         </div>
@@ -367,7 +374,7 @@ export default function MedicationMAR() {
               {STAFF_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
-          <button className="btn btn--primary btn--sm" disabled={savingMed || !medForm.patient || !medForm.medication || !medForm.category || !medForm.route || !medForm.frequency} onClick={handleAddMed}>
+          <button className="btn btn--primary btn--sm" disabled={savingMed} onClick={handleAddMed}>
             {savingMed ? 'Saving…' : 'Submit Medication Order'}
           </button>
         </div>

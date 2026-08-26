@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getTreatmentPlan, upsertTreatmentPlan, isSupabaseReady } from '../../utils/supabase'
 import { mapPatientRow } from '../../utils/patients'
 import { POPULATION_PATHWAY_LABELS } from '../../data/clinicalConstants'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Treatment Plan Builder — Columbia Model + SMART Goals + Interventions
@@ -271,7 +272,8 @@ export default function TreatmentPlanBuilder() {
   const phaseMeta = PHASE_META.find(p => p.key === pt?.phase) || PHASE_META[0]
 
   const handleSave = async () => {
-    if (!selectedPatient || !pd) return
+    if (!requireFields([[selectedPatient, 'Patient']])) return
+    if (!pd) return
     setSaving(true)
     const { error } = await upsertTreatmentPlan(selectedPatient, { plan: pd }, pt?.counselor)
     setSaving(false)

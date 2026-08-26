@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { getPatients, getProgress, upsertProgress } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Fruit of the Spirit Assessment — Galatians 5:22-23
@@ -135,7 +136,11 @@ export default function FruitOfSpirit() {
   const formComplete = form.assessor && FRUITS.every((f) => form[f.id] !== '')
 
   const handleSubmit = async () => {
-    if (!formComplete || saving || !selectedPatient) return
+    if (saving) return
+    if (!requireFields([
+      [selectedPatient, 'Patient'],
+      [formComplete, 'A rating for every fruit'],
+    ])) return
     const parsed = { ...form }
     FRUITS.forEach((f) => { parsed[f.id] = Number(parsed[f.id]) })
     const newAssessment = {
@@ -523,7 +528,7 @@ export default function FruitOfSpirit() {
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={handleSubmit}
-              disabled={!formComplete || saving}
+              disabled={saving}
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,

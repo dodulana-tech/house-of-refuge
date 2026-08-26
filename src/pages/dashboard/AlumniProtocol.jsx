@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { isSupabaseReady, getAlumni, updateAlumnus } from '../../utils/supabase'
 import { initialsFromName } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Alumni Protocol — Structured 24-month follow-up per SOP 8.5
@@ -136,7 +137,7 @@ export default function AlumniProtocol() {
   const relapse = relapseOf(al)
 
   const logContact = async () => {
-    if (!contactForm.date) return
+    if (!requireFields([[contactForm.date, 'Contact date']])) return
     const existing = al.data || {}
     const newContact = { date: contactForm.date, type: contactForm.type, outcome: contactForm.outcome }
     setSaving(true)
