@@ -66,12 +66,16 @@ export default function ProgrammeKPIs() {
       return
     }
     setLoading(true)
-    getProgrammeKpis(selectedYear, selectedQuarter).then(({ data, error }) => {
-      if (!active) return
-      if (error) console.error(error)
-      setRows(data || [])
-      setLoading(false)
-    })
+    getProgrammeKpis(selectedYear, selectedQuarter)
+      .then(({ data, error }) => {
+        if (!active) return
+        if (error) console.error(error)
+        setRows(data || [])
+      })
+      // Without this the page spins forever on a rejected fetch instead of
+      // rendering an empty quarter.
+      .catch((err) => { console.error(err); if (active) setRows([]) })
+      .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [selectedQuarter, selectedYear])
 

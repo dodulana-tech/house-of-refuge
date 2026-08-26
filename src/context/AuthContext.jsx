@@ -23,25 +23,41 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => load('user', null))
   const [loading, setLoading] = useState(true)
 
-  // Listen for Supabase auth changes
+  /*
+    Session bootstrap. Two rules here, both learned the hard way, because every
+    failure in this effect shows up as the app sitting on the loading spinner
+    forever ("just rolling") with no way out but a hard reload:
+
+    1. `loading` MUST end on every path, including thrown errors. getSession()
+       rejects on any network blip, and an unhandled rejection used to leave
+       setLoading(false) unreached.
+
+    2. NEVER await a supabase call inside the onAuthStateChange callback.
+       supabase-js holds an internal lock while dispatching that callback, and
+       any other supabase call needs the same lock to read the session, so
+       awaiting one inside deadlocks the client. Sign-in then hangs forever.
+       The work is deferred out of the callback with setTimeout(0) instead,
+       which is the documented workaround.
+  */
   useEffect(() => {
     if (!isSupabaseReady()) {
       setLoading(false)
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        // Fetch profile
-        supabase.from('profiles').select('*').eq('id', session.user.id).single()
-          .then(({ data: profile }) => {
-            if (profile) {
-              const userData = { ...profile, name: profile.full_name }
-              save('user', userData)
-              setUser(userData)
-            }
-          })
-      } else {
+    let active = true
+    const finish = () => { if (active) setLoading(false) }
+
+    // Last-resort watchdog: whatever happens, the app stops spinning.
+    const watchdog = setTimeout(() => {
+      if (active) {
+        console.warn('[auth] session bootstrap timed out; continuing signed out')
+        setLoading(false)
+      }
+    }, 8000)
+
+    const applySession = async (session) => {
+      if (!session?.user) {
         /*
           No Supabase session, but a user object may still be cached in
           localStorage from a previous sign-in. Keeping it made the dashboard
@@ -54,25 +70,65 @@ export function AuthProvider({ children }) {
           if (prev && !prev.demo) { remove('user'); return null }
           return prev
         })
+        return
       }
-      setLoading(false)
-    })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
-        if (profile) {
-          const userData = { ...profile, name: profile.full_name }
-          save('user', userData)
-          setUser(userData)
-        }
-      } else if (event === 'SIGNED_OUT') {
+      // maybeSingle, not single: single() rejects when the profile row is
+      // missing or hidden by RLS, and that rejection used to strand the app.
+      const { data: profile, error } = await supabase
+        .from('profiles').select('*').eq('id', session.user.id).maybeSingle()
+      if (!active) return
+
+      if (profile) {
+        const userData = { ...profile, name: profile.full_name }
+        save('user', userData)
+        setUser(userData)
+        return
+      }
+
+      // No readable profile. Sign them in from auth metadata rather than
+      // hanging, but never invent a privileged role.
+      if (error) console.warn('[auth] profile fetch failed:', error.message)
+      const meta = session.user.user_metadata || {}
+      const userData = {
+        id: session.user.id,
+        email: session.user.email,
+        name: meta.full_name || session.user.email,
+        full_name: meta.full_name || session.user.email,
+        role: 'patient',
+        phone: meta.phone || '',
+        profileMissing: true,
+      }
+      save('user', userData)
+      setUser(userData)
+    }
+
+    supabase.auth.getSession()
+      .then(({ data }) => applySession(data?.session))
+      .catch(err => { console.error('[auth] getSession failed:', err) })
+      .finally(() => { clearTimeout(watchdog); finish() })
+
+    // Deliberately NOT an async callback - see rule 2 above.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
         remove('user')
         setUser(null)
+        return
+      }
+      if (session?.user) {
+        setTimeout(() => {
+          applySession(session)
+            .catch(err => console.error('[auth] session apply failed:', err))
+            .finally(finish)
+        }, 0)
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      active = false
+      clearTimeout(watchdog)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const login = useCallback(async (email, password) => {
