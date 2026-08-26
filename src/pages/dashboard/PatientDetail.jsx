@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase, getCheckins, isSupabaseReady } from '../../utils/supabase'
 import { mapPatientRow, PROGRAMME_DAYS } from '../../utils/patients'
+import {
+  ENCOUNTER_TYPES, RISK_FLAGS, colorOf, labelOf,
+  getOutpatientHistoryForPatient,
+} from '../../utils/outpatientClinical'
 
 /*
   Patient Detail — tabbed view for a single patient record (live data).
@@ -57,6 +61,7 @@ export default function PatientDetail() {
   const [p, setP] = useState(null)
   const [checkins, setCheckins] = useState([])
   const [incidents, setIncidents] = useState([])
+  const [outpatient, setOutpatient] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -69,13 +74,15 @@ export default function PatientDetail() {
       if (!active) return
       if (error || !row) { setNotFound(true); setLoading(false); return }
       setP(mapPatientRow(row))
-      const [{ data: ci }, { data: inc }] = await Promise.all([
+      const [{ data: ci }, { data: inc }, { data: op }] = await Promise.all([
         getCheckins(id),
         supabase.from('incidents').select('*').eq('patient_id', id).order('created_at', { ascending: false }),
+        getOutpatientHistoryForPatient(id),
       ])
       if (!active) return
       setCheckins(ci || [])
       setIncidents(inc || [])
+      setOutpatient(op)
       setLoading(false)
     }
     load()
@@ -161,12 +168,89 @@ export default function PatientDetail() {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'overview' && <OverviewTab p={p} checkins={checkins} phase={phase} />}
+      {activeTab === 'overview' && (
+        <>
+          {outpatient?.encounters?.length > 0 && (
+            <div className="card" style={{ padding: '14px 20px', marginBottom: 16, borderLeft: '4px solid var(--blue)' }}>
+              <div style={{ fontSize: '.88rem', color: 'var(--charcoal)' }}>
+                <strong>Seen as an outpatient before admission.</strong>{' '}
+                {outpatient.encounters.length} signed session{outpatient.encounters.length === 1 ? '' : 's'} on record
+                {' '}(<Link to={`/dashboard/outpatient/clients/${outpatient.client.id}`}>{outpatient.client.client_code}</Link>).
+                {' '}<button onClick={() => setActiveTab('notes')}
+                  style={{ border: 'none', background: 'none', padding: 0, color: 'var(--blue)', fontWeight: 600, cursor: 'pointer', fontSize: '.88rem', fontFamily: 'inherit' }}>
+                  Read the history →
+                </button>
+              </div>
+            </div>
+          )}
+          <OverviewTab p={p} checkins={checkins} phase={phase} />
+        </>
+      )}
       {activeTab === 'treatment' && <TreatmentTab />}
       {activeTab === 'checkins' && <CheckinsTab checkins={checkins} />}
-      {activeTab === 'notes' && <EmptyState>No clinical notes recorded yet for {p.initials}.</EmptyState>}
+      {activeTab === 'notes' && (
+        outpatient?.encounters?.length
+          ? <OutpatientHistory op={outpatient} initials={p.initials} />
+          : <EmptyState>No clinical notes recorded yet for {p.initials}.</EmptyState>
+      )}
       {activeTab === 'behavioral' && <BehavioralTab incidents={incidents} initials={p.initials} />}
       {activeTab === 'passes' && <EmptyState>No passes on record yet for {p.initials}.</EmptyState>}
+    </div>
+  )
+}
+
+/* ─── Outpatient history (pre-admission) ─── */
+/*
+  Signed outpatient notes from before this person was admitted. They live on the
+  outpatient client record; this reads them through outpatient_clients.patient_id
+  so an assessing clinician does not have to know the outpatient side exists.
+*/
+function OutpatientHistory({ op, initials }) {
+  return (
+    <div>
+      <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.3rem', marginBottom: 6 }}>Pre-admission Outpatient Notes</h2>
+      <p style={{ fontSize: '.85rem', color: 'var(--g500)', marginBottom: 16 }}>
+        {op.encounters.length} signed session{op.encounters.length === 1 ? '' : 's'} recorded for {initials} before admission, on outpatient record{' '}
+        <Link to={`/dashboard/outpatient/clients/${op.client.id}`}>{op.client.client_code}</Link>. Read-only here.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {op.encounters.map(e => (
+          <div key={e.id} className="card" style={{ padding: '16px 20px' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+              <strong style={{ fontSize: '.92rem' }}>{labelOf(ENCOUNTER_TYPES, e.encounter_type)}</strong>
+              {e.risk_flag !== 'none' && (
+                <span style={{
+                  fontSize: '.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                  color: colorOf(RISK_FLAGS, e.risk_flag), background: colorOf(RISK_FLAGS, e.risk_flag) + '18',
+                }}>Risk: {labelOf(RISK_FLAGS, e.risk_flag)}</span>
+              )}
+              <span style={{ fontSize: '.78rem', color: 'var(--g500)' }}>
+                {new Date(e.encounter_date).toLocaleDateString('en-GB', { dateStyle: 'medium' })}
+                {e.signed_by_name ? ` · ${e.signed_by_name}` : ''}
+                {e.outpatient_services?.name ? ` · ${e.outpatient_services.name}` : ''}
+              </span>
+            </div>
+            <NoteField k="Presenting complaint" v={e.presenting_complaint} />
+            <NoteField k="S — Subjective" v={e.subjective} />
+            <NoteField k="O — Objective" v={e.objective} />
+            <NoteField k="A — Assessment" v={e.assessment} />
+            <NoteField k="P — Plan" v={e.plan} />
+            <NoteField k="Working diagnosis" v={e.diagnosis} />
+            <NoteField k="Medication" v={e.medications} />
+            {e.risk_flag !== 'none' && <NoteField k="Risk" v={e.risk_notes} />}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function NoteField({ k, v }) {
+  if (!v) return null
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ fontSize: '.7rem', textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--g500)', fontWeight: 700 }}>{k}</div>
+      <div style={{ fontSize: '.87rem', color: 'var(--charcoal)', whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>{v}</div>
     </div>
   )
 }

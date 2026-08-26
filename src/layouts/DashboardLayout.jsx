@@ -78,6 +78,8 @@ const MENU = {
 
     { section: 'Outpatient' },
     { icon: '📅', to: '/dashboard/outpatient/bookings',       label: 'Bookings' },
+    { icon: '🗂️', to: '/dashboard/outpatient/clients',        label: 'Client Records' },
+    { icon: '🔁', to: '/dashboard/outpatient/follow-ups',    label: 'Follow-ups Due' },
     { icon: '🩺', to: '/dashboard/outpatient/services',       label: 'Services Catalog' },
     { icon: '👨‍⚕️', to: '/dashboard/outpatient/practitioners', label: 'Clinical Roster' },
 
@@ -88,6 +90,10 @@ const MENU = {
     { icon: '🎯', to: '/dashboard/kpis', label: 'Programme KPIs' },
     { icon: '📖', to: '/dashboard/sops', label: 'SOP Library (16)' },
     { icon: '📋', to: '/dashboard/reports', label: 'Board Reports' },
+
+    { section: 'Account & Access' },
+    { icon: '🔑', to: '/dashboard/user-accounts', label: 'User Accounts' },
+    { icon: '👤', to: '/dashboard/account', label: 'My Account' },
   ],
   staff: [
     { section: 'Clinical' },
@@ -125,6 +131,9 @@ const MENU = {
     { icon: '👨‍👩‍👧', to: '/dashboard/visitation', label: 'Visitation' },
     { icon: '🔒', to: '/dashboard/safeguarding', label: 'Safeguarding' },
     { icon: '📖', to: '/dashboard/sops', label: 'SOP Library (16)' },
+
+    { section: 'Account' },
+    { icon: '👤', to: '/dashboard/account', label: 'My Account' },
   ],
   patient: [
     { section: 'My Recovery' },
@@ -142,6 +151,7 @@ const MENU = {
     { section: 'Admin' },
     { icon: '💳', to: '/dashboard/my-payments', label: 'Payments' },
     { icon: '📖', to: '/dashboard/my-rights', label: 'My Rights' },
+    { icon: '👤', to: '/dashboard/account', label: 'My Account' },
   ],
   family: [
     { section: 'Patient' },
@@ -153,6 +163,7 @@ const MENU = {
     { icon: '📚', to: '/dashboard/resources', label: 'Family Resources' },
     { icon: '🤝', to: '/dashboard/family-therapy', label: 'Family Therapy' },
     { icon: '💳', to: '/dashboard/family-payments', label: 'Payments' },
+    { icon: '👤', to: '/dashboard/account', label: 'My Account' },
   ],
 }
 

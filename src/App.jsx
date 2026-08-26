@@ -15,6 +15,8 @@ import Waitlist from './pages/Waitlist'
 import DepositPay from './pages/DepositPay'
 import Contact from './pages/Contact'
 import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import NotFound from './pages/NotFound'
 import Prospectus from './pages/Prospectus'
 import FinancialAssistance from './pages/FinancialAssistance'
@@ -94,10 +96,14 @@ const DUDSTracking = lazy(() => import('./pages/dashboard/UDSTracking'))
 const DAssessmentSchedule = lazy(() => import('./pages/dashboard/AssessmentSchedule'))
 const DLifeSkillsModules = lazy(() => import('./pages/dashboard/LifeSkillsModules'))
 const DSOPLibrary = lazy(() => import('./pages/dashboard/SOPLibrary'))
+const DAccount = lazy(() => import('./pages/dashboard/Account'))
+const DUserAccounts = lazy(() => import('./pages/dashboard/UserAccounts'))
 const DFinancialAssistanceList = lazy(() => import('./pages/dashboard/FinancialAssistanceList'))
 const DFinancialAssistanceDetail = lazy(() => import('./pages/dashboard/FinancialAssistanceDetail'))
 const DOutpatientBookings = lazy(() => import('./pages/dashboard/OutpatientBookings'))
 const DOutpatientBookingDetail = lazy(() => import('./pages/dashboard/OutpatientBookingDetail'))
+const DOutpatientClients = lazy(() => import('./pages/dashboard/OutpatientClients'))
+const DOutpatientClientDetail = lazy(() => import('./pages/dashboard/OutpatientClientDetail'))
 const DOutpatientServices = lazy(() => import('./pages/dashboard/OutpatientServices'))
 const DOutpatientPractitioners = lazy(() => import('./pages/dashboard/OutpatientPractitioners'))
 
@@ -163,6 +169,8 @@ function AppRoutes() {
       <Route path="/deposit/:appId" element={<DepositPay />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Legacy routes — redirect to unified dashboard */}
       <Route path="/portal/*" element={<Navigate to="/dashboard" replace />} />
@@ -234,6 +242,10 @@ function AppRoutes() {
         <Route path="financial-assistance/:id" element={<DFinancialAssistanceDetail />} />
         <Route path="outpatient/bookings" element={<DOutpatientBookings />} />
         <Route path="outpatient/bookings/:id" element={<DOutpatientBookingDetail />} />
+        <Route path="outpatient/clients" element={<DOutpatientClients />} />
+        <Route path="outpatient/clients/:id" element={<DOutpatientClientDetail />} />
+        <Route path="outpatient/follow-ups" element={<DOutpatientClients />} />
+        <Route path="outpatient/risk" element={<DOutpatientClients />} />
         <Route path="outpatient/services" element={<DOutpatientServices />} />
         <Route path="outpatient/practitioners" element={<DOutpatientPractitioners />} />
 
@@ -244,6 +256,10 @@ function AppRoutes() {
         <Route path="safeguarding" element={<DSafeguarding />} />
         <Route path="kpis" element={<DProgrammeKPIs />} />
         <Route path="sops" element={<DSOPLibrary />} />
+
+        {/* Account & access */}
+        <Route path="account" element={<DAccount />} />
+        <Route path="user-accounts" element={<DUserAccounts />} />
         <Route path="reports" element={<DBoardReports />} />
 
         {/* Patient-specific routes */}
