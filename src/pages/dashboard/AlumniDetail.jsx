@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { isSupabaseReady, getAlumnus, updateAlumnus } from '../../utils/supabase'
 import { initialsFromName } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 const RISK_COLORS = {
   low: { bg: '#C6F6D5', color: '#22543D' },
@@ -76,7 +77,10 @@ export default function AlumniDetail() {
   const handleRiskChange = (risk_level) => patchData({ risk_level })
 
   const handleSave = async () => {
-    if (!contactForm.date || !contactForm.notes) return
+    if (!requireFields([
+      [contactForm.date, 'Contact date'],
+      [contactForm.notes, 'Notes'],
+    ])) return
     const newContact = { date: contactForm.date, type: contactForm.type, notes: contactForm.notes, outcome: contactForm.outcome }
     await patchData({
       data: { ...d, lastContact: contactForm.date, contactLog: [newContact, ...contactHistory] },

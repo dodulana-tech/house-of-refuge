@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   isSupabaseReady,
   getIncidents,
@@ -7,6 +8,11 @@ import {
   addIncident,
   updateIncident,
 } from '../../utils/supabase'
+import {
+  RISK_FLAGS, RISK_STATUSES, colorOf, labelOf,
+  listOpenRiskFlags, setRiskStatus,
+} from '../../utils/outpatientClinical'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Safeguarding Dashboard — per HR Manual Section 6
@@ -71,6 +77,7 @@ export default function SafeguardingDashboard() {
   const ready = isSupabaseReady()
   const [loading, setLoading] = useState(true)
   const [incidents, setIncidents] = useState([])
+  const [outpatientRisks, setOutpatientRisks] = useState([])
   const [staffTraining, setStaffTraining] = useState([])
   const [showIncidentForm, setShowIncidentForm] = useState(false)
   const [incidentForm, setIncidentForm] = useState({ type: '', reporter: '', location: '', incidentDate: '', incidentTime: '', personsInvolved: [], witnesses: '', description: '', actions: [] })
@@ -78,12 +85,14 @@ export default function SafeguardingDashboard() {
   const load = async () => {
     if (!ready) { setLoading(false); return }
     setLoading(true)
-    const [incRes, staffRes, trainRes] = await Promise.all([
+    const [incRes, staffRes, trainRes, riskRes] = await Promise.all([
       getIncidents(),
       getStaff(),
       getStaffTraining(),
+      listOpenRiskFlags(),
     ])
     setIncidents(incRes.data || [])
+    setOutpatientRisks(riskRes.data || [])
     setStaffTraining(deriveTraining(staffRes.data || [], trainRes.data || []))
     setLoading(false)
   }
@@ -93,6 +102,23 @@ export default function SafeguardingDashboard() {
   const trainedCount = staffTraining.filter(s => s.trained).length
   const compliancePct = staffTraining.length ? Math.round((trainedCount / staffTraining.length) * 100) : 0
   const openIncidents = incidents.filter(i => (i.status || '').toLowerCase() !== 'resolved').length
+  const openOutpatientRisks = outpatientRisks.length
+
+  /*
+    Outpatient risk cannot go through the `incidents` table: incidents.patient_id
+    is NOT NULL and references patients, which only residential admissions have.
+    So these are read straight off the signed outpatient notes that raised them.
+  */
+  const resolveOutpatientRisk = async (id, status) => {
+    const outcome = status === 'resolved'
+      ? window.prompt('What was the outcome? (recorded against the safeguarding concern)')
+      : undefined
+    if (status === 'resolved' && outcome === null) return
+    setOutpatientRisks(prev => prev.filter(r => r.id !== id))
+    const { error } = await setRiskStatus(id, status, { outcome })
+    if (error) alert(`Could not update: ${error.message}`)
+    load()
+  }
 
   // AUDIT_RESULTS and BOUNDARY_CONCERNS previously held mock per-record data with no
   // backing table. Rather than fabricate, they render as empty states below.
@@ -101,7 +127,11 @@ export default function SafeguardingDashboard() {
 
   const handleSubmitIncident = async e => {
     e.preventDefault()
-    if (!incidentForm.type || !incidentForm.reporter || !incidentForm.location) return
+    if (!requireFields([
+      [incidentForm.type, 'Incident type'],
+      [incidentForm.reporter, 'Reporter'],
+      [incidentForm.location, 'Location'],
+    ])) return
     const descParts = [
       `Location: ${incidentForm.location}`,
       incidentForm.incidentDate ? `Date: ${incidentForm.incidentDate}` : '',
@@ -167,6 +197,7 @@ export default function SafeguardingDashboard() {
           { label: 'Staff Trained', value: `${trainedCount}/${staffTraining.length}`, color: 'var(--blue)' },
           { label: 'Open Incidents', value: openIncidents, color: openIncidents > 0 ? '#E53E3E' : '#1A7A4A' },
           { label: 'Total Incidents', value: incidents.length, color: 'var(--blue)' },
+          { label: 'Outpatient Risk Flags', value: openOutpatientRisks, color: openOutpatientRisks > 0 ? '#E53E3E' : '#1A7A4A' },
         ].map(kpi => (
           <div key={kpi.label} className="card" style={{ textAlign: 'center', padding: 14 }}>
             <div style={{ fontFamily: 'var(--fd)', fontSize: '1.4rem', fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
@@ -186,6 +217,55 @@ export default function SafeguardingDashboard() {
         <p style={{ fontSize: '.75rem', color: 'var(--g500)', marginTop: 8 }}>
           All safeguarding concerns must be reported to the DSL within 1 hour. If the DSL is unavailable, contact the Deputy.
         </p>
+      </div>
+
+      {/* Outpatient risk flags — raised on signed outpatient consult notes */}
+      <div className="card" style={{ padding: 18, marginBottom: 16, borderLeft: `4px solid ${openOutpatientRisks > 0 ? '#E53E3E' : '#1A7A4A'}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+          <h3 style={{ fontFamily: 'var(--fd)', fontSize: '1rem', margin: 0 }}>Outpatient Risk Concerns</h3>
+          <Link to="/dashboard/outpatient/risk" className="btn btn--secondary btn--sm">Open in outpatient</Link>
+        </div>
+        <p style={{ fontSize: '.78rem', color: 'var(--g500)', marginBottom: 12 }}>
+          Raised automatically when a clinician signs an outpatient note flagging risk at moderate or above.
+          Outpatient clients have no residential record, so these do not appear in the incident log below.
+        </p>
+        {outpatientRisks.length === 0 ? (
+          <div style={{ fontSize: '.85rem', color: 'var(--g500)' }}>No open outpatient risk concerns.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {outpatientRisks.map(r => {
+              const c = colorOf(RISK_FLAGS, r.risk_flag)
+              return (
+                <div key={r.id} style={{ padding: '12px 14px', borderRadius: 8, background: c + '0D', borderLeft: `3px solid ${c}` }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
+                    <Link to={`/dashboard/outpatient/clients/${r.client_id}`} style={{ fontWeight: 700, fontSize: '.9rem' }}>
+                      {r.outpatient_clients?.full_name || 'Outpatient client'}
+                    </Link>
+                    <span style={{ fontSize: '.7rem', fontWeight: 700, color: c, background: c + '18', border: `1px solid ${c}33`, borderRadius: 999, padding: '2px 8px' }}>
+                      {labelOf(RISK_FLAGS, r.risk_flag)}
+                    </span>
+                    <span style={{ fontSize: '.7rem', fontWeight: 700, color: colorOf(RISK_STATUSES, r.risk_status), background: colorOf(RISK_STATUSES, r.risk_status) + '18', borderRadius: 999, padding: '2px 8px' }}>
+                      {labelOf(RISK_STATUSES, r.risk_status)}
+                    </span>
+                    <span style={{ fontSize: '.76rem', color: 'var(--g500)' }}>
+                      {new Date(r.encounter_date).toLocaleDateString('en-GB', { dateStyle: 'medium' })} · {r.signed_by_name || '—'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '.85rem', color: 'var(--charcoal)', whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>{r.risk_notes}</div>
+                  {r.outpatient_clients?.phone && (
+                    <div style={{ fontSize: '.78rem', color: 'var(--g500)', marginTop: 4 }}>Contact: {r.outpatient_clients.phone}</div>
+                  )}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                    {r.risk_status !== 'escalated' && (
+                      <button className="btn btn--secondary btn--sm" onClick={() => resolveOutpatientRisk(r.id, 'escalated')}>Escalate to DSL</button>
+                    )}
+                    <button className="btn btn--secondary btn--sm" onClick={() => resolveOutpatientRisk(r.id, 'resolved')}>Mark resolved</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Staff Training Compliance */}

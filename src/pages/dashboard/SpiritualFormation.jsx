@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getProgress, upsertProgress, isSupabaseReady } from '../../utils/supabase'
 import { mapPatientRow } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Spiritual Formation Tracking — SOP Chapter 6
@@ -122,7 +123,10 @@ export default function SpiritualFormation() {
   }
 
   const handleAddNote = async () => {
-    if (!noteForm.topic || !noteForm.engagementLevel) return
+    if (!requireFields([
+      [noteForm.topic, 'Topic'],
+      [noteForm.engagementLevel, 'Engagement level'],
+    ])) return
     const textParts = [
       `Engagement: ${noteForm.engagementLevel}`,
       noteForm.spiritualIndicators.length ? `Indicators: ${noteForm.spiritualIndicators.join(', ')}` : '',

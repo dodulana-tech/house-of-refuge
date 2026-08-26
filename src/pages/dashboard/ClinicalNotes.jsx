@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getPatients, getClinicalNotes, addClinicalNote, deleteClinicalNote, isSupabaseReady } from '../../utils/supabase'
 import { activeBriefs, initialsFromName } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Clinical Notes Module — add and view SOAP-format notes for all patients.
@@ -163,7 +164,11 @@ export default function ClinicalNotes() {
   }
 
   const handleSubmit = async () => {
-    if (!form.patient || !form.type || !form.subjective) return
+    if (!requireFields([
+      [form.patient, 'Patient'],
+      [form.type, 'Note type'],
+      [form.subjective, 'Subjective (what the patient reported)'],
+    ])) return
     const authorInitials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'ST'
     setSaving(true)
     const { error } = await addClinicalNote({

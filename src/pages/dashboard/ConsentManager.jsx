@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { isSupabaseReady, getPatients, getConsents, upsertConsent } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Consent Manager — tracks the consent forms per SOP for each patient.
@@ -84,7 +85,8 @@ export default function ConsentManager() {
   }
 
   const toggleConsent = async (formKey) => {
-    if (!selectedPatient || saving) return
+    if (saving) return
+    if (!requireFields([[selectedPatient, 'Patient']])) return
     const currentlyGranted = statusFor(formKey) === 'signed'
     const granted = !currentlyGranted
     setSaving(true)

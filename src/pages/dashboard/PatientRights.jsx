@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Patient Rights — HOR Resident Rights Charter (SOP Chapter 11)
@@ -63,7 +64,11 @@ export default function PatientRights() {
   const [gForm, setGForm] = useState({ type: '', severity: '', relatedTo: '' })
 
   const handleSubmit = () => {
-    if (!gForm.type || !gForm.severity || !gForm.relatedTo) return
+    if (!requireFields([
+      [gForm.type, 'Grievance type'],
+      [gForm.severity, 'Severity'],
+      [gForm.relatedTo, 'Related to'],
+    ])) return
     setGrievances(prev => [
       { id: prev.length + 1, date: new Date().toISOString().slice(0, 10), type: gForm.type, severity: gForm.severity, relatedTo: gForm.relatedTo, status: 'Acknowledged' },
       ...prev,
@@ -178,7 +183,7 @@ export default function PatientRights() {
               </div>
             </div>
 
-            <button onClick={handleSubmit} disabled={!gForm.type || !gForm.severity || !gForm.relatedTo}
+            <button onClick={handleSubmit} 
               style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: (!gForm.type || !gForm.severity || !gForm.relatedTo) ? 'var(--g300)' : 'var(--blue)', color: '#fff', fontSize: '.86rem', fontWeight: 600, cursor: (!gForm.type || !gForm.severity || !gForm.relatedTo) ? 'not-allowed' : 'pointer' }}>
               Submit Grievance
             </button>

@@ -9,6 +9,7 @@ import {
   exportFinancialAssistanceCSV,
   downloadCSV,
 } from '../../utils/financialAssistance'
+import { requireFields } from '../../utils/formGuard'
 
 const ALL_STATUSES = FA_STATUSES.map(s => s.key)
 
@@ -74,7 +75,10 @@ export default function FinancialAssistanceList() {
   }
 
   const handleBulk = async () => {
-    if (!bulkAction || selected.size === 0) return
+    if (!requireFields([
+      [bulkAction, 'An action to apply'],
+      [selected, 'At least one selected application'],
+    ])) return
     if (!confirm(`Set ${selected.size} application(s) to ${FA_STATUSES.find(s => s.key === bulkAction).label}?`)) return
     setWorking(true)
     const ids = Array.from(selected)

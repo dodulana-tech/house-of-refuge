@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { isSupabaseReady, getPatients, getAssessments, addAssessment } from '../../utils/supabase'
 import { activeBriefs, initialsFromName } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Clinical Outcomes — Validated clinical instruments, tracked over time per patient.
@@ -214,7 +215,8 @@ export default function ClinicalOutcomes() {
   }
 
   const handleSubmit = async (inst) => {
-    if (!selected || saving) return
+    if (saving) return
+    if (!requireFields([[selected, 'Patient']])) return
     const answers = draft[inst.key]
     const score = sumArr(answers)
     const level = inst.riskFn(score).label

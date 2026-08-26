@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getAllVisitations, addVisitation, updateVisitation } from '../../utils/supabase'
 import { activeBriefs, initialsFromName } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Visitation Booking — SOP Section 5.4.2
@@ -73,7 +74,12 @@ export default function VisitationBooking() {
   const handleDecline = (id) => applyUpdate(id, { status: 'declined' })
 
   const handleSubmit = async () => {
-    if (!form.patient || !form.relationship || !form.timeSlot || !form.date) return
+    if (!requireFields([
+      [form.patient, 'Patient'],
+      [form.relationship, 'Relationship to patient'],
+      [form.date, 'Visit date'],
+      [form.timeSlot, 'Time slot'],
+    ])) return
     setSaving(true)
     const label = `${form.relationship} (${form.visitors} visitor${form.visitors !== '1' ? 's' : ''}${form.children !== 'None' ? `, ${form.children} child${form.children !== '1' ? 'ren' : ''}` : ''})`
     const reqs = form.specialRequirements.filter(r => r !== 'None')

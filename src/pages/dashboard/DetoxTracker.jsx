@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getDetoxRecords, addDetoxRecord, isSupabaseReady } from '../../utils/supabase'
 import { initialsFromName } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Detox Tracker — Detoxification completion criteria per Treatment Protocol
@@ -282,7 +283,12 @@ export default function DetoxTracker() {
   }
 
   const handleSubmit = async () => {
-    if (!form.datetime || !form.assessor || !form.vitals || !selectedPatient) return
+    if (!requireFields([
+      [selectedPatient, 'Patient'],
+      [form.datetime, 'Date and time'],
+      [form.assessor, 'Assessor'],
+      [form.vitals, 'Vitals'],
+    ])) return
     if (threshold !== null && form.score === '') return
     setSaving(true)
     const { error } = await addDetoxRecord({
@@ -893,7 +899,7 @@ export default function DetoxTracker() {
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={handleSubmit}
-              disabled={!form.datetime || !form.assessor || !form.vitals || (threshold !== null && form.score === '')}
+              disabled={saving}
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,

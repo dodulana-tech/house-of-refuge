@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getAssessments, addAssessment, isSupabaseReady } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   URICA — University of Rhode Island Change Assessment (Simplified 12-item)
@@ -260,7 +261,11 @@ export default function URICAAssessment() {
   const formStage = formSubscales ? determineStage(formSubscales, formReadiness) : null
 
   const handleSubmit = async () => {
-    if (!form.assessor || !allItemsComplete || !selectedPatient) return
+    if (!requireFields([
+      [selectedPatient, 'Patient'],
+      [form.assessor, 'Assessor'],
+      [allItemsComplete, 'A response to every item'],
+    ])) return
 
     const subscales = calculateSubscales(form)
     const readiness = calculateReadiness(subscales)
@@ -711,7 +716,7 @@ export default function URICAAssessment() {
           <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={handleSubmit}
-              disabled={!form.assessor || !allItemsComplete}
+              disabled={saving}
               style={{
                 padding: '10px 24px',
                 borderRadius: 8,

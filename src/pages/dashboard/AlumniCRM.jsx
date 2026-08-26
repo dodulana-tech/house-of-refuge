@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { isSupabaseReady, getAlumni, addAlumnus, updateAlumnus } from '../../utils/supabase'
 import { initialsFromName } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Alumni CRM — 24-Month Post-Discharge Monitoring per SOP Chapter 8.5
@@ -70,7 +71,10 @@ export default function AlumniCRM() {
   }, [])
 
   const handleLogContact = async (alumniId) => {
-    if (!contactForm.date || !contactForm.notes) return
+    if (!requireFields([
+      [contactForm.date, 'Contact date'],
+      [contactForm.notes, 'Notes'],
+    ])) return
     const row = alumni.find(a => a.id === alumniId)
     if (!row) return
     const existing = row.data || {}
@@ -89,7 +93,10 @@ export default function AlumniCRM() {
   }
 
   const handleAddAlumnus = async () => {
-    if (!addForm.full_name || !addForm.discharge_date) return
+    if (!requireFields([
+      [addForm.full_name, 'Full name'],
+      [addForm.discharge_date, 'Discharge date'],
+    ])) return
     setSaving(true)
     const { error } = await addAlumnus({
       initials: initialsFromName(addForm.full_name),

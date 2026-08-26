@@ -10,6 +10,7 @@ import {
   upsertProgress,
 } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Outpatient Engagement Pathway — Treatment Protocol Section 4.5
@@ -225,7 +226,12 @@ export default function OutpatientPathway() {
     : 0
 
   const handleAddSession = async () => {
-    if (!form.date || !form.type || !form.assessor || !form.outcome) return
+    if (!requireFields([
+      [form.date, 'Date'],
+      [form.type, 'Contact type'],
+      [form.assessor, 'Assessor'],
+      [form.outcome, 'Outcome'],
+    ])) return
     const id = selectedClient
     setSaving(true)
     const { error } = await addTherapySession({
@@ -744,7 +750,7 @@ export default function OutpatientPathway() {
               <div style={{ display: 'flex', gap: 12 }}>
                 <button
                   onClick={handleAddSession}
-                  disabled={saving || !form.date || !form.type || !form.assessor || !form.outcome}
+                  disabled={saving}
                   style={{
                     padding: '10px 24px',
                     borderRadius: 8,

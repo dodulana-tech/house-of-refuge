@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { isSupabaseReady, getPatients, getProgress, getAllProgress, upsertProgress } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Church Placement Pipeline — Treatment Protocol Section 10.6.
@@ -132,7 +133,7 @@ export default function ChurchPlacement() {
   }
 
   const handleSave = async () => {
-    if (!selectedPatient) return
+    if (!requireFields([[selectedPatient, 'Patient']])) return
     setSaving(true)
     const { error: sErr } = await upsertProgress(selectedPatient, 'church_placement', placement, 'PK')
     setSaving(false)

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getPatients, getAllVisitations, addVisitation } from '../../utils/supabase'
 import { activeBriefs, initialsFromName } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Family Visit Requests — SOP Section 5.4.2
@@ -95,7 +96,11 @@ export default function FamilyVisitRequests() {
   }
 
   const handleSubmit = async () => {
-    if (!form.patient || !form.date || !form.timeSlot) return
+    if (!requireFields([
+      [form.patient, 'Patient'],
+      [form.date, 'Visit date'],
+      [form.timeSlot, 'Time slot'],
+    ])) return
     setSaving(true)
     const notesParts = []
     if (form.children && form.children !== 'None') notesParts.push(`Children: ${form.children}`)

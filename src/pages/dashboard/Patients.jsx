@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { SUBSTANCE_PATHWAYS, SUBSTANCE_PATHWAY_META, CARE_LEVELS, POPULATION_PATHWAYS } from '../../data/clinicalConstants'
 import { getPatients, getLatestCheckinsByPatient, createPatient, updatePatient, isSupabaseReady } from '../../utils/supabase'
 import { mapPatientRow } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Shared Patient Records — visible to admin, staff. Live `patients` table.
@@ -70,7 +71,17 @@ export default function Patients() {
   const availableBeds = BED_OPTIONS.filter(b => !takenBeds.includes(b))
 
   const handleAdmitSubmit = async () => {
-    if (!admitForm.initials || admitForm.initials.length !== 2 || !admitForm.gender || !admitForm.age || !admitForm.substance || !admitForm.pathway || !admitForm.insight || !admitForm.bed || !admitForm.counselor) return
+    if (!requireFields([
+      [admitForm.initials, 'Initials'],
+      [admitForm.gender, 'Gender'],
+      [admitForm.age, 'Age'],
+      [admitForm.substance, 'Primary substance'],
+      [admitForm.pathway, 'Pathway'],
+      [admitForm.insight, 'Insight level'],
+      [admitForm.bed, 'Bed'],
+      [admitForm.counselor, 'Counsellor'],
+    ])) return
+    if (admitForm.initials.length !== 2) { alert('Initials must be exactly two letters.'); return }
     const substancePathway = admitForm.substancePathway || SUBSTANCE_PATHWAYS[admitForm.substance] || 'Polysubstance'
     const record = {
       full_name: admitForm.initials.toUpperCase(),

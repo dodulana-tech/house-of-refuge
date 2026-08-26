@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
 import { buildDepositEmail, DEFAULT_DEPOSIT_AMOUNT as DEPOSIT_AMOUNT_NAIRA } from '../../data/depositEmailTemplate'
 import { sendDepositRequestEmail, getApplicationById, isSupabaseReady } from '../../utils/supabase'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Admission Detail — full view of the single application identified by the :id
@@ -277,7 +278,7 @@ export default function AdmissionDetail() {
   })
 
   async function sendDepositEmail() {
-    if (!depositForm.toEmail.includes('@')) return
+    if (!depositForm.toEmail.includes('@')) { alert('Enter a valid recipient email address.'); return }
     setDepositForm(p => ({ ...p, sending: true, error: '' }))
     try {
       if (isSupabaseReady()) {
@@ -327,7 +328,7 @@ export default function AdmissionDetail() {
   }
 
   const confirmAction = () => {
-    if (!actionReason) return
+    if (!requireFields([[actionReason, 'Reason']])) return
     if (confirm === 'Advance to Next Stage') {
       const nextIdx = currentStepIdx + 1
       if (nextIdx < PIPELINE_STEPS.length) {

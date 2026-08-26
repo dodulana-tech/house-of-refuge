@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getProgress, getAllProgress, upsertProgress, isSupabaseReady } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Life Skills Tracker — SOP Chapter 7
@@ -100,7 +101,7 @@ export default function LifeSkillsTracker() {
     setStatusMap(prev => ({ ...prev, [moduleId]: value }))
 
   const handleSave = async () => {
-    if (!selectedPatient) return
+    if (!requireFields([[selectedPatient, 'Patient']])) return
     setSaving(true)
     const { error } = await upsertProgress(selectedPatient, 'life_skills', statusMap, 'SN')
     setSaving(false)

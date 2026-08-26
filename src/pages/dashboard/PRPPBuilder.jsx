@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getPatients, getTreatmentPlan, upsertTreatmentPlan, isSupabaseReady } from '../../utils/supabase'
 import { activeBriefs } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Personal Relapse Prevention Plan (PRPP) Builder —
@@ -272,7 +273,8 @@ export default function PRPPBuilder() {
   }
 
   const handleSave = async () => {
-    if (!selectedPatient || !data) return
+    if (!requireFields([[selectedPatient, 'Patient']])) return
+    if (!data) return
     setSaving(true)
     const { error } = await upsertTreatmentPlan(selectedPatient, { prpp: data }, data.updatedBy)
     setSaving(false)

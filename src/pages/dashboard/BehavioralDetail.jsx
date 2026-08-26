@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { isSupabaseReady, getIncident, updateIncident, getIncidents, getPatients } from '../../utils/supabase'
 import { initialsFromName } from '../../utils/patients'
+import { requireFields } from '../../utils/formGuard'
 
 const tierConfig = {
   1: { label: 'Tier 1 — Minor', color: '#D69E2E', bg: 'rgba(214,158,46,.1)' },
@@ -66,6 +67,7 @@ export default function BehavioralDetail() {
   }
 
   const composeResponse = () => {
+    if (!requireFields([[escalationNotes, 'Escalation notes']])) return
     const note = escalationNotes.trim()
     if (!note) return response
     const stamp = fmtDate(new Date().toISOString())
@@ -201,7 +203,7 @@ export default function BehavioralDetail() {
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           <button
             onClick={handleSaveNote}
-            disabled={saving || !escalationNotes.trim()}
+            disabled={saving}
             style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: 'var(--blue)', color: '#fff', cursor: (saving || !escalationNotes.trim()) ? 'default' : 'pointer', fontWeight: 700, fontSize: '.78rem', opacity: (saving || !escalationNotes.trim()) ? 0.6 : 1 }}>
             {saving ? 'Saving…' : 'Save Notes'}
           </button>

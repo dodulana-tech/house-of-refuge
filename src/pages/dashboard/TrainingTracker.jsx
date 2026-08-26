@@ -6,6 +6,7 @@ import {
   addStaffTraining,
   updateStaffTraining,
 } from '../../utils/supabase'
+import { requireFields } from '../../utils/formGuard'
 
 /*
   Training Tracker — Mandatory Compliance per HR Manual Section 10
@@ -111,7 +112,11 @@ export default function TrainingTracker() {
 
   const handleSubmit = async e => {
     e.preventDefault()
-    if (!form.staffId || !form.moduleId || !form.date) return
+    if (!requireFields([
+      [form.staffId, 'Staff member'],
+      [form.moduleId, 'Training module'],
+      [form.date, 'Completion date'],
+    ])) return
     const member = staff.find(s => s.id === form.staffId)
     if (!member) return
     await saveCell(member, form.moduleId, {
