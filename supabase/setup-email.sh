@@ -28,20 +28,55 @@ echo "Project: $PROJECT_REF"
 echo
 
 # ── 1. Collect inputs ─────────────────────────────────────
-read -r -p "Zoho sending mailbox [contact@houseofrefugeng.org]: " ZOHO_USER
-ZOHO_USER="${ZOHO_USER:-contact@houseofrefugeng.org}"
+# Read from the terminal, not stdin. A pasted value carries a trailing newline,
+# and that newline used to satisfy the NEXT read instantly: the staff-address
+# prompt would flash past unanswered and the script aborted. Reading from
+# /dev/tty and re-prompting on empty makes a stray newline harmless.
+TTY=/dev/tty
+[ -r "$TTY" ] || TTY=/dev/stdin
 
-read -r -s -p "Zoho APP-SPECIFIC password (input hidden): " ZOHO_PASS
-echo
-[ -n "$ZOHO_PASS" ] || { echo "A password is required."; exit 1; }
+# Every value can be preset in the environment to skip its prompt entirely:
+#   ZOHO_USER=me@x.org ZOHO_PASS=... STAFF_EMAILS=a@x.org ./supabase/setup-email.sh
+ask() {           # ask VAR "prompt" "default"   (empty default = required)
+  local __var="$1" __prompt="$2" __default="${3:-}" __val
+  __val="${!__var:-}"
+  while [ -z "$__val" ]; do
+    printf '%s' "$__prompt" > "$TTY"
+    IFS= read -r __val < "$TTY" || __val=""
+    __val="${__val#"${__val%%[![:space:]]*}"}"   # trim leading space
+    __val="${__val%"${__val##*[![:space:]]}"}"   # trim trailing space
+    if [ -z "$__val" ] && [ -n "$__default" ]; then __val="$__default"; fi
+    [ -n "$__val" ] || echo "  This one is required - please type a value." > "$TTY"
+  done
+  printf -v "$__var" '%s' "$__val"
+}
+
+ask ZOHO_USER "Zoho sending mailbox [contact@houseofrefugeng.org]: " "contact@houseofrefugeng.org"
+
+# Zoho displays app passwords in spaced groups; the spaces are not part of it.
+while [ -z "${ZOHO_PASS:-}" ]; do
+  printf 'Zoho APP-SPECIFIC password for %s (input hidden): ' "$ZOHO_USER" > "$TTY"
+  IFS= read -r -s ZOHO_PASS < "$TTY" || ZOHO_PASS=""
+  echo > "$TTY"
+  [ -n "$ZOHO_PASS" ] || echo "  A password is required." > "$TTY"
+done
+# Strip unconditionally, so a preset ZOHO_PASS= is cleaned the same way a typed
+# one is. Zoho renders the password in spaced groups and those spaces are not
+# part of it; sending them produces an SMTP auth failure that reads like a
+# wrong password.
+ZOHO_PASS="${ZOHO_PASS//[[:space:]]/}"
 
 echo
 echo "Who should receive internal alerts for every new submission?"
-read -r -p "Comma-separated addresses: " STAFF_EMAILS
-[ -n "$STAFF_EMAILS" ] || { echo "At least one staff address is required."; exit 1; }
+ask STAFF_EMAILS "Comma-separated addresses: "
 
-read -r -p "Zoho SMTP host [smtp.zoho.com]: " ZOHO_HOST
-ZOHO_HOST="${ZOHO_HOST:-smtp.zoho.com}"
+ask ZOHO_HOST "Zoho SMTP host [smtp.zoho.com]: " "smtp.zoho.com"
+
+echo
+echo "Sending as : $ZOHO_USER"
+echo "Alerting   : $STAFF_EMAILS"
+echo "SMTP host  : $ZOHO_HOST"
+echo
 
 WEBHOOK_SECRET="$(openssl rand -hex 32)"
 
@@ -90,8 +125,12 @@ chmod 600 "$OUT"
 
 echo
 echo "Done. Final step, in the Supabase SQL editor:"
-echo "  1. Run supabase/migrations/20260810_email_notifications.sql"
-echo "  2. Then run the contents of:"
+echo "  Run the contents of:"
 echo "     $OUT"
+echo
+echo "  (20260810_email_notifications.sql is already applied if you have run"
+echo "   supabase/RUN_PENDING_2026-08-24.sql. Check with:"
+echo "     select tgname from pg_trigger where tgname like 'notify%';"
+echo "   Four rows means you are set.)"
 echo
 echo "That file holds the webhook secret. It is gitignored; delete it once run."
