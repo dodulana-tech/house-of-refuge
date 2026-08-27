@@ -94,6 +94,78 @@ CREATE INDEX IF NOT EXISTS applications_deposit_request_sent_at_idx
 
 
 -- ===========================================================================
+-- REPAIR: de-duplicate the practitioner roster and retire Dr Alex Adenuga.
+--
+-- Must run BEFORE the outpatient_services section below, which ends by creating
+-- a UNIQUE index on outpatient_practitioners(full_name). That index cannot be
+-- built while duplicates exist and the whole file aborts with 23505.
+--
+-- The duplicates exist because the original seed used a bare `on conflict do
+-- nothing` with no unique index to conflict against, so every run of that
+-- migration inserted another copy of each doctor.
+--
+-- Dr Alex Adenuga left HOR on 2026-08-12. He is deleted only if no booking ever
+-- referenced him; if any did, he is deactivated instead, because deleting a
+-- clinician who actually saw patients would null out practitioner_id on those
+-- bookings and lose the record of who provided the care. Either way he stops
+-- appearing on the public site and in the booking picker.
+-- ===========================================================================
+
+do $$
+declare
+  n_dupes int;
+  n_bookings int;
+begin
+  if to_regclass('public.outpatient_practitioners') is null then
+    return;  -- fresh database; the seed below will create a clean roster
+  end if;
+
+  -- Repoint any bookings at the row being kept, so de-duplication cannot
+  -- orphan them.
+  if to_regclass('public.outpatient_bookings') is not null then
+    with keep as (
+      select distinct on (full_name) id, full_name
+        from public.outpatient_practitioners
+       order by full_name, created_at, id
+    )
+    update public.outpatient_bookings b
+       set practitioner_id = k.id
+      from public.outpatient_practitioners p
+      join keep k on k.full_name = p.full_name
+     where b.practitioner_id = p.id
+       and b.practitioner_id is distinct from k.id;
+  end if;
+
+  -- Keep the earliest row per name, drop the rest.
+  with keep as (
+    select distinct on (full_name) id
+      from public.outpatient_practitioners
+     order by full_name, created_at, id
+  )
+  delete from public.outpatient_practitioners
+   where id not in (select id from keep);
+  get diagnostics n_dupes = row_count;
+  raise notice 'removed % duplicate practitioner row(s)', n_dupes;
+
+  -- Retire the departed clinician.
+  select count(*) into n_bookings
+    from public.outpatient_bookings b
+    join public.outpatient_practitioners p on p.id = b.practitioner_id
+   where p.full_name = 'Dr Alex Adenuga';
+
+  if n_bookings > 0 then
+    update public.outpatient_practitioners
+       set active = false, public = false
+     where full_name = 'Dr Alex Adenuga';
+    raise notice 'Dr Alex Adenuga deactivated (% booking(s) reference him)', n_bookings;
+  else
+    delete from public.outpatient_practitioners where full_name = 'Dr Alex Adenuga';
+    raise notice 'Dr Alex Adenuga removed (no bookings referenced him)';
+  end if;
+end $$;
+
+
+-- ===========================================================================
 -- SOURCE: supabase/migrations/20260514_outpatient_services.sql
 -- ===========================================================================
 
