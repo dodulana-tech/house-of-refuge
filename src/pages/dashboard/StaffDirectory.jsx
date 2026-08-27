@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { isSupabaseReady, getStaff, addStaff, deleteStaff } from '../../utils/supabase'
+import { isSupabaseReady, getStaff, addStaff, deleteStaff, getProfiles, inviteOrResendStaff } from '../../utils/supabase'
 import { requireFields } from '../../utils/formGuard'
+import { useAuth } from '../../context/AuthContext'
 
 /*
   Staff Directory — per HOR Organogram
@@ -26,11 +27,17 @@ const departmentOptions = Object.keys(deptColors)
 const emptyForm = { code: '', full_name: '', role: '', department: 'Leadership', email: '', phone: '', start_date: '' }
 
 export default function StaffDirectory() {
+  const { user } = useAuth()
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  // Lower-cased emails of everyone who actually has a login, so each row can say
+  // whether this person can sign in. The directory itself has no link to auth.
+  const [accounts, setAccounts] = useState(new Set())
+  const [invitingId, setInvitingId] = useState(null)
+  const isAdmin = user?.role === 'admin'
 
   async function load() {
     if (!isSupabaseReady()) {
@@ -41,7 +48,44 @@ export default function StaffDirectory() {
     const { data, error } = await getStaff()
     if (error) alert('Failed to load staff: ' + error.message)
     setStaff(data || [])
+    const { data: profiles } = await getProfiles()
+    setAccounts(new Set((profiles || []).map(p => (p.email || '').toLowerCase())))
     setLoading(false)
+  }
+
+  /*
+    Adding someone to this directory never created a login, so nobody was ever
+    emailed. This invites them (or resends if the account already exists); either
+    way they set their own password from the emailed link.
+  */
+  async function handleInvite(s) {
+    if (invitingId) return
+    if (!s.email) { alert(`${s.full_name || 'This staff member'} has no email address on file. Add one first.`); return }
+    const existing = accounts.has(s.email.toLowerCase())
+    const verb = existing ? 'Resend the set-password link to' : 'Create a login and email a set-password link to'
+    if (!window.confirm(`${verb} ${s.email}?`)) return
+
+    setInvitingId(s.id)
+    const res = await inviteOrResendStaff({
+      email: s.email,
+      fullName: s.full_name,
+      phone: s.phone,
+      role: 'staff',
+      department: s.department,
+      title: s.role,
+    })
+    setInvitingId(null)
+
+    if (res.error) { alert(`Could not send: ${res.error.message}`); return }
+    if (res.inviteError) {
+      alert(`Account created for ${s.email}, but the email failed: ${res.inviteError.message}\n\nSupabase caps auth emails unless custom SMTP is configured. Try again shortly, or send from User Accounts.`)
+      await load()
+      return
+    }
+    alert(res.action === 'resent'
+      ? `Set-password link resent to ${s.email}.`
+      : `Login created for ${s.email} and a set-password link sent.`)
+    await load()
   }
 
   useEffect(() => {
@@ -185,6 +229,26 @@ export default function StaffDirectory() {
                       {s.phone && <div>{s.phone}</div>}
                       {s.data?.reports && <div style={{ fontSize: '.68rem', marginTop: 2 }}>Reports to: {s.data.reports}</div>}
                     </div>
+                    {isAdmin && (() => {
+                      const hasLogin = s.email && accounts.has(s.email.toLowerCase())
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <span title={hasLogin ? 'This person can sign in' : 'No login yet'}
+                            style={{
+                              padding: '2px 8px', borderRadius: 10, fontSize: '.66rem', fontWeight: 700,
+                              background: hasLogin ? '#C6F6D5' : '#FEFCBF',
+                              color: hasLogin ? '#22543D' : '#744210',
+                            }}>
+                            {hasLogin ? 'Has login' : 'No login'}
+                          </span>
+                          <button onClick={() => handleInvite(s)} disabled={invitingId === s.id}
+                            title={hasLogin ? 'Resend the set-password link' : 'Create a login and email a set-password link'}
+                            style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--g200)', background: '#fff', color: 'var(--blue)', cursor: invitingId === s.id ? 'default' : 'pointer', fontSize: '.72rem', fontWeight: 700, opacity: invitingId === s.id ? 0.6 : 1 }}>
+                            {invitingId === s.id ? 'Sending…' : hasLogin ? 'Resend link' : 'Send invite'}
+                          </button>
+                        </div>
+                      )
+                    })()}
                     <button onClick={() => handleDelete(s)} title="Remove staff member"
                       style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #FED7D7', background: '#fff', color: '#E53E3E', cursor: 'pointer', fontSize: '.72rem', fontWeight: 700, flexShrink: 0 }}>
                       Delete

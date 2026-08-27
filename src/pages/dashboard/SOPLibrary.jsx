@@ -134,6 +134,24 @@ const SOPS = [
     summary: 'Client requests through counsellor, eligibility assessed, Program Director approves/denies, Pass Form completed (destination, contact, times), pre-pass briefing, sign-out/sign-in register, mid-pass check-in call, post-return assessment for substance use (UDS if suspicion), late return escalation (2 hours → Program Director, 6 hours → Abscondment SOP).',
     keyActions: ['Counsellor assesses eligibility and recommends', 'Program Director approves or denies', 'Pass Form: destination, contact, departure/return times', 'Pre-pass briefing on expectations', 'Post-return behavioural assessment', '2 hours late → Program Director; 6 hours → SOP-008'],
   },
+  {
+    id: 'SOP-017', title: 'Outpatient Encounter Documentation', section: '23.18',
+    category: 'Clinical Operations',
+    responsible: 'Consultant Psychiatrist, Medical Officer, Clinical Psychologist, Counsellor',
+    steps: 9,
+    summary: 'Every outpatient contact is documented against the client record, not the booking. Open the client in Outpatient → Client Records, start an encounter, and write it in SOAP form while the client is still in the room. Save as draft to keep working, then sign once. Signing locks the clinical content permanently, completes or no-shows the booking, opens a safeguarding concern for moderate-or-above risk, and arms the recall list if a follow-up date is set. A did-not-attend is still an encounter and is still documented.',
+    keyActions: [
+      'Dashboard → Outpatient → Client Records → open the client → New encounter',
+      'Set encounter type, attendance and duration before writing',
+      'Complete all four SOAP fields; field prompts change with encounter type',
+      'Record diagnosis and medications where a prescription was issued or changed',
+      'Set the risk flag honestly: moderate, high or immediate auto-opens a safeguarding concern',
+      'Set a follow-up date to place the client on the recall list',
+      'Save draft while the client is present; sign the same working day',
+      'Signing is final — a signed note cannot be edited (database rejects with 42501)',
+      'Correct a signed note by writing a new addendum encounter, never by overwriting',
+    ],
+  },
 ]
 
 const CATEGORIES = [...new Set(SOPS.map(s => s.category))]
