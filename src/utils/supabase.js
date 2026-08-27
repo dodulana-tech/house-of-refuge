@@ -104,6 +104,46 @@ export async function adminUpdateProfile(targetId, { name, phone, department, ti
   emailed reset link. handle_new_user() forces the profile to 'patient', so the
   role is applied afterwards through admin_set_role.
 */
+// Staff can read all profiles, so an admin can check whether a directory entry
+// has a login before deciding to invite or simply resend.
+export async function getProfileByEmail(email) {
+  if (!supabase) return { data: null, error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, full_name, role')
+    .ilike('email', (email || '').trim())
+    .maybeSingle()
+  return { data, error }
+}
+
+/*
+  Invite a staff directory entry to the platform, or resend their set-password
+  link if they already have an account.
+
+  The staff table is a directory only: it has an email column but no link to
+  auth.users, so adding someone to Staff Directory never created a login and
+  never sent them anything. This closes that gap.
+
+  Returns { action: 'invited' | 'resent' } so the caller can say which happened.
+*/
+export async function inviteOrResendStaff({ email, fullName, phone, role = 'staff', department, title }) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const addr = (email || '').trim()
+  if (!addr.includes('@')) return { error: { message: 'This staff member has no valid email address on file.' } }
+
+  const { data: existing, error: lookupErr } = await getProfileByEmail(addr)
+  if (lookupErr) return { error: lookupErr }
+
+  if (existing) {
+    const { error } = await sendPasswordReset(addr)
+    return error ? { error } : { action: 'resent', id: existing.id, role: existing.role }
+  }
+
+  const res = await adminCreateStaffAccount({ email: addr, fullName, phone, role, department, title })
+  if (res.error) return res
+  return { action: 'invited', id: res.data?.id, inviteError: res.inviteError }
+}
+
 export async function adminCreateStaffAccount({ email, fullName, phone, role, department, title }) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
 

@@ -88,7 +88,7 @@ const MENU = {
     { icon: '🎓', to: '/dashboard/alumni', label: 'Alumni Programme' },
     { icon: '🔒', to: '/dashboard/safeguarding', label: 'Safeguarding' },
     { icon: '🎯', to: '/dashboard/kpis', label: 'Programme KPIs' },
-    { icon: '📖', to: '/dashboard/sops', label: 'SOP Library (16)' },
+    { icon: '📖', to: '/dashboard/sops', label: 'SOP Library (17)' },
     { icon: '📋', to: '/dashboard/reports', label: 'Board Reports' },
 
     { section: 'Account & Access' },
@@ -130,7 +130,7 @@ const MENU = {
     { icon: '🎫', to: '/dashboard/passes', label: 'Passes & Leave' },
     { icon: '👨‍👩‍👧', to: '/dashboard/visitation', label: 'Visitation' },
     { icon: '🔒', to: '/dashboard/safeguarding', label: 'Safeguarding' },
-    { icon: '📖', to: '/dashboard/sops', label: 'SOP Library (16)' },
+    { icon: '📖', to: '/dashboard/sops', label: 'SOP Library (17)' },
 
     { section: 'Account' },
     { icon: '👤', to: '/dashboard/account', label: 'My Account' },
