@@ -47,7 +47,7 @@ select u.email,
 -- non-admin caller, which is why she cannot add new staff from the dashboard.
 -- update public.profiles
 --    set role = 'admin'
---  where email = 'director@houseofrefugeng.org';
+--  where email = 'programme.director@houseofrefugeng.org';
 
 -- update public.profiles
 --    set role = 'staff'

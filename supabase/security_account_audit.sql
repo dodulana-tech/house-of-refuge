@@ -40,7 +40,7 @@ WHERE email IN (
 -- ── 4. PROMOTE real staff (run per person, as admin) ─────────
 -- The hardening migration blocks self-promotion; grant staff/admin here:
 -- UPDATE public.profiles SET role = 'staff' WHERE email = 'realstaff@houseofrefugeng.org';
--- UPDATE public.profiles SET role = 'admin' WHERE email = 'director@houseofrefugeng.org';
+-- UPDATE public.profiles SET role = 'admin' WHERE email = 'programme.director@houseofrefugeng.org';
 
 -- ── 5. VERIFY hardening is active ────────────────────────────
 SELECT tgname FROM pg_trigger WHERE tgname = 'trg_prevent_role_self_escalation';
