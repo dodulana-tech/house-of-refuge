@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, applyApplicationTransition } from './supabase'
 
 const BUCKET = 'fa-documents'
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
@@ -141,7 +141,7 @@ export async function getFAById(id) {
   return { data, error }
 }
 
-export async function updateFAStatus(id, { status, decision_notes, internal_notes, decision_by }) {
+export async function updateFAStatus(id, { status, decision_notes, internal_notes, decision_by }, actor = {}) {
   if (!supabase) return { error: { message: 'Supabase not configured' } }
   const patch = { status }
   if (decision_notes !== undefined) patch.decision_notes = decision_notes
@@ -156,7 +156,50 @@ export async function updateFAStatus(id, { status, decision_notes, internal_note
     .eq('id', id)
     .select()
     .single()
-  return { data, error }
+  if (error) return { data, error }
+
+  const { error: syncError } = await syncApplicationFunding(data, actor)
+  return { data, error: null, syncError }
+}
+
+/*
+  A decision here has to reach the admission file. Without this the committee
+  approves a sponsored place and the admissions worklist still shows the family
+  as "assistance requested" indefinitely, which is the same stall this whole
+  model exists to remove. Declining sets 'assistance-declined' rather than
+  closing the file: the family may still find a third-party sponsor, and only a
+  person should decide that there is no route left.
+*/
+export async function syncApplicationFunding(faRow, actor = {}) {
+  if (!supabase) return { error: null }
+  if (!faRow?.application_id) return { error: null }
+
+  const route = faRow.status === 'approved' ? 'assistance-approved'
+    : faRow.status === 'declined' ? 'assistance-declined'
+    : null
+  if (!route) return { error: null }
+
+  const { data: app, error: readError } = await supabase
+    .from('applications')
+    .select('id, stage, disposition, funding_route')
+    .eq('id', faRow.application_id)
+    .maybeSingle()
+  if (readError || !app) return { error: readError }
+  if (app.funding_route === route) return { error: null }
+
+  const { error } = await applyApplicationTransition(app.id, {
+    patch: { funding_route: route, disposition: 'active-us' },
+    event: {
+      gate: 'funding',
+      answer: route,
+      from_stage: app.stage, to_stage: app.stage,
+      from_disposition: app.disposition, to_disposition: 'active-us',
+      from_funding_route: app.funding_route, to_funding_route: route,
+      reason: `Freedom Foundation ${faRow.status} case ${faRow.reference_code}`,
+      note: faRow.decision_notes || null,
+    },
+  }, actor)
+  return { error }
 }
 
 export async function updatePastoralInterview(id, { status, scheduled_at, completed_at, notes }) {
@@ -191,7 +234,11 @@ export async function bulkUpdateFAStatus(ids, status, decision_by) {
     .update(patch)
     .in('id', ids)
     .select()
-  return { data, error }
+  if (error) return { data, error }
+
+  // Carry each decision through to its admission file, same as the single update.
+  for (const row of data || []) await syncApplicationFunding(row, { id: decision_by })
+  return { data, error: null }
 }
 
 export function exportFinancialAssistanceCSV(rows) {
@@ -223,4 +270,90 @@ export function downloadCSV(csv, filename) {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
+}
+
+// ── Staff-opened assistance cases ───────────────────────────
+/*
+  The Programme Director learns on the screening call that a family cannot pay.
+  Until now the only way into this table was the public form, which the family
+  had to find and fill in themselves, and nothing linked a case back to the
+  admission it belonged to. So "they say they have no money" was a fact that
+  had nowhere to go, and the file stopped.
+
+  This opens the case from the application, prefilled from what the family
+  already told us, and links both rows so neither queue loses sight of the
+  other. Staff-only: `fa_staff_full` is what permits the insert and read-back.
+*/
+function ageFromDob(dob) {
+  if (!dob) return null
+  const d = new Date(dob)
+  if (Number.isNaN(d.getTime())) return null
+  const diff = Date.now() - d.getTime()
+  const age = Math.floor(diff / (365.25 * 24 * 3600 * 1000))
+  return age > 0 && age < 130 ? age : null
+}
+
+export async function createFACaseFromApplication(app, actor = {}) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+
+  const patientName = [app.first_name, app.last_name].filter(Boolean).join(' ').trim() || 'Unnamed applicant'
+  // The family contact who would actually handle the money, falling back to
+  // the applicant themselves when no next of kin was given.
+  const applicantName = app.pfsp_name || app.nok_name || patientName
+  const applicantPhone = app.pfsp_phone || app.nok_phone || app.phone || ''
+  const applicantEmail = app.nok_email || app.email || ''
+
+  if (!applicantPhone || !applicantEmail) {
+    return { error: { message: 'This application has no contact phone or email to open an assistance case with. Add one first.' } }
+  }
+
+  const openedBy = actor.full_name || actor.name || actor.email || 'House of Refuge admissions'
+
+  const payload = {
+    // reference_code is left to trg_gen_fa_ref, which retries on collision.
+    application_id: app.id,
+    applicant_name: applicantName,
+    applicant_phone: applicantPhone,
+    applicant_email: applicantEmail,
+    applicant_relationship: app.pfsp_relationship || app.nok_relationship || null,
+    patient_name: patientName,
+    patient_age: ageFromDob(app.date_of_birth),
+    patient_gender: app.gender || null,
+    patient_substance: [app.substance, app.substance_other].filter(Boolean).join(' / ') || null,
+    patient_substance_duration: app.duration || null,
+    patient_prior_treatment: app.prev_treatment || null,
+    patient_willingness: app.willingness_confirm || null,
+    financial_situation_narrative:
+      `Opened from admission application ${app.id} by ${openedBy} during the screening call. ` +
+      `The family reported they are unable to meet the deposit. ` +
+      `Financial stability reported on the application: ${app.financial_stability || 'not recorded'}.`,
+    internal_notes: `Staff-opened case. Source: admissions screening call. Opened by ${openedBy}.`,
+    status: 'submitted',
+  }
+
+  const { data, error } = await supabase
+    .from('financial_assistance_applications')
+    .insert(payload)
+    .select()
+    .single()
+  if (error) return { error }
+
+  // Link the admission back to the case. A failure here leaves an orphaned
+  // case rather than losing it, so report it instead of rolling back.
+  const { error: linkError } = await supabase
+    .from('applications')
+    .update({ fa_application_id: data.id })
+    .eq('id', app.id)
+
+  return { data, error: null, linkError }
+}
+
+export async function getFAByApplicationId(applicationId) {
+  if (!supabase) return { data: null, error: null }
+  const { data, error } = await supabase
+    .from('financial_assistance_applications')
+    .select('*')
+    .eq('application_id', applicationId)
+    .maybeSingle()
+  return { data, error }
 }

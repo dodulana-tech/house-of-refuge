@@ -166,9 +166,9 @@ export default function Waitlist() {
   /*
     Applicants who are not yet willing, or who screen into an exclusion, are not
     turned away. They continue on a shortened track — steps 1-3, then submit — and
-    land in the dashboard as an outpatient-engagement or referral lead instead of a
-    residential application. Both statuses already exist in the `applications`
-    status CHECK constraint, so this needs no schema change.
+    land in the dashboard flagged against the willingness or clinical-fit gate,
+    so the Programme Director sees what the form screened and why before the
+    call, and confirms it rather than inheriting it.
   */
   const track = form.willingnessConfirm === 'no'
     ? 'outpatient'
@@ -239,9 +239,21 @@ export default function Waitlist() {
       return
     }
 
-    const status = track === 'outpatient' ? 'outpatient-pathway'
-      : track === 'referral' ? 'referred'
-      : 'submitted'
+    /*
+      What the form screens out is a provisional answer to two of the review
+      gates, not a decision. It used to be written straight into `status` as
+      'outpatient-pathway' or 'referred', which closed the file before anyone
+      had spoken to the person. The answers are now recorded against the gates
+      they belong to and the file stays on the worklist for a human to confirm.
+      `status` itself is derived in the database and must not be sent.
+    */
+    const pipeline = {
+      stage: 'submitted',
+      disposition: 'active-us',
+      funding_route: 'undetermined',
+      gate_willingness: track === 'outpatient' ? 'ambivalent' : null,
+      gate_clinical_fit: track === 'referral' ? 'out-of-scope' : null,
+    }
 
     setLoading(true)
 
@@ -293,7 +305,7 @@ export default function Waitlist() {
           severe_cognitive: form.severeCognitive || 'no',
           legal_detention: form.legalDetention || 'no',
           children_cohabitation: form.childrenCohabitation || 'no',
-          deposit_paid: false, status,
+          deposit_paid: false, ...pipeline,
         })
         submitError = error
       } else {
@@ -301,7 +313,7 @@ export default function Waitlist() {
           id: `APP_${Date.now()}`,
           ...form,
           track,
-          status,
+          ...pipeline,
           depositPaid: false,
           submittedAt: new Date().toISOString(),
           insightScore: INSIGHT_LEVELS.findIndex(l => l.value === form.insightLevel) + 1,

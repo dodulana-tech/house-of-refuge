@@ -77,15 +77,25 @@ export default function FinancialAssistanceDetail() {
       if (!confirm('No decision notes entered. Continue without notes?')) return
     }
     setWorking(true)
-    const { error } = await updateFAStatus(id, {
+    const { error, syncError } = await updateFAStatus(id, {
       status: decisionStatus,
       decision_notes: decisionNotes,
       internal_notes: internalNotes,
       decision_by: user?.id,
-    })
+    }, user || {})
     setWorking(false)
     if (error) { notify?.('Update failed', error.message || String(error), 'error'); return }
-    notify?.('Status updated', `Application set to ${FA_STATUSES.find(s => s.key === decisionStatus).label}.`, 'success')
+    /*
+      An approval or refusal has to reach the admission file, or the admissions
+      worklist keeps showing the family as "assistance requested" for ever.
+      The decision itself has saved either way, so report a sync failure rather
+      than implying the decision did not land.
+    */
+    if (syncError) {
+      notify?.('Decision saved', 'The admission file could not be updated with this decision. Set the funding route on the application manually.', 'error')
+    } else {
+      notify?.('Status updated', `Application set to ${FA_STATUSES.find(s => s.key === decisionStatus).label}.`, 'success')
+    }
     setDecisionStatus('')
     load()
   }
@@ -113,6 +123,13 @@ export default function FinancialAssistanceDetail() {
             <code style={{ color: 'var(--blue)', fontSize: '1.3rem' }}>{app.reference_code}</code>
             <span style={{ marginLeft: 14, fontSize: '.86rem', fontWeight: 500, color: 'var(--g700)' }}>{app.applicant_name}</span>
           </h1>
+          {/* Cases opened from the screening call carry the admission they belong to. */}
+          {app.application_id && (
+            <Link to={`/dashboard/admissions/${app.application_id}`}
+              style={{ fontSize: '.78rem', color: 'var(--blue)', fontWeight: 600, display: 'inline-block', marginTop: 4 }}>
+              Opened from an admission application. Open the file →
+            </Link>
+          )}
         </div>
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,

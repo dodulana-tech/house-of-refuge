@@ -235,6 +235,83 @@ export async function updateApplication(id, updates) {
   return { data, error }
 }
 
+// ── Admissions pipeline: transitions, contact log, audit ──
+/*
+  Every pipeline move goes through here. The old Actions panel changed React
+  state and nothing else, so a status change survived until the next refresh
+  and the reason chosen in the dropdown was thrown away. A transition is now
+  one update plus one audit row naming the gate, the answer and the actor.
+
+  `actor.id` is only sent when it is a real uuid: the dev demo accounts use
+  ids like 'A001', which the profiles foreign key would reject.
+*/
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export async function applyApplicationTransition(id, { patch, event }, actor = {}) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+
+  const { data, error } = await supabase
+    .from('applications')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) return { error }
+
+  /*
+    The audit row is written after the update, deliberately. If it fails we
+    still return the successful transition rather than telling the reviewer
+    their decision did not save, but we surface the failure so the gap in the
+    trail is visible instead of silent.
+  */
+  const { error: eventError } = await supabase.from('application_events').insert({
+    application_id: id,
+    actor_id: UUID_RE.test(actor.id || '') ? actor.id : null,
+    actor_name: actor.full_name || actor.name || actor.email || null,
+    ...event,
+  })
+
+  return { data, error: null, eventError }
+}
+
+export async function logApplicationContact({ applicationId, method, outcome, notes, occurredAt }, actor = {}) {
+  if (!supabase) return { error: { message: 'Supabase not configured' } }
+  const { data, error } = await supabase
+    .from('application_contacts')
+    .insert({
+      application_id: applicationId,
+      contacted_by: UUID_RE.test(actor.id || '') ? actor.id : null,
+      contacted_by_name: actor.full_name || actor.name || actor.email || null,
+      method,
+      outcome,
+      notes: notes || null,
+      occurred_at: occurredAt || new Date().toISOString(),
+    })
+    .select()
+    .single()
+  return { data, error }
+}
+
+export async function getApplicationContacts(applicationId) {
+  if (!supabase) return { data: [], error: null }
+  const { data, error } = await supabase
+    .from('application_contacts')
+    .select('*')
+    .eq('application_id', applicationId)
+    .order('occurred_at', { ascending: false })
+  return { data: data || [], error }
+}
+
+export async function getApplicationEvents(applicationId) {
+  if (!supabase) return { data: [], error: null }
+  const { data, error } = await supabase
+    .from('application_events')
+    .select('*')
+    .eq('application_id', applicationId)
+    .order('created_at', { ascending: false })
+  return { data: data || [], error }
+}
+
 // ── Admin: trigger deposit-request email ──────────────────
 // Calls the `send-deposit-request` Edge Function. Requires the caller to be
 // signed in as staff/admin — the function verifies role server-side.

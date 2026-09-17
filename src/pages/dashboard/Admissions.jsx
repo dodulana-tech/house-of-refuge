@@ -4,35 +4,35 @@ import { getApplications as getLocalApps } from '../../utils/store'
 import { getApplications as getSupaApps, isSupabaseReady } from '../../utils/supabase'
 import { fmt } from '../../utils/paystack'
 import { SUBSTANCE_PATHWAYS, SUBSTANCE_PATHWAY_META, POPULATION_PATHWAY_LABELS, INSIGHT_COLORS } from '../../data/clinicalConstants'
+import {
+  STAGES, DISPOSITIONS, stageLabel, dispositionLabel, dispositionColor,
+  fundingLabel, fundingColor, closureLabel, daysInStage, isOverdue, nextAction,
+} from '../../utils/admissionsPipeline'
 
 /*
-  Admissions Pipeline — maps to the 8-step SOP admission process:
-  1. Submitted → 2. Pre-screening → 3. Clinical Assessment → 4. Admission Decision
-  5. Documentation → 6. Intake → 7. Treatment Planning → 8. Admitted
-  + Outpatient Pathway, Referred, Deferred, Declined, Withdrawn
+  Admissions worklist.
+
+  The old page filtered on a single `status` column that was doing three jobs
+  at once, so a file that was clinically fine but unfunded had no chip of its
+  own and simply sat in whichever stage it had reached. The list now leads with
+  disposition, which answers the question that actually matters on a Monday
+  morning: what owes us an action, and how long has it been waiting.
 */
 
-/*
-  Every status the `applications` CHECK constraint allows must appear here.
-  Documentation, intake, treatment-planning, deferred, declined and withdrawn
-  were missing, so files parked in those stages were reachable only through the
-  "All" view and were invisible in the stage chips.
-*/
-const PIPELINE_STAGES = [
-  { key: 'submitted', label: 'Submitted', color: 'var(--blue)' },
-  { key: 'pre-screening', label: 'Pre-screening', color: '#DD6B20' },
-  { key: 'clinical-assessment', label: 'Clinical Assessment', color: '#D69E2E' },
-  { key: 'admission-decision', label: 'Decision', color: '#805AD5' },
-  { key: 'documentation', label: 'Documentation', color: '#805AD5' },
-  { key: 'intake', label: 'Intake', color: '#2B6CB0' },
-  { key: 'treatment-planning', label: 'Treatment Planning', color: '#2B6CB0' },
-  { key: 'admitted', label: 'Admitted', color: '#1A7A4A' },
-  { key: 'outpatient-pathway', label: 'Outpatient', color: 'var(--g500)' },
-  { key: 'referred', label: 'Referred', color: '#E53E3E' },
-  { key: 'deferred', label: 'Deferred', color: '#B7791F' },
-  { key: 'declined', label: 'Declined', color: '#822727' },
-  { key: 'withdrawn', label: 'Withdrawn', color: 'var(--g500)' },
-]
+const PIPELINE_STAGES = STAGES.map((s, i) => ({
+  ...s,
+  color: ['var(--blue)', '#DD6B20', '#D69E2E', '#805AD5', '#805AD5', '#2B6CB0', '#2B6CB0', '#1A7A4A'][i] || 'var(--g500)',
+}))
+
+// Rows from the dev local-storage fallback predate the four axes.
+function normalise(a) {
+  return {
+    ...a,
+    stage: a.stage || 'submitted',
+    disposition: a.disposition || 'active-us',
+    funding_route: a.funding_route || 'undetermined',
+  }
+}
 
 const PATHWAY_COLORS = Object.fromEntries(
   Object.entries(SUBSTANCE_PATHWAY_META).map(([k, v]) => [k, v.color])
@@ -43,6 +43,7 @@ const insightColors = INSIGHT_COLORS
 export default function Admissions() {
   const [apps, setApps] = useState([])
   const [stage, setStage] = useState('all')
+  const [view, setView] = useState('active-us')   // disposition, the first question
   const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
@@ -68,31 +69,55 @@ export default function Admissions() {
     load()
   }, [])
 
-  const filtered = stage === 'all' ? apps : apps.filter(a => (a.status || '') === stage)
+  const rows = apps.map(normalise)
 
-  const known = new Set(PIPELINE_STAGES.map(s => s.key))
-  const unknownStages = Object.entries(
-    apps.reduce((acc, a) => {
-      const key = a.status || ''
-      if (!known.has(key)) acc[key] = (acc[key] || 0) + 1
-      return acc
-    }, {})
-  ).map(([key, count]) => ({ key, count }))
+  const byDisposition = view === 'all' ? rows : rows.filter(a => a.disposition === view)
+  const filtered = (stage === 'all' ? byDisposition : byDisposition.filter(a => a.stage === stage))
+    /*
+      Oldest first, with anything overdue pulled to the top. A worklist sorted
+      by submission date buries exactly the files that have been waiting
+      longest, which is how 39 of them went quiet.
+    */
+    .sort((a, b) => (isOverdue(b) - isOverdue(a)) || (daysInStage(b) - daysInStage(a)))
+
+  const needsAssistance = rows.filter(a => a.funding_route === 'assistance-requested').length
+  const overdue = rows.filter(isOverdue).length
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Admissions Pipeline</h1>
-        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>8-step admission process per SOP · {apps.length} total applications</p>
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontFamily: 'var(--fd)', fontSize: '1.8rem', marginBottom: 4 }}>Admissions Worklist</h1>
+        <p style={{ fontSize: '.88rem', color: 'var(--g500)' }}>
+          {apps.length} application{apps.length === 1 ? '' : 's'}
+          {overdue > 0 && <> · <strong style={{ color: '#8B2A2A' }}>{overdue} overdue</strong></>}
+          {needsAssistance > 0 && <> · {needsAssistance} awaiting financial assistance</>}
+        </p>
       </div>
 
-      {/* Pipeline stage counts */}
+      {/* Who owes the next action. The first question, before any stage. */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        {DISPOSITIONS.map(d => {
+          const count = rows.filter(a => a.disposition === d.key).length
+          return (
+            <button key={d.key} className={`btn btn--sm ${view === d.key ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => { setView(d.key); setStage('all') }} title={d.hint}>
+              {d.label} ({count})
+            </button>
+          )
+        })}
+        <button className={`btn btn--sm ${view === 'all' ? 'btn--primary' : 'btn--secondary'}`}
+          onClick={() => { setView('all'); setStage('all') }}>
+          All ({rows.length})
+        </button>
+      </div>
+
+      {/* Then where in the funnel, within that group. */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         <button className={`btn btn--sm ${stage === 'all' ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setStage('all')}>
-          All ({apps.length})
+          Every stage ({byDisposition.length})
         </button>
         {PIPELINE_STAGES.map(s => {
-          const count = apps.filter(a => a.status === s.key).length
+          const count = byDisposition.filter(a => a.stage === s.key).length
           if (count === 0) return null
           return (
             <button key={s.key} className={`btn btn--sm ${stage === s.key ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setStage(s.key)}>
@@ -100,19 +125,15 @@ export default function Admissions() {
             </button>
           )
         })}
-        {/* Anything written by a route we do not know about still gets a chip,
-            so a new or mistyped status can never hide a file from admissions. */}
-        {unknownStages.map(s => (
-          <button key={s.key} className={`btn btn--sm ${stage === s.key ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setStage(s.key)}>
-            {s.key || 'No status'} ({s.count})
-          </button>
-        ))}
       </div>
 
       {/* Application cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {filtered.map(app => {
-          const stageInfo = PIPELINE_STAGES.find(s => s.key === app.status) || { label: app.status, color: 'var(--g500)' }
+          const stageInfo = PIPELINE_STAGES.find(s => s.key === app.stage) || { label: stageLabel(app.stage), color: 'var(--g500)' }
+          const waiting = daysInStage(app)
+          const late = isOverdue(app)
+          const waitingOn = nextAction(app)
           return (
             <div key={app.id} className="card" style={{ padding: '18px 22px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
@@ -125,9 +146,22 @@ export default function Admissions() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {late && (
+                    <span style={{ padding: '4px 10px', borderRadius: 14, fontSize: '.72rem', fontWeight: 700, background: '#8B2A2A15', color: '#8B2A2A' }}>
+                      {app.disposition === 'parked' ? 'Review overdue' : `Waiting ${waiting}d`}
+                    </span>
+                  )}
                   <span style={{ padding: '4px 10px', borderRadius: 14, fontSize: '.72rem', fontWeight: 700, background: stageInfo.color + '15', color: stageInfo.color }}>
                     {stageInfo.label}
                   </span>
+                  <span style={{ padding: '4px 10px', borderRadius: 14, fontSize: '.72rem', fontWeight: 700, background: dispositionColor(app.disposition) + '18', color: dispositionColor(app.disposition) }}>
+                    {app.disposition === 'closed' ? closureLabel(app.closure_reason) : dispositionLabel(app.disposition)}
+                  </span>
+                  {app.funding_route !== 'undetermined' && (
+                    <span style={{ padding: '4px 10px', borderRadius: 14, fontSize: '.72rem', fontWeight: 700, background: fundingColor(app.funding_route) + '18', color: fundingColor(app.funding_route) }}>
+                      {fundingLabel(app.funding_route)}
+                    </span>
+                  )}
                   {app.deposit_paid && (
                     <span style={{ padding: '4px 10px', borderRadius: 14, fontSize: '.72rem', fontWeight: 700, background: 'rgba(26,122,74,.1)', color: '#1A7A4A' }}>
                       {fmt(1000000)} Paid
@@ -142,6 +176,14 @@ export default function Admissions() {
                 <span>Substance: <strong>{app.substance}</strong></span>
                 <span>Insight: <strong style={{ color: insightColors[app.insight_level] || 'var(--g500)' }}>{app.insight_level || 'N/A'}</strong></span>
                 <span>Family: <strong>{app.family_support || app.familyAwareness || 'N/A'}</strong></span>
+                {waitingOn && (
+                  <span style={{ color: 'var(--blue)', fontWeight: 600 }}>Next: {waitingOn}</span>
+                )}
+                {app.disposition === 'parked' && app.parked_until && (
+                  <span style={{ color: late ? '#8B2A2A' : 'var(--g500)' }}>
+                    Review {new Date(app.parked_until).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}
+                  </span>
+                )}
               </div>
               <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                 {(app.substancePathway || SUBSTANCE_PATHWAYS[app.substance]) && (
@@ -175,7 +217,7 @@ export default function Admissions() {
         )}
         {!loadError && filtered.length === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--g500)' }}>
-            No applications in this stage.
+            Nothing here. Try another group above.
           </div>
         )}
       </div>

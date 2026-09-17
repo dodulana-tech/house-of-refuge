@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
 import { getApplications, getPatients, getPayments, getLatestCheckinsByPatient, isSupabaseReady } from '../../utils/supabase'
 import { mapPatientRow, dayInProgramme, phaseForDay, PROGRAMME_DAYS } from '../../utils/patients'
+import { STAGES } from '../../utils/admissionsPipeline'
 
 /*
   Role-aware overview — renders different KPI dashboards per role.
@@ -11,13 +12,13 @@ import { mapPatientRow, dayInProgramme, phaseForDay, PROGRAMME_DAYS } from '../.
 
 const TOTAL_BEDS = 19
 /*
-  Open files still needing action. 'outpatient-pathway' and 'referred' are
-  included: since the form stopped dead-ending unwilling clients those two
-  statuses carry real people awaiting a call-back, and leaving them out made
-  the KPI read lower than the Admissions pipeline for no visible reason.
-  Closed states (admitted, deferred, declined, withdrawn) stay out.
+  Open files still needing action. `disposition` answers this directly now, so
+  the KPI is simply everything not closed. The status list is kept as a
+  fallback for rows that predate the four axes, or that come from the dev
+  local-storage mirror.
 */
 const PENDING_STATUSES = ['submitted', 'pre-screening', 'clinical-assessment', 'admission-decision', 'documentation', 'intake', 'treatment-planning', 'outpatient-pathway', 'referred']
+const isOpenFile = a => (a.disposition ? a.disposition !== 'closed' : PENDING_STATUSES.includes(a.status))
 const PHASE_LABELS = {
   stabilization: 'Medical Stabilization (Wk 1–2)',
   foundation: 'Therapeutic Foundation (Wk 3–6)',
@@ -34,24 +35,27 @@ function isThisMonth(iso) {
 
 function buildAdmin(apps, patients, payments) {
   const active = patients.filter(p => ['admitted', 'on-pass', 'suspended'].includes(p.status))
-  const pending = apps.filter(a => PENDING_STATUSES.includes(a.status))
+  const pending = apps.filter(isOpenFile)
   const settledMtd = payments.filter(p => (p.status === 'paid' || p.verified) && isThisMonth(p.created_at))
   const revenueMtd = settledMtd.reduce((s, p) => s + Math.round((p.amount || 0) / 100), 0)
   const occupancyFree = TOTAL_BEDS > 0 ? Math.round(((TOTAL_BEDS - active.length) / TOTAL_BEDS) * 100) : 0
 
+  /*
+    Open files by stage, then the two groups that need chasing rather than
+    working: files waiting on the family, and parked files whose review date
+    has come round. Closed files are not pipeline.
+  */
+  const open = apps.filter(isOpenFile)
+  const stageColors = ['var(--blue)', '#DD6B20', '#D69E2E', '#805AD5', '#805AD5', '#2B6CB0', '#2B6CB0', '#1A7A4A']
   const pipelineItems = [
-    ['submitted', 'Submitted', 'var(--blue)'],
-    ['pre-screening', 'Pre-screening', '#DD6B20'],
-    ['clinical-assessment', 'Clinical Assessment', '#D69E2E'],
-    ['admission-decision', 'Admission Decision', '#805AD5'],
-    ['documentation', 'Documentation', '#805AD5'],
-    ['intake', 'Intake', '#2B6CB0'],
-    ['treatment-planning', 'Treatment Planning', '#2B6CB0'],
-    ['outpatient-pathway', 'Outpatient Pathway', 'var(--g500)'],
-    ['referred', 'Referred Out', '#E53E3E'],
-    ['deferred', 'Deferred', '#B7791F'],
-  ].map(([key, label, color]) => ({ label, color, count: apps.filter(a => a.status === key).length }))
-   .filter(i => i.count > 0)
+    ...STAGES.map((st, i) => ({
+      label: st.label,
+      color: stageColors[i] || 'var(--g500)',
+      count: open.filter(a => (a.stage || 'submitted') === st.key && a.disposition !== 'parked').length,
+    })),
+    { label: 'Parked', color: '#B7791F', count: open.filter(a => a.disposition === 'parked').length },
+    { label: 'Awaiting assistance', color: '#C08A30', count: open.filter(a => a.funding_route === 'assistance-requested').length },
+  ].filter(i => i.count > 0)
 
   const phaseItems = ['stabilization', 'foundation', 'deepening', 'reintegration'].map(ph => ({
     label: PHASE_LABELS[ph],
