@@ -131,7 +131,7 @@ export default function UserAccounts() {
             <div className="fg"><label className="flabel">Work Email *</label>
               <input className="fi" type="email" {...f('email')} placeholder="name@houseofrefugeng.org" /></div>
             <div className="fg"><label className="flabel">Full Name *</label>
-              <input className="fi" {...f('fullName')} placeholder="Dr Adediwura Okeleye" /></div>
+              <input className="fi" {...f('fullName')} placeholder="Dr Onyeka Obilo" /></div>
             <div className="fg"><label className="flabel">Phone</label>
               <input className="fi" {...f('phone')} placeholder="0911 277 7600" /></div>
             <div className="fg"><label className="flabel">Role *</label>

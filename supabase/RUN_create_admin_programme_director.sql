@@ -25,7 +25,7 @@ WHERE email = 'programme.director@houseofrefugeng.org';
 INSERT INTO public.profiles (id, email, full_name, phone, role, department, title)
 SELECT u.id,
        u.email,
-       'Dr Adediwura Okeleye',
+       'Dr Onyeka Obilo',
        '09112777600',
        'admin',
        'Administration',
