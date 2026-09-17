@@ -3,25 +3,30 @@ import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { fmt } from '../../utils/paystack'
 import { buildDepositEmail, DEFAULT_DEPOSIT_AMOUNT as DEPOSIT_AMOUNT_NAIRA } from '../../data/depositEmailTemplate'
-import { sendDepositRequestEmail, getApplicationById, isSupabaseReady } from '../../utils/supabase'
-import { requireFields } from '../../utils/formGuard'
+import {
+  sendDepositRequestEmail, getApplicationById, isSupabaseReady,
+  applyApplicationTransition, logApplicationContact, getApplicationContacts, getApplicationEvents,
+} from '../../utils/supabase'
+import { createFACaseFromApplication, getFAByApplicationId } from '../../utils/financialAssistance'
+import {
+  STAGES, GATES, FUNDING_ROUTES, CLOSURE_REASONS, CONTACT_METHODS, CONTACT_OUTCOMES,
+  stageIndex, stageLabel, dispositionLabel, dispositionColor, fundingLabel, fundingColor,
+  closureLabel, nextGate, nextAction, gateFor, gateState, resolveGate, advanceStage, parkApplication,
+  isFundingConfirmed,
+  closeApplication, reopenApplication, setFundingRoute, daysInStage, isOverdue,
+} from '../../utils/admissionsPipeline'
 
 /*
-  Admission Detail — full view of the single application identified by the :id
-  route param. Loads the real record from Supabase. Visible to admin when
-  clicking an application in the pipeline. 8-step pipeline stepper.
+  Admission Detail: the single application identified by the :id route param.
+
+  The review runs on four gates, asked in order, each with a mutually exclusive
+  and collectively exhaustive answer set. Answering one writes the stage, the
+  disposition, the funding route and the closure reason together, so a file can
+  never end a review in an undefined state. The model lives in
+  utils/admissionsPipeline.js; this file only renders it and saves the result.
 */
 
-const PIPELINE_STEPS = [
-  { key: 'initial-contact', label: 'Initial Contact' },
-  { key: 'pre-screening', label: 'Pre-Screening' },
-  { key: 'clinical-assessment', label: 'Clinical Assessment' },
-  { key: 'admission-decision', label: 'Admission Decision' },
-  { key: 'documentation', label: 'Documentation' },
-  { key: 'intake', label: 'Intake' },
-  { key: 'treatment-planning', label: 'Treatment Planning' },
-  { key: 'admitted', label: 'Admitted' },
-]
+const PIPELINE_STEPS = STAGES
 
 function initialsOf(first, last) {
   return (((first || '').charAt(0)) + ((last || '').charAt(0))).toUpperCase() || '—'
@@ -70,6 +75,23 @@ function mapApplication(r) {
     household: r.household_type || 'Not reported',
     enablers: r.enablers_present || 'Not reported',
     aftercareHousing: r.housing_aftercare || 'Not reported',
+    // The four axes. Everything the review panel decides from.
+    stage: r.stage || 'submitted',
+    disposition: r.disposition || 'active-us',
+    fundingRoute: r.funding_route || 'undetermined',
+    funding_route: r.funding_route || 'undetermined',
+    gate_contact: r.gate_contact || null,
+    gate_willingness: r.gate_willingness || null,
+    gate_clinical_fit: r.gate_clinical_fit || null,
+    closureReason: r.closure_reason || null,
+    closureNote: r.closure_note || null,
+    parkedUntil: r.parked_until || null,
+    stage_entered_at: r.stage_entered_at || r.updated_at || r.created_at,
+    parked_until: r.parked_until || null,
+    contactAttempts: r.contact_attempts || 0,
+    faApplicationId: r.fa_application_id || null,
+    fa_application_id: r.fa_application_id || null,
+    financialStability: r.financial_stability || 'Not reported',
   }
 }
 
@@ -81,39 +103,6 @@ const insightColors = {
   action: '#2B6CB0',
 }
 
-const ADVANCE_REASONS = [
-  'Pre-screening complete',
-  'Clinical assessment complete',
-  'Admission approved',
-  'Documentation verified',
-  'Intake complete',
-  'Treatment plan created',
-  'Detox initiated',
-]
-
-const DEFER_REASONS = [
-  'Insufficient documentation',
-  'Bed unavailable',
-  'Awaiting family confirmation',
-  'Medical clearance pending',
-  'Financial arrangement incomplete',
-]
-
-const DECLINE_REASONS = [
-  'Does not meet admission criteria',
-  'Active psychosis — requires higher care',
-  'Violent behaviour history — safety concern',
-  'Refused programme terms',
-  'Duplicate application',
-]
-
-const REFER_REASONS = [
-  'Mild substance use — outpatient appropriate',
-  'Strong community support in place',
-  'Patient preference for outpatient',
-  'Clinical assessment recommends outpatient',
-]
-
 function escapeHtml(v) {
   return String(v ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -123,7 +112,7 @@ function escapeHtml(v) {
 // Build a self-contained, print-ready HTML document for one application.
 // Rendered into a new window and sent to the browser print dialog (Save as PDF).
 function buildApplicationHtml(app) {
-  const statusLabel = PIPELINE_STEPS.find(s => s.key === app.status)?.label || app.status
+  const statusLabel = stageLabel(app.stage)
   const depositLine = app.depositPaid
     ? `${fmt(app.depositAmount)} paid`
     : app.depositRequestSentAt
@@ -168,7 +157,9 @@ function buildApplicationHtml(app) {
     <div class="meta">${app.applicantEmail ? escapeHtml(app.applicantEmail) + ' &middot; ' : ''}${app.applicantPhone ? escapeHtml(app.applicantPhone) + ' &middot; ' : ''}Applied ${escapeHtml(applied)}</div>
     <div class="badges">
       <span class="badge">${escapeHtml(statusLabel)}</span>
+      <span class="badge">${escapeHtml(app.disposition === 'closed' ? `Closed: ${closureLabel(app.closureReason)}` : dispositionLabel(app.disposition))}</span>
       <span class="badge">Pathway ${escapeHtml(app.pathway)}</span>
+      <span class="badge">Funding: ${escapeHtml(fundingLabel(app.fundingRoute))}</span>
       <span class="badge">Deposit: ${escapeHtml(depositLine)}</span>
     </div>
     ${section('Clinical Summary', [
@@ -202,10 +193,20 @@ export default function AdmissionDetail() {
   const { user } = useAuth()
   const { id } = useParams()
   const [app, setApp] = useState(null)
+  const [raw, setRaw] = useState(null)           // the untouched row, for opening an FA case
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [confirm, setConfirm] = useState(null)
-  const [actionReason, setActionReason] = useState('')
+  const [contacts, setContacts] = useState([])
+  const [events, setEvents] = useState([])
+  const [faCase, setFaCase] = useState(null)
+  // A transition the reviewer has chosen but not yet confirmed.
+  const [pending, setPending] = useState(null)   // { kind, label, resolve, needs }
+  const [pendingNote, setPendingNote] = useState('')
+  const [pendingDate, setPendingDate] = useState('')
+  const [pendingChoice, setPendingChoice] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [callForm, setCallForm] = useState({ method: 'phone', outcome: 'no-answer', notes: '', open: false, saving: false })
   const [depositModal, setDepositModal] = useState(false)
   const [depositForm, setDepositForm] = useState({
     toEmail: '',
@@ -227,9 +228,31 @@ export default function AdmissionDetail() {
       }
       const { data, error } = await getApplicationById(id)
       if (!active) return
-      if (error || !data) setLoadError('not-found')
-      else setApp(mapApplication(data))
+      if (error || !data) {
+        setLoadError('not-found')
+        setLoading(false)
+        return
+      }
+      setApp(mapApplication(data))
+      setRaw(data)
       setLoading(false)
+
+      /*
+        The call log, the decision trail and any linked assistance case load
+        after the application itself. They are supporting detail: a failure to
+        read them should not blank the page the reviewer came here for.
+      */
+      const [{ data: c }, { data: e }] = await Promise.all([
+        getApplicationContacts(id),
+        getApplicationEvents(id),
+      ])
+      if (!active) return
+      setContacts(c || [])
+      setEvents(e || [])
+      if (data.fa_application_id || data.funding_route === 'assistance-requested') {
+        const { data: fa } = await getFAByApplicationId(id)
+        if (active) setFaCase(fa || null)
+      }
     }
     load()
     return () => { active = false }
@@ -251,9 +274,11 @@ export default function AdmissionDetail() {
     )
   }
 
-  const currentStepIdx = PIPELINE_STEPS.findIndex(
-    s => s.key === (app.status === 'submitted' ? 'initial-contact' : app.status)
-  )
+  const currentStepIdx = stageIndex(app.stage)
+  const outstandingGate = nextGate(app)
+  const isClosed = app.disposition === 'closed'
+  // Why the file cannot move on, if it cannot. Funding is the hard one.
+  const advanceBlock = isClosed ? null : advanceStage(app).error
 
   function openDepositEmail() {
     setDepositForm({
@@ -322,27 +347,138 @@ export default function AdmissionDetail() {
     else w.onload = () => setTimeout(fire, 250)
   }
 
-  const handleAction = (action) => {
-    setConfirm(action)
-    setActionReason('')
+  // ── Transitions ───────────────────────────────────────────
+  /*
+    One path for every pipeline move: resolve it against the model, write it,
+    then record who decided what and why. Nothing here changes React state
+    alone, which is precisely how the previous panel lost every decision on the
+    next refresh and discarded the reason the reviewer had selected.
+  */
+  function resetPending() {
+    setPending(null); setPendingNote(''); setPendingDate(''); setPendingChoice('')
   }
 
-  const confirmAction = () => {
-    if (!requireFields([[actionReason, 'Reason']])) return
-    if (confirm === 'Advance to Next Stage') {
-      const nextIdx = currentStepIdx + 1
-      if (nextIdx < PIPELINE_STEPS.length) {
-        setApp(prev => ({ ...prev, status: PIPELINE_STEPS[nextIdx].key }))
-      }
-    } else if (confirm === 'Refer to Outpatient Pathway') {
-      setApp(prev => ({ ...prev, status: 'outpatient-pathway' }))
-    } else if (confirm === 'Defer Application') {
-      setApp(prev => ({ ...prev, status: 'deferred' }))
-    } else if (confirm === 'Decline Application') {
-      setApp(prev => ({ ...prev, status: 'declined' }))
+  async function openAssistanceCase(row) {
+    const { data, error, linkError } = await createFACaseFromApplication(row || raw, user || {})
+    if (error) {
+      setSaveError(`Decision saved, but the assistance case could not be opened: ${error.message}`)
+      return
     }
-    setConfirm(null)
-    setActionReason('')
+    setFaCase(data)
+    setApp(prev => (prev ? { ...prev, faApplicationId: data.id } : prev))
+    if (linkError) setSaveError('Assistance case opened, but the link back to this application did not save.')
+  }
+
+  async function commit(resolved) {
+    if (resolved?.error) { setSaveError(resolved.error); return }
+    if (!isSupabaseReady()) {
+      setSaveError('Not saved: the database connection is not configured.')
+      return
+    }
+    setSaving(true); setSaveError('')
+
+    const { data, error, eventError } = await applyApplicationTransition(app.id, resolved, user || {})
+    if (error) {
+      setSaveError(error.message || 'Could not save this decision.')
+      setSaving(false)
+      return
+    }
+
+    setApp(mapApplication(data))
+    setRaw(data)
+    setEvents(prev => [{
+      ...resolved.event,
+      actor_name: user?.full_name || user?.name || user?.email || null,
+      created_at: new Date().toISOString(),
+    }, ...prev])
+
+    if (resolved.opensFACase) await openAssistanceCase(data)
+
+    setSaving(false)
+    resetPending()
+    if (eventError) setSaveError('Saved, but the decision trail entry failed to write.')
+  }
+
+  // Ask for confirmation, plus whatever the answer cannot be saved without.
+  function askGate(gateKey, answerKey) {
+    const gate = gateFor(gateKey)
+    const answer = gate.answers.find(a => a.key === answerKey)
+    setSaveError('')
+    setPendingNote(''); setPendingDate(''); setPendingChoice('')
+    setPending({
+      kind: 'gate', gateKey, answerKey,
+      title: `${gate.label}: ${answer.label}`,
+      detail: answer.hint,
+      needsDate: (answer.needs || []).includes('parked_until'),
+    })
+  }
+
+  function ask(kind, extra = {}) {
+    setSaveError('')
+    setPendingNote(''); setPendingDate(''); setPendingChoice('')
+    setPending({ kind, ...extra })
+  }
+
+  function confirmPending() {
+    if (!pending) return
+    const note = pendingNote.trim()
+    switch (pending.kind) {
+      case 'gate':
+        return commit(resolveGate(app, pending.gateKey, pending.answerKey, {
+          parked_until: pendingDate || null,
+          note,
+        }))
+      case 'advance':
+        return commit(advanceStage(app, note || `Advanced to ${stageLabel(PIPELINE_STEPS[currentStepIdx + 1]?.key)}`, note))
+      case 'park':
+        if (!note) { setSaveError('A reason is required to park a file.'); return }
+        return commit(parkApplication(app, pendingDate, note, note))
+      case 'close':
+        return commit(closeApplication(app, pendingChoice, null, note))
+      case 'reopen':
+        return commit(reopenApplication(app, note || 'Reopened'))
+      case 'funding':
+        return commit(setFundingRoute(app, pending.route || pendingChoice, null, note))
+      default:
+        return undefined
+    }
+  }
+
+  // A pending transition is only savable once its required extras are present.
+  function pendingReady() {
+    if (!pending) return false
+    if (pending.needsDate && !pendingDate) return false
+    if (pending.kind === 'park' && (!pendingDate || !pendingNote.trim())) return false
+    if (pending.kind === 'close') {
+      if (!pendingChoice) return false
+      if (pendingChoice === 'other' && !pendingNote.trim()) return false
+    }
+    if (pending.kind === 'funding' && !pending.route && !pendingChoice) return false
+    return true
+  }
+
+  // ── Contact log ───────────────────────────────────────────
+  /*
+    Separate from the gates on purpose. Three unanswered calls and one refusal
+    are different facts, and until now neither was written down anywhere.
+  */
+  async function saveCall() {
+    if (!isSupabaseReady()) { setSaveError('Not saved: the database connection is not configured.'); return }
+    setCallForm(p => ({ ...p, saving: true }))
+    const { data, error } = await logApplicationContact({
+      applicationId: app.id,
+      method: callForm.method,
+      outcome: callForm.outcome,
+      notes: callForm.notes,
+    }, user || {})
+    if (error) {
+      setSaveError(error.message || 'Could not save the call.')
+      setCallForm(p => ({ ...p, saving: false }))
+      return
+    }
+    setContacts(prev => [data, ...prev])
+    setApp(prev => (prev ? { ...prev, contactAttempts: (prev.contactAttempts || 0) + 1 } : prev))
+    setCallForm({ method: 'phone', outcome: 'no-answer', notes: '', open: false, saving: false })
   }
 
   return (
@@ -379,7 +515,15 @@ export default function AdmissionDetail() {
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
           <span style={{ padding: '4px 12px', borderRadius: 14, fontSize: '.74rem', fontWeight: 700, background: '#DD6B2015', color: '#DD6B20' }}>
-            {PIPELINE_STEPS.find(s => s.key === app.status)?.label || app.status}
+            {stageLabel(app.stage)}
+          </span>
+          <span style={{ padding: '4px 12px', borderRadius: 14, fontSize: '.74rem', fontWeight: 700, background: dispositionColor(app.disposition) + '18', color: dispositionColor(app.disposition) }}>
+            {app.disposition === 'closed'
+              ? `Closed: ${closureLabel(app.closureReason)}`
+              : dispositionLabel(app.disposition)}
+          </span>
+          <span style={{ padding: '4px 12px', borderRadius: 14, fontSize: '.74rem', fontWeight: 700, background: fundingColor(app.fundingRoute) + '18', color: fundingColor(app.fundingRoute) }}>
+            {fundingLabel(app.fundingRoute)}
           </span>
           <span style={{ padding: '4px 12px', borderRadius: 14, fontSize: '.74rem', fontWeight: 700, background: 'rgba(26,95,173,.08)', color: 'var(--blue)' }}>
             Pathway {app.pathway}
@@ -403,7 +547,7 @@ export default function AdmissionDetail() {
       {/* 8-Step Pipeline Progress */}
       <div className="card" style={{ padding: '22px 24px', marginBottom: 16 }}>
         <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.1rem', marginBottom: 16, color: 'var(--charcoal)' }}>
-          8-Step Admission Pipeline
+          Stage
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 0, overflowX: 'auto', paddingBottom: 8 }}>
           {PIPELINE_STEPS.map((step, i) => {
@@ -507,71 +651,345 @@ export default function AdmissionDetail() {
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="card" style={{ padding: '20px 22px' }}>
-        <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', marginBottom: 14, color: 'var(--charcoal)' }}>
-          Actions
-        </h2>
-        {confirm ? (
-          <div style={{ padding: 16, background: 'var(--g100, #f7fafc)', borderRadius: 8 }}>
-            <p style={{ fontSize: '.88rem', marginBottom: 12, color: 'var(--charcoal)' }}>
-              <strong>Confirm:</strong> Are you sure you want to <strong>{confirm}</strong> application {app.id} ({app.initials})?
-            </p>
-            <div className="fg" style={{ marginBottom: 12 }}>
-              <label className="flabel">Reason *</label>
-              <select className="fi" value={actionReason} onChange={e => setActionReason(e.target.value)}>
-                <option value="">Select reason...</option>
-                {(confirm === 'Advance to Next Stage' ? ADVANCE_REASONS
-                  : confirm === 'Refer to Outpatient Pathway' ? REFER_REASONS
-                  : confirm === 'Defer Application' ? DEFER_REASONS
-                  : DECLINE_REASONS
-                ).map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
+      {/* Review: the four gates */}
+      <div className="card" style={{ padding: '20px 22px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+          <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', color: 'var(--charcoal)', margin: 0 }}>
+            Review
+          </h2>
+          <span style={{ fontSize: '.76rem', color: 'var(--g500)' }}>
+            {daysInStage(app)} day{daysInStage(app) === 1 ? '' : 's'} at {stageLabel(app.stage)}
+          </span>
+        </div>
+        <p style={{ fontSize: '.78rem', color: 'var(--g500)', marginBottom: 14, lineHeight: 1.6 }}>
+          Four questions, asked in order. The review stops at the first one that fails, which is why
+          funding is asked last. Every answer records the stage, who owes the next action and, where
+          it applies, how the file closed.
+        </p>
+
+        {/* Where each gate stands */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+          {gateState(app).map(g => (
+            <div key={g.key} style={{
+              flex: '1 1 150px', minWidth: 140, padding: '9px 12px', borderRadius: 8,
+              background: g.answerLabel ? 'rgba(26,95,173,.06)' : 'var(--g100, #f7fafc)',
+              border: `1px solid ${g.key === outstandingGate ? 'var(--blue)' : 'transparent'}`,
+            }}>
+              <div style={{ fontSize: '.68rem', textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--g500)', fontWeight: 700 }}>
+                {g.label}
+              </div>
+              <div style={{ fontSize: '.86rem', fontWeight: 700, marginTop: 3, color: g.answerLabel ? 'var(--charcoal)' : 'var(--g500)' }}>
+                {g.answerLabel || (g.key === outstandingGate ? 'Asking now' : 'Not asked')}
+              </div>
             </div>
+          ))}
+        </div>
+
+        {saveError && (
+          <div style={{
+            background: '#FDECEC', border: '1px solid #F5B5B5', color: '#8B2A2A',
+            borderRadius: 8, padding: '9px 13px', fontSize: '.8rem', marginBottom: 12, lineHeight: 1.5,
+          }}>
+            {saveError}
+          </div>
+        )}
+
+        {/* The pending decision, and whatever it cannot be saved without */}
+        {pending ? (
+          <div style={{ padding: 16, background: 'var(--g100, #f7fafc)', borderRadius: 8 }}>
+            <p style={{ fontSize: '.88rem', marginBottom: 4, color: 'var(--charcoal)' }}>
+              <strong>{pending.title || (pending.kind === 'advance' ? `Advance to ${stageLabel(PIPELINE_STEPS[currentStepIdx + 1]?.key)}` : pending.kind === 'park' ? 'Park this file' : pending.kind === 'close' ? 'Close this file' : pending.kind === 'reopen' ? 'Reopen this file' : 'Change the funding route')}</strong>
+            </p>
+            {pending.detail && (
+              <p style={{ fontSize: '.78rem', color: 'var(--g500)', marginBottom: 12 }}>{pending.detail}</p>
+            )}
+
+            {pending.kind === 'close' && (
+              <div className="fg" style={{ marginBottom: 12 }}>
+                <label className="flabel">How did it end? *</label>
+                <select className="fi" value={pendingChoice} onChange={e => setPendingChoice(e.target.value)}>
+                  <option value="">Select an outcome...</option>
+                  {CLOSURE_REASONS.filter(c => c.key !== 'admitted').map(c => (
+                    <option key={c.key} value={c.key}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {pending.kind === 'funding' && !pending.route && (
+              <div className="fg" style={{ marginBottom: 12 }}>
+                <label className="flabel">Funding route *</label>
+                <select className="fi" value={pendingChoice} onChange={e => setPendingChoice(e.target.value)}>
+                  <option value="">Select a route...</option>
+                  {FUNDING_ROUTES.filter(f => f.key !== 'undetermined').map(f => (
+                    <option key={f.key} value={f.key}>{f.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {(pending.needsDate || pending.kind === 'park') && (
+              <div className="fg" style={{ marginBottom: 12 }}>
+                <label className="flabel">Review on *</label>
+                <input className="fi" type="date" value={pendingDate}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={e => setPendingDate(e.target.value)} />
+                <span style={{ fontSize: '.72rem', color: 'var(--g500)', display: 'block', marginTop: 4 }}>
+                  A parked file needs a date it comes back. That is what stops it ageing quietly.
+                </span>
+              </div>
+            )}
+
+            <div className="fg" style={{ marginBottom: 12 }}>
+              <label className="flabel">
+                Note {pending.kind === 'park' || pendingChoice === 'other' ? '*' : '(optional)'}
+              </label>
+              <textarea className="fi" rows={2} value={pendingNote}
+                onChange={e => setPendingNote(e.target.value)}
+                placeholder="What was said, and why this decision." />
+            </div>
+
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn--primary btn--sm" onClick={confirmAction} disabled={!actionReason}>
-                Yes, {confirm}
+              <button className="btn btn--primary btn--sm" onClick={confirmPending} disabled={saving || !pendingReady()}>
+                {saving ? 'Saving…' : 'Save decision'}
               </button>
-              <button className="btn btn--secondary btn--sm" onClick={() => setConfirm(null)}>
+              <button className="btn btn--secondary btn--sm" onClick={resetPending} disabled={saving}>
                 Cancel
               </button>
             </div>
           </div>
+        ) : isClosed ? (
+          <div style={{ padding: 16, background: 'var(--g100, #f7fafc)', borderRadius: 8 }}>
+            <p style={{ fontSize: '.88rem', color: 'var(--charcoal)', marginBottom: 4 }}>
+              Closed: <strong>{closureLabel(app.closureReason)}</strong>
+            </p>
+            {app.closureNote && (
+              <p style={{ fontSize: '.8rem', color: 'var(--g500)', marginBottom: 12 }}>{app.closureNote}</p>
+            )}
+            <button className="btn btn--secondary btn--sm" onClick={() => ask('reopen')}>Reopen</button>
+          </div>
+        ) : outstandingGate ? (
+          <div>
+            <p style={{ fontSize: '.92rem', fontWeight: 700, color: 'var(--charcoal)', marginBottom: 10 }}>
+              {gateFor(outstandingGate).question}
+            </p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {gateFor(outstandingGate).answers.map(a => (
+                <button key={a.key} className="btn btn--secondary btn--sm"
+                  style={{ textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start', padding: '9px 14px' }}
+                  onClick={() => askGate(outstandingGate, a.key)}
+                  title={a.hint}>
+                  {a.label}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: '.74rem', color: 'var(--g500)', marginTop: 10 }}>
+              {gateFor(outstandingGate).answers.map(a => `${a.label}: ${a.hint}`).join('  ·  ')}
+            </p>
+          </div>
         ) : (
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button
-              className="btn btn--primary btn--sm"
-              onClick={() => handleAction('Advance to Next Stage')}
-              disabled={currentStepIdx >= PIPELINE_STEPS.length - 1 || app.status === 'deferred' || app.status === 'declined' || app.status === 'outpatient-pathway'}
-            >
-              Advance to Next Stage
-            </button>
+          <div>
+            <p style={{ fontSize: '.85rem', color: 'var(--g500)', marginBottom: 12 }}>
+              All four questions are answered.{' '}
+              {advanceBlock
+                ? advanceBlock
+                : `Next: ${nextAction(app) || 'move this file on below'}.`}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Funding: the axis that used to have nowhere to go */}
+      <div className="card" style={{ padding: '20px 22px', marginBottom: 16 }}>
+        <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', marginBottom: 6, color: 'var(--charcoal)' }}>
+          Funding
+        </h2>
+        <p style={{ fontSize: '.78rem', color: 'var(--g500)', marginBottom: 14, lineHeight: 1.6 }}>
+          The deposit pays for the assessment, so nothing clinical is booked until funding is
+          confirmed: the deposit paid, or assistance approved. What this answer settles is who is
+          expected to pay and who we are waiting on, so a family who cannot pay is a file with an
+          assistance case open and an owner rather than a file that stops.
+        </p>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+          <span style={{
+            padding: '5px 13px', borderRadius: 14, fontSize: '.78rem', fontWeight: 700,
+            background: fundingColor(app.fundingRoute) + '18', color: fundingColor(app.fundingRoute),
+          }}>
+            {fundingLabel(app.fundingRoute)}
+          </span>
+          {faCase && (
+            <Link to={`/dashboard/financial-assistance/${faCase.id}`} style={{ fontSize: '.8rem', color: 'var(--blue)', fontWeight: 600 }}>
+              Case {faCase.reference_code} ({faCase.status.replace(/_/g, ' ')}) →
+            </Link>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {app.fundingRoute !== 'assistance-requested' && !faCase && (
             <button
               className="btn btn--sm"
-              style={{ background: app.depositPaid ? 'rgba(160,160,160,.1)' : 'rgba(26,95,173,.08)', color: app.depositPaid ? 'var(--g500)' : 'var(--blue)', border: '1px solid rgba(26,95,173,.25)', fontWeight: 600 }}
-              onClick={openDepositEmail}
-              disabled={app.depositPaid}
-              title={app.depositPaid ? 'Deposit already paid' : 'Send the refundable-deposit request email to the applicant'}
+              style={{ background: '#C08A3015', color: '#8E5F00', border: '1px solid #C08A3040', fontWeight: 600 }}
+              onClick={() => ask('funding', {
+                route: 'assistance-requested',
+                title: 'Flag as needing financial assistance',
+                detail: 'Opens a Freedom Foundation case prefilled from this application, links the two, and keeps the file moving on the clinical track.',
+              })}
+              disabled={isClosed}
             >
-              {app.depositRequestSentAt ? 'Resend Deposit Request Email' : 'Send Deposit Request Email'}
+              Needs financial assistance
             </button>
-            <button className="btn btn--secondary btn--sm" onClick={() => handleAction('Refer to Outpatient Pathway')}>
-              Refer to Outpatient Pathway
+          )}
+          <button className="btn btn--secondary btn--sm" onClick={() => ask('funding', { title: 'Change the funding route' })} disabled={isClosed}>
+            Change funding route
+          </button>
+          <button
+            className="btn btn--sm"
+            style={{ background: app.depositPaid ? 'rgba(160,160,160,.1)' : 'rgba(26,95,173,.08)', color: app.depositPaid ? 'var(--g500)' : 'var(--blue)', border: '1px solid rgba(26,95,173,.25)', fontWeight: 600 }}
+            onClick={openDepositEmail}
+            disabled={app.depositPaid}
+            title={app.depositPaid ? 'Deposit already paid' : 'Send the refundable-deposit request email to the applicant'}
+          >
+            {app.depositRequestSentAt ? 'Resend Deposit Request Email' : 'Send Deposit Request Email'}
+          </button>
+        </div>
+      </div>
+
+      {/* Stage controls */}
+      <div className="card" style={{ padding: '20px 22px', marginBottom: 16 }}>
+        <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', marginBottom: 14, color: 'var(--charcoal)' }}>
+          Move this file
+        </h2>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            className="btn btn--primary btn--sm"
+            onClick={() => ask('advance')}
+            disabled={isClosed || currentStepIdx >= PIPELINE_STEPS.length - 1 || !!outstandingGate || !!advanceBlock}
+            title={outstandingGate ? 'Answer the outstanding question first' : advanceBlock || 'Move to the next stage'}
+          >
+            Advance to {stageLabel(PIPELINE_STEPS[currentStepIdx + 1]?.key) || 'next stage'}
+          </button>
+          <button
+            className="btn btn--sm"
+            style={{ background: '#D69E2E15', color: '#8E5F00', border: '1px solid #D69E2E40', fontWeight: 600 }}
+            onClick={() => ask('park')}
+            disabled={isClosed}
+          >
+            Park with a review date
+          </button>
+          <button
+            className="btn btn--sm"
+            style={{ background: '#E53E3E12', color: '#8B2A2A', border: '1px solid #E53E3E30', fontWeight: 600 }}
+            onClick={() => ask('close')}
+            disabled={isClosed}
+          >
+            Close this file
+          </button>
+        </div>
+        {app.disposition === 'parked' && app.parkedUntil && (
+          <p style={{ fontSize: '.8rem', color: isOverdue(app) ? '#8B2A2A' : 'var(--g500)', marginTop: 12, fontWeight: isOverdue(app) ? 700 : 400 }}>
+            Parked until {new Date(app.parkedUntil).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+            {isOverdue(app) ? '. That date has passed.' : '.'}
+          </p>
+        )}
+      </div>
+
+      {/* Contact log */}
+      <div className="card" style={{ padding: '20px 22px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+          <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', color: 'var(--charcoal)', margin: 0 }}>
+            Contact log
+          </h2>
+          <button className="btn btn--secondary btn--sm" onClick={() => setCallForm(p => ({ ...p, open: !p.open }))}>
+            {callForm.open ? 'Cancel' : '+ Log a call'}
+          </button>
+        </div>
+        <p style={{ fontSize: '.78rem', color: 'var(--g500)', marginBottom: 14 }}>
+          {contacts.length
+            ? `${contacts.length} attempt${contacts.length === 1 ? '' : 's'} recorded.`
+            : 'No attempts recorded. Three unanswered calls and one refusal are different facts.'}
+        </p>
+
+        {callForm.open && (
+          <div style={{ padding: 16, background: 'var(--g100, #f7fafc)', borderRadius: 8, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              <div className="fg">
+                <label className="flabel">How</label>
+                <select className="fi" value={callForm.method} onChange={e => setCallForm(p => ({ ...p, method: e.target.value }))}>
+                  {CONTACT_METHODS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
+                </select>
+              </div>
+              <div className="fg">
+                <label className="flabel">What happened</label>
+                <select className="fi" value={callForm.outcome} onChange={e => setCallForm(p => ({ ...p, outcome: e.target.value }))}>
+                  {CONTACT_OUTCOMES.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="fg" style={{ marginBottom: 12 }}>
+              <label className="flabel">Notes</label>
+              <textarea className="fi" rows={2} value={callForm.notes}
+                onChange={e => setCallForm(p => ({ ...p, notes: e.target.value }))}
+                placeholder="What they said." />
+            </div>
+            <button className="btn btn--primary btn--sm" onClick={saveCall} disabled={callForm.saving}>
+              {callForm.saving ? 'Saving…' : 'Save call'}
             </button>
-            <button
-              className="btn btn--sm"
-              style={{ background: '#D69E2E15', color: '#D69E2E', border: '1px solid #D69E2E30', fontWeight: 600 }}
-              onClick={() => handleAction('Defer Application')}
-            >
-              Defer Application
-            </button>
-            <button
-              className="btn btn--sm"
-              style={{ background: '#E53E3E12', color: '#E53E3E', border: '1px solid #E53E3E30', fontWeight: 600 }}
-              onClick={() => handleAction('Decline Application')}
-            >
-              Decline Application
-            </button>
+          </div>
+        )}
+
+        {contacts.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {contacts.map(c => (
+              <div key={c.id} style={{ display: 'flex', gap: 10, fontSize: '.82rem', borderBottom: '1px solid var(--g100, #eee)', paddingBottom: 9 }}>
+                <span style={{ color: 'var(--g500)', minWidth: 96, flexShrink: 0 }}>
+                  {new Date(c.occurred_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}
+                </span>
+                <span>
+                  <strong>{CONTACT_OUTCOMES.find(o => o.key === c.outcome)?.label || c.outcome}</strong>
+                  {' '}by {CONTACT_METHODS.find(m => m.key === c.method)?.label.toLowerCase() || c.method}
+                  {c.contacted_by_name ? `, ${c.contacted_by_name}` : ''}
+                  {c.notes && <span style={{ color: 'var(--g500)', display: 'block', marginTop: 2 }}>{c.notes}</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Decision trail */}
+      <div className="card" style={{ padding: '20px 22px' }}>
+        <h2 style={{ fontFamily: 'var(--fd)', fontSize: '1.05rem', marginBottom: 6, color: 'var(--charcoal)' }}>
+          Decision trail
+        </h2>
+        <p style={{ fontSize: '.78rem', color: 'var(--g500)', marginBottom: 14 }}>
+          Every move, the reason given, and who made it.
+        </p>
+        {events.length === 0 ? (
+          <p style={{ fontSize: '.82rem', color: 'var(--g500)' }}>Nothing recorded yet.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {events.map((e, i) => (
+              <div key={e.id || i} style={{ display: 'flex', gap: 10, fontSize: '.82rem', borderBottom: '1px solid var(--g100, #eee)', paddingBottom: 10 }}>
+                <span style={{ color: 'var(--g500)', minWidth: 96, flexShrink: 0 }}>
+                  {new Date(e.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}
+                </span>
+                <span>
+                  <strong>{e.reason}</strong>
+                  {e.from_stage !== e.to_stage && (
+                    <span style={{ color: 'var(--g500)' }}> · {stageLabel(e.from_stage)} → {stageLabel(e.to_stage)}</span>
+                  )}
+                  {e.from_disposition !== e.to_disposition && (
+                    <span style={{ color: 'var(--g500)' }}> · {dispositionLabel(e.from_disposition)} → {dispositionLabel(e.to_disposition)}</span>
+                  )}
+                  {e.from_funding_route !== e.to_funding_route && (
+                    <span style={{ color: 'var(--g500)' }}> · funding: {fundingLabel(e.to_funding_route)}</span>
+                  )}
+                  {e.note && <span style={{ color: 'var(--g500)', display: 'block', marginTop: 2 }}>{e.note}</span>}
+                  {e.actor_name && <span style={{ color: 'var(--g500)', display: 'block', marginTop: 2 }}>{e.actor_name}</span>}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </div>
